@@ -1,0 +1,773 @@
+<html>
+
+<head>
+<link rel="stylesheet" href="css/mlTools.css">
+</head>
+
+<body>
+<script src="js/math.min.js"></script>
+<script src = "js/Chart.min.js"></script>
+
+
+<div id = "bannerDiv">
+
+<div id = "leftBannerDiv">
+ <label for "lambdaInput">Lambda</label>
+ <input id = "lambdaInput" type="text" value = "0.1">
+  <label for "maxIterationsInput">Max Iterations</label>
+ <input id = "maxIterationsInput" type="text" value = "10">
+ <br>
+ 
+  <input id = "scalingFlag" type="checkbox" checked>feature Scaling
+  <input id = "analyticFlag" type="checkbox" checked>Also solve analytically
+  <br>
+  <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
+  <input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature
+  <br>
+  <label for "initTheta">Initial	 Theta</label>
+  <input id = "initTheta" type="text" value = "">
+   <label for "convThreshold">Convergence Threshold</label>
+  <input id = "convThreshold" type="text" value = "0.0000000001">
+  <br>
+  <input type="radio" name="featureType" id = "featureMulti" onclick="featureTypeClicked(event)" value="multi">Multi Feature
+  <input type="radio" name="featureType" id="featurePoly" onclick="featureTypeClicked(event)" value="poly">Polynomial
+  
+   <label for "degreesInput" id="degreesInputLab">Degrees</label>
+ <input id = "degreesInput" type="text" value = "1"> 
+ <br>
+ 
+ 
+ 
+ <button onclick="learnForeground()">Learn</button>
+ <button onclick="learnBackground()">Learn Background</button>
+ <button onclick="clearRes()">Clear</button>
+ 
+
+
+
+</div>
+<div id = "rightBannerDiv">
+<h2>Machine Learning Tools</h2>
+
+</div>
+<div>
+
+<button id = "Logistic"  onclick="logButClicked()" class="moduleBut">Logistic Regression</button>
+<button id = "Regression" onclick="regButClicked()" class="moduleBut">Regression</button>
+</div>
+
+</div>
+
+<div id = "rightTwo">Diagnostics</div>
+
+
+
+
+<div id = "mfkTools">
+    <div id = "mfkInputTools">
+    <textarea id = "trainingInput" cols=50 rows=10 ></textarea>
+	<div id = "blog">Results</div>
+   </div>	
+ 
+</div>	
+<div id = "chartDiv">		
+<canvas id="costChart" width="400" height="300"></canvas>
+</div>
+<div id = "chart2Div">
+<canvas id="visualiseChart"  width="400" height="250"></canvas>
+</div>	
+<script>
+
+var w;
+
+var mlParams = {};
+
+
+function stringifyToMatrix(string) {
+  var obj = JSON.parse(string);
+  //obj.__proto__ = math.matrix.prototype;
+  var mat = math.matrix(obj.data);
+  
+  return mat;
+}
+
+
+function logButClicked() {
+  document.getElementById('trainingInput').value = '1 3 0\n2 4 0\n0 1 0\n5 7 1\n6 8 1\n4 4 1\n2 2 0\n5 4 1'	;
+
+  getParams();
+   var res = getXandY(mlParams);
+   var X = res[0];
+   var Y = res[1];
+   var XOrig = res[2];
+   visualiseLogTrainingOnly(XOrig,Y);
+	
+}
+
+function regButClicked() {
+document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+
+}
+
+function startWorker() {
+
+if (typeof	(Worker) !== "undefined") {
+    w = new Worker("js/mlTools_worker.js");
+	w.onmessage = function(event) {
+	        if (event.data.action == 'progUp') {
+			    learnProgressForeground(event.data.elToUpdate,event.data.mess,event.data.clearFlag);
+				
+				if (event.data.obj) {
+				  var mat = stringifyToMatrix(event.data.obj);
+				  alert('obj: ' + mat + ' size: ' + mat.size());
+				}
+			
+			}
+			else if (event.data.action == 'fin') {
+			    //alert('min Th in: ' + event.data.minTheta);
+				var minTheta = stringifyToMatrix(event.data.minTheta);
+				//alert('Min Theta: ' + minTheta + ' size: ' + minTheta.size());
+				var X = stringifyToMatrix(event.data.X);
+				var Y = stringifyToMatrix(event.data.Y);
+				var IdealCost = stringifyToMatrix(event.data.IdealCost);
+				var ThetaIdeal = stringifyToMatrix(event.data.ThetaIdeal);
+				var  XOrig = stringifyToMatrix(event.data.XOrig);
+				var adjTh = event.data.adjTh; //stringifyToMatrix(event.data.adjTh);
+				var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
+				var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
+				var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
+				
+				testChart(costAr,iters);
+	
+	            visualise(X,Y,minTheta, XOrig,adjTh,ThetaIdeal,scaleFactors);
+				
+				
+			}
+			else if (event.data.action == 'chartUp') {
+			
+			    //var costArExtra = event.data.costAr.slice(event.data.costAr.length - 1000);
+				//var itersExtra = event.data.iters.slice(event.data.iters.length - 1000);
+				var minTheta = stringifyToMatrix(event.data.minTheta);
+				//alert('Min Theta: ' + minTheta + ' size: ' + minTheta.size());
+				var X = stringifyToMatrix(event.data.X);
+				var Y = stringifyToMatrix(event.data.Y);
+				var IdealCost = stringifyToMatrix(event.data.IdealCost);
+				var ThetaIdeal = stringifyToMatrix(event.data.ThetaIdeal);
+				var  XOrig = stringifyToMatrix(event.data.XOrig);
+				var adjTh = event.data.adjTh; //stringifyToMatrix(event.data.adjTh);
+				var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
+				var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
+				var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
+				
+				updateCostChart(event.data.costAr,event.data.iters);
+				visualise(X,Y,minTheta,XOrig,adjTh,ThetaIdeal,scaleFactors);
+			}
+			else {
+               document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Tools</h2>' + event.data;
+			}   
+        };
+		
+}
+else {
+
+        document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Tools</h2>' + "Sorry! No Web Worker support.";
+    }
+
+}	
+
+
+
+document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+ 
+ var visChart = null;
+ var costChart = null;
+ 
+ var featureType = "multi";
+ featureTypeUpdated();
+ 
+ startWorker();
+ 
+ 
+ function getParams() {
+    
+	mlParams.featureType = featureType; //uses mvc
+	mlParams.input = elVal('trainingInput');
+	mlParams.degrees = parseInt(elVal('degreesInput'));
+	mlParams.addOnesFlag = elVal('addOnesFlag');
+	mlParams.scalingFlag = elVal('scalingFlag');
+	mlParams.diagnosticsFlag = elVal('diagnosticsFlag');
+	mlParams.solveAnalytically = elVal('analyticFlag');
+	mlParams.initTheta = elVal('initTheta');
+	mlParams.lambda = parseFloat(elVal('lambdaInput'));
+	mlParams.maxIterations = parseInt(elVal('maxIterationsInput'));
+	mlParams.convThreshold = parseFloat(elVal('convThreshold'));
+	
+	
+ 
+ }
+ 
+ function featureTypeClicked(event) {
+    if (event.target.id === 'featurePoly') {
+	    featureType = 'poly';
+		
+    }
+	else {
+	   featureType = 'multi';
+	   
+	}
+	
+	featureTypeUpdated();
+ 
+ }
+ 
+ 
+ function featureTypeUpdated() {
+ 
+    mlParams.featureType = featureType;
+	
+    switch (featureType) {
+	
+	  case 'poly':
+	     if (elVal('featureMulti')) {
+		 
+	        el('featurePoly').checked = true;
+		 }
+		 el('degreesInput').style.display = 'inline-block';
+		 el('degreesInputLab').style.display = 'inline-block';
+	
+	  break;
+	  
+	  case 'multi':
+	    if (elVal('featurePoly')) {
+		   el('featureMulti').checked = true;
+		}
+	    
+		el('degreesInput').style.display = 'none';
+		el('degreesInputLab').style.display = 'none';
+	
+	  break;
+	   
+	   default:
+	   
+	
+	   break;
+	
+	}
+ }
+ 
+ function elVal(elId) {
+    var el = document.getElementById(elId);
+	
+	if (!el) {
+	   alert('el not defined: ' + elId);
+	   return null;
+	}
+	
+	if (el.type === 'checkbox') {
+	   return el.checked;
+	}
+	
+	else {
+	
+      return el.value;
+	}
+ 
+ }
+ 
+ function el(elId) {
+    return document.getElementById(elId	);
+ 
+}
+ 
+ 
+ function clearCharts() {
+   if (visChart) {
+     visChart.destroy();
+	 
+   }
+   
+   if (costChart) {
+     costChart.destroy();
+   }
+   
+   visChart = null;
+   costChart = null;
+
+ 
+ }
+ 
+function clearRes()  {
+
+  
+  el('blog').innerHTML = '';
+  el('rightTwo').innerHTML = '';
+  
+  clearCharts();
+  
+  
+  
+  
+} 
+
+function learnBackground() {
+
+    if (!w) {
+	  alert('Background processing not available');
+	  return;
+	}
+    getParams();
+	
+	clearCharts();
+	
+	testChart([],[]);
+	
+    w.postMessage({'action':'Go','params':mlParams});
+}
+
+function learnForeground() {
+    getParams();
+	
+
+	clearCharts();
+	
+	
+	
+	var res = learn(mlParams,learnProgressForeground);
+	
+	var costAr = res[0];
+	var iters = res[1];
+	var ThetaIdeal = res[2];
+	var IdeaCost = res[3];
+	var X = res[4];
+	var Y = res[5];
+	var minTheta = res[6];
+	var XOrig = res[7];
+	var adjTh = res[8];
+	
+	var scaleFactors = res[9];
+	
+	testChart(costAr,iters);
+	
+	visualise(X,Y,minTheta, XOrig,adjTh,ThetaIdeal,scaleFactors);
+	
+	
+
+}
+
+function learnProgressForeground(targetEl,message,clearFlag) {
+   
+   if (targetEl == 'chart') {
+      return; // 
+   }
+   if (clearFlag) {
+       if (targetEl == 'rightBannerDiv') {
+	       el(targetEl).innerHTML= '<h2>Machine Learning Tools</h2>' + message;
+	   }
+	   else {
+          el(targetEl).innerHTML= message;
+		}
+	}
+	
+	else {
+	   el(targetEl).innerHTML+= message;
+	}
+	
+	
+	if (targetEl == 'blog') {
+	   var elem = el('blog');
+       elem.scrollTop = elem.scrollHeight;
+	
+	}
+
+
+}
+
+
+function createVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,scatPointStyles) {
+   var ctx = document.getElementById("visualiseChart");
+
+   if (visChart) {
+
+  
+
+  }
+
+else {
+
+    if (!modelData) {
+	   modelData = [];
+	}
+	
+	if (!idealData) {
+	
+	   idealData = [];
+	   
+	}
+	
+	if (!scatData) {
+	   scatData = [];
+	}
+	
+	
+	var scatterChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+			datasets: [{
+				label: 'Training Data',
+				
+				data: scatData,
+				pointBackgroundColor: scatPointBackgroundColors,
+				pointStyle:scatPointStyles,
+				
+				fill: false
+			},
+			{
+					
+				label: 'Model',
+				data: modelData,
+				pointBackgroundColor: "#000",
+				
+				pointRadius: 1,
+				
+				fill: false
+			
+			},
+				{
+				label: 'Ideal',
+				
+				data: idealData,
+				pointBackgroundColor: "#0f0",
+				pointRadius: 1,
+				
+				fill: false
+			
+			}
+			
+			
+			]
+		},
+		options: {
+			scales: {
+				xAxes: [{
+					type: 'linear',
+					position: 'bottom'
+				}]
+			},
+			showLines:false,
+			responsive:false
+		}
+	});
+
+	 visChart = scatterChart;
+  }
+ 
+
+
+}
+
+function visualiseLogTrainingOnly(XOrig,Y) {
+  var ctx = document.getElementById("visualiseChart");
+  
+  var x1Ar = mRow(XOrig,1,true);
+  
+  var x2Ar = mRow(XOrig,2,true);
+  
+  var yAr = mCol(Y,0,true);
+  
+  var scatData = [];
+  
+  var pointBackgroundColors = [];
+  var pointStyles = [];
+  
+  x1Ar.forEach(function(x,i) {
+     var x2 = x2Ar[i]; //"y" is actually just second x here
+	 var rad = yAr[i] == 1 ? 6 : 1;
+	 var plotPoint = {x:x,y:x2};
+	 scatData.push(plotPoint);
+	 pointBackgroundColors.push(yAr[i] == 1 ? "#0f0" : "#0ff");
+	 pointStyles.push(yAr[i] == 1 ? "circle" : "square");
+	 
+  });  
+  
+  createVisGraph(scatData,null,null,pointBackgroundColors,pointStyles);
+
+}
+
+function visualise(X,Y,Theta,XOrig,ThetaOrig,ThetaIdeal,scaleFactors) {
+
+var ctx = document.getElementById("visualiseChart");
+
+
+var rows = XOrig.size();
+
+var x1Ar = mRow(XOrig,1,true);
+
+
+var yAr = mCol(Y,0,true);
+
+
+var scatData = [];
+x1Ar.forEach(function(x,i) {
+     var y = yAr[i];
+	 var plotPoint = {x:x,y:y};
+	 scatData.push(plotPoint);
+	 
+});
+
+var modelData =[];
+
+var idealData = [];
+
+var incX = scaleFactors ? (scaleFactors[1][1] / 30) : 2000 / 10;
+var endX = scaleFactors ?  scaleFactors[1][2] + scaleFactors[1][1] +  incX  : 2000;
+
+for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
+   var th0 = math.subset(Theta,math.index(0,0));
+   var th1 = math.subset(Theta,math.index(1,0)); 
+ 
+   var xVal;
+   
+	xVal = i;
+	
+	
+	var yVal = 0;
+	var yValIdeal = 0;
+	
+    if (document.getElementById('scalingFlag').checked)  {
+	   for (var ii = 0;ii < ThetaOrig.length;++ii) {
+	      
+	          yVal+= (ThetaOrig[ii] * Math.pow(i,ii));
+			
+	   }
+	}
+	else {
+	   for (var ii = 0;ii < Theta.size()[0];++ii) {
+	       yVal += (math.subset(Theta,math.index(ii,0))  * Math.pow(i,ii));
+	   }
+	}
+	
+	
+	for (var ii = 0;ii < ThetaIdeal.size()[0];++ii) {
+	       yValIdeal += (math.subset(ThetaIdeal,math.index(ii,0))  * Math.pow(i,ii));
+	}
+	
+	
+	
+   //var yVal = th0 + (th1 * xVal); 
+  
+   var degrees = parseInt(elVal('degreesInput'));
+ 
+ 
+    var plotPoint = {x:i,y:yVal};
+	var plotPointIdeal = {x:i, y:yValIdeal};
+	
+	 
+ 
+   modelData.push(plotPoint);
+   
+   idealData.push(plotPointIdeal);
+   
+}
+
+Theta.subset(math.index(0, 0)); 
+
+if (visChart) {
+
+  visChart.data.datasets[0].data = scatData;
+  visChart.data.datasets[1].data = modelData;
+  visChart.data.datasets[2].data = idealData;
+  visChart.update();
+
+}
+
+else {
+	var scatterChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+			datasets: [{
+				label: 'Training Data',
+				/*
+				data: [{
+					x: -10,
+					y: 0
+				}, {
+					x: 0,
+					y: 10
+				}, {
+					x: 10,
+					y: 5
+				}]
+				*/
+				data: scatData,
+				pointBackgroundColor: "#f0f",
+				
+				fill: false
+			},
+			{
+				   label: 'Model',
+				
+				/*
+				data: [{
+					x: 0,
+					y: 0.1
+				}, {
+					x: 0.3,
+					y: 0.3
+				}, {
+					x: 0.5,
+					y: 0.5
+				}]
+				*/
+				
+				
+				data: modelData,
+				pointBackgroundColor: "#000",
+				pointRadius: 1,
+				
+				fill: false
+			
+			},
+				{
+				   label: 'Ideal',
+				
+				/*
+				data: [{
+					x: 0,
+					y: 0.1
+				}, {
+					x: 0.3,
+					y: 0.3
+				}, {
+					x: 0.5,
+					y: 0.5
+				}]
+				*/
+				
+				
+				data: idealData,
+				pointBackgroundColor: "#0f0",
+				pointRadius: 1,
+				
+				fill: false
+			
+			}
+			
+			
+			]
+		},
+		options: {
+			scales: {
+				xAxes: [{
+					type: 'linear',
+					position: 'bottom'
+				}]
+			},
+			showLines:false,
+			responsive:false
+		}
+	});
+
+	 visChart = scatterChart;
+  }
+
+}
+	
+function updateCostChart(newCost,newIters) {
+
+//var len = costAr.length;
+
+//var smallerCost = costAr.slice(len - lastHowMany);
+//var smallerIter = iters.slice(len - lastHowMany);
+
+costChart.data.labels = newIters;
+costChart.data.datasets[0].data = newCost;
+costChart.update();
+
+
+
+}
+
+
+function testChart(costAr,iters) {
+
+console.log('costar: ' + costAr);
+
+var len = costAr.length;
+
+if (len > 500) {
+   costAr = costAr.filter(function(el,i) {
+       if ((i == 0) || ((i + 1) % 50 == 0)) {
+	      return true;
+	   }
+	   return false;
+   });
+   iters = iters.filter(function(el,i) {
+       if ((i == 0) || ((i + 1) % 50 == 0)) {
+	      return true;
+	   }
+	   return false;
+   });
+   
+}
+
+var ctx = document.getElementById("costChart");
+/*
+var cont = ctx.getContext("2d");
+cont.canvas.width = 300;
+cont.canvas.height = 300;
+*/
+var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+	
+        labels:  iters,
+		
+        datasets: [{
+            label: 'Cost function',
+            data: costAr,//[12, 19, 3, 5, 2, 3]
+			/*
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+            ],
+            borderColor: [
+                'rgba(255,99,132,1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+			*/
+        }]
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero:true
+                }
+            }]
+        },
+		
+		
+                responsive: false
+            
+    }
+});
+costChart = myChart;
+}
+
+
+</script>
+<script src="js/mlTools_routines.js"></script>
+
+</body>
+
+
+</html>
