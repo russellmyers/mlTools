@@ -1,25 +1,3 @@
-	
-function h(Xt,Theta) {
-    return math.multiply(Xt,Theta);
-}
-
-function err(Xt,Theta,Y) {
-    return math.subtract(h(Xt,Theta),Y);
-
-}
-
-function sqErr(Xt,Theta,Y)  {
-    return math.square(err(Xt,Theta,Y));
-}
-
-function gdUpdate(X,Theta,Y,lambda) {
-    var Derivs = derivs(X,Theta,Y);
-	var adjDerivs = math.multiply(Derivs,lambda);
-	var ThetaUpdated = math.subtract(Theta,adjDerivs);
-	return [ThetaUpdated,Derivs];
-	
-	
-}
 
 function matrixToArray(mat,rNum,cNum) {
 
@@ -76,12 +54,63 @@ function mCol(matrix, index,retAsArray) {
   }
   
 } 
+
+function sigmoid(In) {
+	var Out = math.map(In,function(el) {
+		
+		var exp = Math.pow(Math.E,el * -1);	
+		return  1 / (1 + exp);
+		
+	});
+	
+	return Out;
+
+}
+
+function predict(Xt,Theta) {
+	//Logistic regression prediction
+	
+	var thresh = 0.5; // predict true if >= this
+	var H = h(Xt,Theta,true);
+	return math.map(H,function(el) {
+		return el >= 0.5 ? 1 : 0;
+	});
+	
+	
+}
+	
+function h(Xt,Theta,logisticFlag) {
+	if (logisticFlag) {
+		return sigmoid(math.multiply(Xt,Theta));
+	}
+    else {	
+        return math.multiply(Xt,Theta);
+	}
+}
+
+function err(Xt,Theta,Y,logisticFlag) {
+    return math.subtract(h(Xt,Theta,logisticFlag),Y);
+
+}
+
+function sqErr(Xt,Theta,Y,logisticFlag)  {
+    return math.square(err(Xt,Theta,Y,logisticFlag));
+}
+
+function gdUpdate(X,Theta,Y,lambda,logisticFlag) {
+    var Derivs = derivs(X,Theta,Y,logisticFlag);
+	var adjDerivs = math.multiply(Derivs,lambda);
+	var ThetaUpdated = math.subtract(Theta,adjDerivs);
+	return [ThetaUpdated,Derivs];
+	
+	
+}
  
-function derivs(X,Theta,Y) {
+function derivs(X,Theta,Y,logisticFlag) {
     //console.log('X: ' + X);
     var Xt = math.transpose(X);
     //console.log('Xt: ' + Xt);
-	var errs = err(Xt,Theta,Y);
+	var errs = err(Xt,Theta,Y,logisticFlag);
     var Derivs = math.multiply(X,errs);
     //console.log('der: ' + Derivs);
 
@@ -96,13 +125,41 @@ function derivs(X,Theta,Y) {
 }
   
 
-function costFunction(Xt,Theta,Y) {
-         var Cost = sqErr(Xt,Theta,Y);
-		 Cost = math.multiply(Cost,1 / (2 * Y.size()[0]));//math.square(math.subtract(h(Xt,Theta),Y));
+function costFunction(Xt,Theta,Y,logisticFlag) {
+	
+	     var Cost;
+		 
+		 var m = Y.size()[0];
+		 
+		 if (logisticFlag) {
+			 var H = h(Xt,Theta,logisticFlag);
+			 var LogH = math.map(H,function(el) {
+				 return math.log(el);
+			 });
+			 
+			 var Cost1 = math.dotMultiply(Y,LogH);
+             Cost1 = math.multiply(Cost1,-1);			 
+
+			 var OtherLogH = math.map(H,function(el) {
+				 return math.log(1 - el);
+			 });
+			 var OtherY = math.map(Y,function(el) {
+				 return 1 - el;
+			 });
+			 var Cost2 = math.dotMultiply(OtherY,OtherLogH);
+			 
+			 
+			 return math.multiply((math.subtract(Cost1,Cost2)),1 / m);
+			 
+		 }
+		 else {
+            Cost = sqErr(Xt,Theta,Y);
+		    Cost = math.multiply(Cost,1 / (2 * Y.size()[0]));//math.square(math.subtract(h(Xt,Theta),Y));
+		 }
          var costSum = math.sum(Cost);
          return Cost;
 
-   }
+ }
  
  function featureScale(mat) {
  
@@ -291,6 +348,8 @@ function learn(mlParams,progCallback) {
    var m = Y.size()[0];
    var n = X.size()[0] -1;
    
+   var logisticFlag = (mlParams.module == 'log');
+   
    
    if (progCallback) {
        progCallback('blog','<br>----------------------------------------------------------------------------------------');  // document.getElementById('blog').innerHTML+='<br>----========================-------------------------------------';
@@ -320,7 +379,7 @@ function learn(mlParams,progCallback) {
 	        }
 		}
 	//  document.getElementById('blog').innerHTML+='<br>Analytics result: ' + ThetaIdeal;
-	  var IdealCost =  costFunction(math.transpose(XOrig),ThetaIdeal,Y);
+	  var IdealCost =  costFunction(math.transpose(XOrig),ThetaIdeal,Y,logisticFlag);
 	  if (progCallback) {
 	       progCallback('blog','<br> Ideal Cost: ' + math.sum(IdealCost));
 	       //document.getElementById('blog').innerHTML+='<br> Ideal Cost: ' + math.sum(IdealCost);
@@ -397,7 +456,7 @@ function learn(mlParams,progCallback) {
 			
 			
   
-			var Cost =  costFunction(Xt,Theta,Y);
+			var Cost =  costFunction(Xt,Theta,Y,logisticFlag);
 			++iterNum;
 			
 			if (i % 50 == 0) {
@@ -492,7 +551,7 @@ function learn(mlParams,progCallback) {
 			//var Derivs = derivs(X,Theta,Y);
 			console.log('theta before: ' + Theta);
 		
-			var res = gdUpdate(X,Theta,Y,lambda);
+			var res = gdUpdate(X,Theta,Y,lambda,logisticFlag);
 			Theta = res[0];
 			console.log('Theta after: ' + Theta);
 			
