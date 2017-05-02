@@ -461,7 +461,7 @@ function learn(mlParams,progCallback) {
 			
 			if (i % 50 == 0) {
 				if (progCallback) {
-					progCallback('rightBannerDiv','iter: ' + i + ' Cost: ' + math.sum(Cost),true);
+					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
 					
 				}
 			}
