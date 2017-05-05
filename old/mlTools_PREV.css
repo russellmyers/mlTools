@@ -1,0 +1,125 @@
+body {
+    width: 1200px;
+    margin-left:auto;
+    margin-right: auto;
+	border-style: solid;
+	border-width: 2px;
+	padding:2px;
+	
+	
+	
+
+}
+
+#bannerDiv {
+   background-color: black;
+   margin:0;
+   padding:0;
+   font-size:0;
+   height: 170px;
+   
+}
+
+#leftBannerDiv {
+font-size:medium;
+  background-color: lightblue;
+  display:inline-block;
+  width: 60%;
+  height: 88%;
+    margin: 0;
+
+    padding: 0;
+    
+}
+
+#rightBannerDiv {
+  font-size:medium;
+  background-color: blue;
+  display:inline-block;
+  vertical-align:top;
+  width: 40%;
+  height: 88%;
+  margin: 0;
+  padding: 0;
+
+}
+.moduleBut {
+	float:right;
+	height: 20px;
+}
+
+#regression {
+  float: right;	
+  height: 20px;
+}
+
+#mfkTools {
+  background-color: yellow;
+}
+
+#mfkInputTools {
+  background-color: lightgrey;
+
+}
+
+#stats {
+   background-color: purple;
+}
+
+#navDiv {
+   background-color: red;
+}
+
+#rightTwo {
+   background-color:orange;
+   height: 203px;
+   width: 220px;
+   float: right;
+   overflow:auto;		
+}
+
+#progressDiv {
+    clear: both;
+    float:right;
+   background-color: pink;
+}
+
+#blog {
+  display:inline-block;
+  vertical-align: top;
+  width: 550px;
+  height: 180px;
+  overflow: auto;
+}
+
+#trainingInput {
+  height: 200px;
+}
+
+#chartDiv {
+  /* width: 500px;
+   height: 500px;*/
+   float:left;
+}
+
+
+#chart2Div {
+   /*width: 500px;
+   height: 500px;*/
+   float:left;
+}
+
+
+#costChart {
+   /*display: inline-block;*/
+   
+}
+
+#visualiseChart {
+    /*display: inline-block;*/
+    
+
+}
+	
+
+

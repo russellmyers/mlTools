@@ -67,6 +67,23 @@ function sigmoid(In) {
 
 }
 
+function accuracy(Xt,Theta,Y) {
+	var pred = predict(Xt,Theta);
+	
+	var accMatrix =  math.subtract(Y,pred);
+	
+	var correctNum = 0;
+	
+	accMatrix.forEach(function(el) {
+		if (el == 0) {
+			++correctNum;
+		}
+	});
+	
+	return [accMatrix,correctNum,Y.size()[0]];
+	
+}
+
 function predict(Xt,Theta) {
 	//Logistic regression prediction
 	
@@ -162,6 +179,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  }
  
  function featureScale(mat) {
+	 //scale factors indexes: 0-mean, 1-range, 2-lowest
  
    var scaledMat = mat.clone();
    var rows = math.size(mat).valueOf()[0];
@@ -194,16 +212,8 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  }
  
  function getXandY(mlParams) {
- 
- /*
-   if (extraDegrees) {
-      
-	}
-	else {
-	   extraDegrees = 0;
-	}
-*/	
-	
+	 
+	  
 	
    var ar =  mlParams.input.split('\n'); //document.getElementById('trainingInput').value.split('\n');
    //alert(ar);
@@ -232,6 +242,17 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
 	   
 	   yVal = inAr.pop();
 	   
+	   if ((mlParams.module == 'log') && (mlParams.numLogClasses > 2) && (mlParams.currClassNum > -1)) {
+		   if (yVal == mlParams.currClassNum + 1) { //input class y vals are one based 
+		      yVal = 1;
+		   }
+		   else {
+			   yVal = 0;
+		   }
+		   
+	   }
+	   
+	   
 	   yAr.push([yVal]);
 	   return inAr;
    });
@@ -242,7 +263,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
    var Y = math.matrix(yAr);
    var X = math.transpose(Xt);	
    
-   var XOrig = X.clone();
+   var XUnscaled = X.clone();
 
    //if (document.getElementById('scalingFlag').checked) {
    ret = featureScale(X);
@@ -253,10 +274,10 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  	}
 	
    
-   return [X,Y, XOrig,scaleFactors];   
+   return [X,Y, XUnscaled,scaleFactors];   
  
  }
- 
+ /*
  function getXandY_background(inp,degrees,addOnesFlag,scalingFlag,polyFlag) {
  
    if (degrees) {
@@ -301,7 +322,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
    var Y = math.matrix(yAr);
    var X = math.transpose(Xt);	
    
-   var XOrig = X.clone();
+   var XUnscaled = X.clone();
 
    //if (document.getElementById('scalingFlag').checked) {
    ret = featureScale(X);
@@ -311,10 +332,11 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  	}
 	
    
-   return [X,Y, XOrig,scaleFactors];   
+   return [X,Y, XUnscaled,scaleFactors];   
  
  }
  
+ */
  function solveAnalytically(X,Y) {
  
  var Xt = math.transpose(X);
@@ -331,6 +353,25 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  }
  
  
+function thetaUnscale(Theta) {
+
+	var constAdj = 0;
+	var ThetaUnscaled = [];
+	
+	var n = Theta.size()[0] - 1;
+	
+	for (var a = 1;a < n+1;++a) {
+			var ThetaUnscaledEntry =  Theta.subset(math.index(a, 0)) / scaleFactors[a][1];
+			ThetaUnscaled.push([ThetaUnscaledEntry]);
+			constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] * Theta.subset(math.index(a, 0));
+	}
+
+	ThetaUnscaled.unshift([Theta.subset(math.index(0,0)) + constAdj]);
+	return math.matrix(ThetaUnscaled);
+
+
+}	
+ 
 function learn(mlParams,progCallback) {
   
    var minCost = null;
@@ -341,7 +382,7 @@ function learn(mlParams,progCallback) {
    var res = getXandY(mlParams);
    var X = res[0];
    var Y = res[1];
-   var XOrig = res[2];
+   var XUnscaled = res[2];
    var scaleFactors = res[3];
    var Xt = math.transpose(X);
    
@@ -355,7 +396,10 @@ function learn(mlParams,progCallback) {
        progCallback('blog','<br>----------------------------------------------------------------------------------------');  // document.getElementById('blog').innerHTML+='<br>----========================-------------------------------------';
 	   if (mlParams.diagnosticsFlag) {
           progCallback('rightTwo',	'<br>-----------');   
-	   }	  
+	   }
+       if (mlParams.numLogClasses > 2) {
+		progCallback('blog','<br>Training class: ' + (mlParams.currClassNum + 1));
+	   }	   
 	}
 	
 	/*
@@ -366,24 +410,31 @@ function learn(mlParams,progCallback) {
 	*/
    
    //var solveFlag = elVal('analyticFlag');
-   if (mlParams.solveAnalytically) {
-       var ThetaIdeal = solveAnalytically(math.transpose(XOrig),Y);
+   var ThetaIdea,IdealCost;
+   if ((mlParams.solveAnalytically) && (mlParams.module == 'reg')) {
+       ThetaIdeal = solveAnalytically(math.transpose(XUnscaled),Y);
+	   var d = 4;
 	   if (progCallback) {
-	        progCallback('blog','<br>Ideal h(Theta) = ' + math.subset(ThetaIdeal,math.index(0,0)));
+	        progCallback('blog','<br>Ideal h(Theta) = ' + math.subset(ThetaIdeal,math.index(0,0)).toFixed(d));
 			
-	        //document.getElementById('blog').innerHTML+= '<br>Ideal h(Theta) = ' + math.subset(ThetaIdeal,math.index(0,0)); //adjTh[0]; // + ' + ' + adjTh[1] + 'x1';
+	        //document.getElementById('blog').innerHTML+= '<br>Ideal h(Theta) = ' + math.subset(ThetaIdeal,math.index(0,0)); //minThetaUnscaled[0]; // + ' + ' + minThetaUnscaled[1] + 'x1';
   
             for (var i = 1;i < n+1;++i) {
-			   progCallback('blog',' + ' + math.subset(ThetaIdeal,math.index(i,0)) + 'x' + i);
+			   progCallback('blog',' + ' + math.subset(ThetaIdeal,math.index(i,0)).toFixed(d) + 'x' + i);
 	           //document.getElementById('blog').innerHTML+= ' + ' + math.subset(ThetaIdeal,math.index(i,0)) + 'x' + i;
 	        }
 		}
 	//  document.getElementById('blog').innerHTML+='<br>Analytics result: ' + ThetaIdeal;
-	  var IdealCost =  costFunction(math.transpose(XOrig),ThetaIdeal,Y,logisticFlag);
+	  IdealCost =  costFunction(math.transpose(XUnscaled),ThetaIdeal,Y,logisticFlag);
 	  if (progCallback) {
 	       progCallback('blog','<br> Ideal Cost: ' + math.sum(IdealCost));
 	       //document.getElementById('blog').innerHTML+='<br> Ideal Cost: ' + math.sum(IdealCost);
 		}   
+   }
+   else {
+	   IdealCost = math.matrix([[0],[0]]);
+	   ThetaIdeal = math.matrix([[0],[0]]);
+	   
    }
    
   
@@ -447,8 +498,7 @@ function learn(mlParams,progCallback) {
 	}
 	*/
 	var Theta = math.matrix(startTheta);
-		
-		
+	minTheta = Theta.clone();
 		
 		
 	for (var i = 0;i < maxIters;++i) {
@@ -462,6 +512,11 @@ function learn(mlParams,progCallback) {
 			if (i % 50 == 0) {
 				if (progCallback) {
 					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
+					var acc = accuracy(Xt,minTheta,Y);
+					progCallback('rightBannerDiv','<br>Accuracy: ' + acc[1] + '/' + acc[2]);
+					if (mlParams.numLogClasses > 2) {
+						progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
+					}
 					
 				}
 			}
@@ -471,7 +526,7 @@ function learn(mlParams,progCallback) {
 				iters.push(iterNum);
 		//	}
 		
-		    if ((i % 1000 == 0) && (i != 0)) {
+		    if (i % 1000 == 0) {
 				if (progCallback) {
 					
 					var costArRed,itersRed;
@@ -495,19 +550,32 @@ function learn(mlParams,progCallback) {
 						itersRed = itersRed;
 					}
 					
+					/*
 					var constAdj = 0;
-	                var adjTh = [];
+	                var minThetaUnscaled = [];
 	                for (var a = 1;a < n+1;++a) {
-	                        var adjThEntry =  minTheta.subset(math.index(a, 0)) / scaleFactors[a][1];
-	                    	adjTh.push(adjThEntry);
+	                        var minThetaUnscaledEntry =  minTheta.subset(math.index(a, 0)) / scaleFactors[a][1];
+	                    	minThetaUnscaled.push(minThetaUnscaledEntry);
 	                    	constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] * minTheta.subset(math.index(a, 0));
 	                }
 	
-	                adjTh.unshift(minTheta.subset(math.index(0,0)) + constAdj);
-				
+	                minThetaUnscaled.unshift(minTheta.subset(math.index(0,0)) + constAdj);
+				    */
+					var minThetaUnscaled;
+					if (mlParams.scalingFlag) {
+					    minThetaUnscaled = thetaUnscale(minTheta);
+					}
+					else {
+						minThetaUnscaled = minTheta.clone();
+					}
    		
 
-			        progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,minTheta,XOrig,adjTh,scaleFactors]);
+		            if (i == 0) {
+						//progCallback('chart',null,true);
+					}
+					else {
+			          progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors]);
+					}
 				}
 			
 			}
@@ -577,32 +645,72 @@ function learn(mlParams,progCallback) {
 			
 	}
 	
+	/*
 	var constAdj = 0;
-	var adjTh = [];
+	var minThetaUnscaled = [];
 	for (var i = 1;i < n+1;++i) {
-	    var adjThEntry =  minTheta.subset(math.index(i, 0)) / scaleFactors[i][1];
-		adjTh.push(adjThEntry);
+	    var minThetaUnscaledEntry =  minTheta.subset(math.index(i, 0)) / scaleFactors[i][1];
+		minThetaUnscaled.push(minThetaUnscaledEntry);
 		constAdj += (scaleFactors[i][0] * -1) / scaleFactors[i][1] * minTheta.subset(math.index(i, 0));
 	}
 	
-	adjTh.unshift(minTheta.subset(math.index(0,0)) + constAdj);
-
+	minThetaUnscaled.unshift(minTheta.subset(math.index(0,0)) + constAdj);
+    */
+	
+	if (progCallback) {
+		progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
+		var acc = accuracy(Xt,minTheta,Y);
+		progCallback('rightBannerDiv','<br>Accuracy: ' + acc[1] + '/' + acc[2]);
+		if (mlParams.numLogClasses > 2) {
+			progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
+		}
+					
+	}
+	
+	
+	var minThetaUnscaled;
+    if (mlParams.scalingFlag) {
+          minThetaUnscaled  = thetaUnscale(minTheta);
+	}
+	else {
+		minThetaUnscaled = minTheta.clone();
+		
+	}
 	
 
 	if (progCallback) {
-	   progCallback('blog','<br><br>Lambda: ' +  mlParams.lambda  + '<br>Model h(Theta) = ' + adjTh[0]);
-       //document.getElementById('blog').innerHTML+= '<br><br>Lambda: ' + document.getElementById('lambdaInput').value + '<br>Model h(Theta) = ' + adjTh[0]; // + ' + ' + adjTh[1] + 'x1';
+		var g = minThetaUnscaled.get([0,0]);
+		var h = math.subset(minThetaUnscaled,math.index(0,0));
+		
+		var gg = parseFloat(g);
+		var aa = math.format(g,8);
+		var bb = parseFloat(aa);
+				
+		var cc = h.toFixed(2);
+		
+		var d = 4;
+		
+		//progCallback('blog','<br><br>get: ' + Math.toFixed(minThetaUnscaled.get([0,0])));
+
+	   progCallback('blog','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d)); //minThetaUnscaled[0]);
+       //document.getElementById('blog').innerHTML+= '<br><br>Lambda: ' + document.getElementById('lambdaInput').value + '<br>Model h(Theta) = ' + minThetaUnscaled[0]; // + ' + ' + minThetaUnscaled[1] + 'x1';
 		for (var i = 1;i < n+1;++i) {
-		   progCallback('blog',' + ' + adjTh[i] + 'x' + i);
-		   //document.getElementById('blog').innerHTML+= ' + ' + adjTh[i] + 'x' + i;
+		   progCallback('blog',' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
+		   //document.getElementById('blog').innerHTML+= ' + ' + minThetaUnscaled[i] + 'x' + i;
 		}
-		progCallback('blog','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0, 0)));
+			
+	    progCallback('blog','<br>Model Cost: ' + minCostSum);
+	   //document.getElementById('blog').innerHTML+=  '<br>Model 								Cost: ' + minCostSum;
+	
+		progCallback('blog','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0, 0)).toFixed(d));
 		//document.getElementById('blog').innerHTML+= '<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0, 0));//+ ' + ' + minTheta.subset(math.index(1, 0)) + 'x1)';
 		 for (var i = 1;i < n+1;++i) {
-		   progCallback('blog',' + ' + minTheta.subset(math.index(i, 0)) + 'x' + i);
+		   progCallback('blog',' + ' + minTheta.subset(math.index(i, 0)).toFixed(d) + 'x' + i);
 		   //document.getElementById('blog').innerHTML+= ' + ' + minTheta.subset(math.index(i, 0)) + 'x' + i;
 		}
 		progCallback('blog',')');
+			   progCallback('blog','<br>Lambda: ' +  mlParams.lambda) ;
+
 		//document.getElementById('blog').innerHTML+= ')';
 	}	
 	
@@ -612,14 +720,11 @@ function learn(mlParams,progCallback) {
 	   document.getElementById('blog').innerHTML+= ' + ' + minTheta.subset(math.index(e+2, 0)) + 'x' + (e+2);
 	}
 	*/
-	if (progCallback) {
-	   progCallback('blog','<br>Model Cost: ' + minCostSum);
-	   //document.getElementById('blog').innerHTML+=  '<br>Model 								Cost: ' + minCostSum;
-	}
+
 	//document.getElementById('blog').innerHTML+=  '<br>Cost: ' + Cost;
 	
 	
-	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XOrig,adjTh,scaleFactors];
+	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors];
    
      
 

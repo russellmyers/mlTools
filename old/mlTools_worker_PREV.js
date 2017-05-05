@@ -1,5 +1,5 @@
  importScripts('math.min.js');
- importScripts('mlTools_routines.js');  	
+ importScripts('tstformat_routines.js');  	
  
 	
  postMessage('Hello from worker');	
@@ -11,29 +11,21 @@
 	 
 	    if (elToUpdate == 'chart') {
 			
-			if (!clearFlag) {
 			
-				var msg = {};
-				msg.action = 'chartUp';
-				msg.elToUpdate = 'chart';
-				msg.costAr = mess[0];//JSON.stringify(res[0]);
-				msg.iters = mess[1];//JSON.stringify(res[1]);
-				msg.ThetaIdeal = JSON.stringify(mess[2]);
-				msg.IdealCost = JSON.stringify(mess[3]);
-				msg.X = JSON.stringify(mess[4]);
-				msg.Y = JSON.stringify(mess[5]);
-				msg.minTheta = JSON.stringify(mess[6]);
-				msg.XUnscaled = JSON.stringify(mess[7]);
-				msg.minThetaUnscaled = JSON.stringify(mess[8]);
-				msg.scaleFactors = mess[9];//JSON.stringify(res[9]);
-				postMessage(msg);
-			}
-			else {
-				var msg = {};
-				msg.action = 'chartInit';
-				postMessage(msg);
-			}
-				
+			var msg = {};
+			msg.action = 'chartUp';
+			msg.elToUpdate = 'chart';
+			msg.costAr = mess[0];//JSON.stringify(res[0]);
+			msg.iters = mess[1];//JSON.stringify(res[1]);
+			msg.ThetaIdeal = JSON.stringify(mess[2]);
+			msg.IdealCost = JSON.stringify(mess[3]);
+			msg.X = JSON.stringify(mess[4]);
+			msg.Y = JSON.stringify(mess[5]);
+			msg.minTheta = JSON.stringify(mess[6]);
+			msg.XOrig = JSON.stringify(mess[7]);
+			msg.adjTh = mess[8];//JSON.stringify(res[8]);
+			msg.scaleFactors = mess[9];//JSON.stringify(res[9]);
+			postMessage(msg);
 		}
 		else {
 	       postMessage({'action':'progUp','elToUpdate':elToUpdate,'mess':mess,'clearFlag':clearFlag});
@@ -42,7 +34,7 @@
  }	 
  
  
- // return [ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors];
+ // return [ThetaIdeal,IdealCost,X,Y,minTheta,XOrig,adjTh,scaleFactors];
 
  self.onmessage = function (msg) {
     switch (msg.data.action) {
@@ -62,8 +54,8 @@
 			msg.X = JSON.stringify(res[4]);
 			msg.Y = JSON.stringify(res[5]);
 			msg.minTheta = JSON.stringify(res[6]);
-			msg.XUnscaled = JSON.stringify(res[7]);
-			msg.minThetaUnscaled = JSON.stringify(res[8]);
+			msg.XOrig = JSON.stringify(res[7]);
+			msg.adjTh = res[8];//JSON.stringify(res[8]);
 			msg.scaleFactors = res[9];//JSON.stringify(res[9]);
 			//postMessage({'action':'fin','elToUpdate':'blog','mess':'<br>finished','minT':JSON.stringify(res[4])});	
 			postMessage(msg);

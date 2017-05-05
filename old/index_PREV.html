@@ -1,12 +1,12 @@
-<html>	
+<html>
 
 <head>
-<link rel="stylesheet" href="css/mlTools.css">
+<link rel="stylesheet" href="tstformat.css">
 </head>
 
 <body>
-<script src="js/math.min.js"></script>
-<script src = "js/Chart.min.js"></script>
+<script src="math.min.js"></script>
+<script src = "Chart.min.js"></script>
 
 
 <div id = "bannerDiv">
@@ -23,10 +23,8 @@
   <br>
   <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
   <input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature
-  <label for "numLogClasses" id = "numLogClassesLab">Number of classes</label>
-  <input id = "numLogClasses" onchange = "numLogClassesClicked()" value = "0" type="text">
   <br>
-  <label for "initTheta">Initial Theta</label>
+  <label for "initTheta">Initial	 Theta</label>
   <input id = "initTheta" type="text" value = "">
    <label for "convThreshold">Convergence Threshold</label>
   <input id = "convThreshold" type="text" value = "0.0000000001">
@@ -43,7 +41,6 @@
  <button onclick="learnForeground()">Learn</button>
  <button onclick="learnBackground()">Learn Background</button>
  <button onclick="clearRes()">Clear</button>
- <button onclick="applyInput()">Apply Input</button>
  
 
 
@@ -54,9 +51,9 @@
 
 </div>
 <div>
-<button id = "test"  onclick="testButClicked()" class="moduleBut blackBut">Test</button>
-<button id = "logistic"  onclick="logButClicked()" class="moduleBut blackBut">Logistic Regression</button>
-<button id = "regression" onclick="regButClicked()" class="moduleBut colourBut">Regression</button>
+
+<button id = "Logistic"  onclick="logButClicked()" class="moduleBut">Logistic Regression</button>
+<button id = "Regression" onclick="regButClicked()" class="moduleBut">Regression</button>
 </div>
 
 </div>
@@ -84,35 +81,6 @@
 var w;
 
 var mlParams = {};
-var mlResults = [];
-
-init();
-
-document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
- 
- var visChart = null;
- var costChart = null;
- 
- //var featureType = "multi";
-
- 
-  
- startWorker();
-
- 
-function init() {
-    mlParams = {};
-	
-    mlParams.featureType = "multi";
-	featureTypeUpdated();
-	
-	mlParams.module = "reg";
-	moduleUpdated();
-	
-	mlParams.numLogClasses = 2;
-	numLogClassesUpdated();
-	
-} 
 
 
 function stringifyToMatrix(string) {
@@ -124,78 +92,27 @@ function stringifyToMatrix(string) {
 }
 
 
-function testButClicked() {
-
-   mlParams.module = 'tst';
-   moduleUpdated();
-
-  var testIn = math.matrix([[120000],[-25000],[0]]);
-  var sig = sigmoid(testIn);
-  
-  //var testXT = math.matrix([[1,8,3],[3,4,5],[1,2,1]]);
-  var testXT  = math.matrix([[1,8,1,6],[1,3,5,7],[1,4,9,2]]);
-  
-  //var testTheta = math.matrix([[0.1],[-0.1],[0.1]]);
-  var testTheta = math.matrix([[-2],[-1],[1],[2]]);
-  
-  var testY = math.matrix([[1],[0],[1]]);
- 
-  var testH = h(testXT,testTheta,true);
-  
-  var pred = predict(testXT,testTheta);
- 
-  var C = costFunction(testXT,testTheta,testY,true);
-  var c = math.sum(C);
-  
-  var x = 1;
-
-}
-
-function applyInput() {
-      
-   getParams();
-   var res = getXandY(mlParams,1);
-   var X = res[0];
-   var Y = res[1];
-   var XUnscaled = res[2];
-   visualiseTrainingOnly(XUnscaled,Y);
-  
-
-}
-
 function logButClicked() {
-   document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
- // document.getElementById('trainingInput').value = '1 1 1\n2 2 2\n3 3 3'	;
+  document.getElementById('trainingInput').value = '1 3 0\n2 4 0\n0 1 0\n5 7 1\n6 8 1\n4 4 1\n2 2 0\n5 4 1'	;
 
-
- //el('initTheta').value = '-10 -10 10'; //set to non-optimal so that it is easier to see boundary adjusting
-  
   getParams();
    var res = getXandY(mlParams);
    var X = res[0];
    var Y = res[1];
-   var XUnscaled = res[2];
-   visualiseTrainingOnly(XUnscaled,Y);
-   
-   mlParams.module = 'log';
-   moduleUpdated();
-   
- 
+   var XOrig = res[2];
+   visualiseLogTrainingOnly(XOrig,Y);
 	
 }
 
 function regButClicked() {
-   document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
- 
-   mlParams.module = 'reg';
-   moduleUpdated();
-   
- }
+document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+
+}
 
 function startWorker() {
 
 if (typeof	(Worker) !== "undefined") {
-    w = new Worker("js/mlTools_worker.js");
+    w = new Worker("tstformat_worker.js");
 	w.onmessage = function(event) {
 	        if (event.data.action == 'progUp') {
 			    learnProgressForeground(event.data.elToUpdate,event.data.mess,event.data.clearFlag);
@@ -214,24 +131,15 @@ if (typeof	(Worker) !== "undefined") {
 				var Y = stringifyToMatrix(event.data.Y);
 				var IdealCost = stringifyToMatrix(event.data.IdealCost);
 				var ThetaIdeal = stringifyToMatrix(event.data.ThetaIdeal);
-				var  XUnscaled = stringifyToMatrix(event.data.XUnscaled);
-				var minThetaUnscaled = stringifyToMatrix(event.data.minThetaUnscaled);
+				var  XOrig = stringifyToMatrix(event.data.XOrig);
+				var adjTh = event.data.adjTh; //stringifyToMatrix(event.data.adjTh);
 				var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
 				var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
 				var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
 				
-
-				mlResults.push([costAr,iters,ThetaIdeal,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors]);
-				
-				if (mlParams.module == 'log') {
-	                   el('blog').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled),math.matrix(minThetaUnscaled));
-					   el('blog').innerHTML += '<br>Accuracy: ' + accuracy(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),Y);
-					   el('blog').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
-             	}
-				
 				testChart(costAr,iters);
 	
-	            visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+	            visualise(X,Y,minTheta, XOrig,adjTh,ThetaIdeal,scaleFactors);
 				
 				
 			}
@@ -245,20 +153,15 @@ if (typeof	(Worker) !== "undefined") {
 				var Y = stringifyToMatrix(event.data.Y);
 				var IdealCost = stringifyToMatrix(event.data.IdealCost);
 				var ThetaIdeal = stringifyToMatrix(event.data.ThetaIdeal);
-				var  XUnscaled = stringifyToMatrix(event.data.XUnscaled);
-				var minThetaUnscaled = stringifyToMatrix(event.data.minThetaUnscaled);
+				var  XOrig = stringifyToMatrix(event.data.XOrig);
+				var adjTh = event.data.adjTh; //stringifyToMatrix(event.data.adjTh);
 				var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
 				var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
 				var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
 				
 				updateCostChart(event.data.costAr,event.data.iters);
-				visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+				visualise(X,Y,minTheta,XOrig,adjTh,ThetaIdeal,scaleFactors);
 			}
-			
-			else if (event.data.action == 'chartInit') {
-			    clearCharts();
-			}
-
 			else {
                document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Tools</h2>' + event.data;
 			}   
@@ -272,11 +175,22 @@ else {
 
 }	
 
+
+
+document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+ 
+ var visChart = null;
+ var costChart = null;
+ 
+ var featureType = "multi";
+ featureTypeUpdated();
+ 
+ startWorker();
  
  
  function getParams() {
     
-	//mlParams.featureType = featureType; //uses mvc
+	mlParams.featureType = featureType; //uses mvc
 	mlParams.input = elVal('trainingInput');
 	mlParams.degrees = parseInt(elVal('degreesInput'));
 	mlParams.addOnesFlag = elVal('addOnesFlag');
@@ -288,19 +202,17 @@ else {
 	mlParams.maxIterations = parseInt(elVal('maxIterationsInput'));
 	mlParams.convThreshold = parseFloat(elVal('convThreshold'));
 	
-	mlParams.currClassNum = -1; //used for logisitic regression multi-class
-	
 	
  
  }
  
  function featureTypeClicked(event) {
     if (event.target.id === 'featurePoly') {
-	    mlParams.featureType = 'poly';
+	    featureType = 'poly';
 		
     }
 	else {
-	   mlParams.featureType = 'multi';
+	   featureType = 'multi';
 	   
 	}
 	
@@ -308,18 +220,12 @@ else {
  
  }
  
- function numLogClassesClicked(event) {
-    mlParams.numLogClasses = parseInt(elVal('numLogClasses'));
-	numLogClassesUpdated();
- 
- }
- 
  
  function featureTypeUpdated() {
  
-    //mlParams.featureType = featureType;
+    mlParams.featureType = featureType;
 	
-    switch (mlParams.featureType) {
+    switch (featureType) {
 	
 	  case 'poly':
 	     if (elVal('featureMulti')) {
@@ -347,71 +253,6 @@ else {
 	   break;
 	
 	}
- }
- 
- 
- function numLogClassesUpdated() {
- 
-    
-      el('numLogClasses').value = mlParams.numLogClasses;
-	
-
- }
- 
- function moduleUpdated() {
- 
-    switch (mlParams.module) {
-	
-
-	  
-	  case 'log':
-	       el('logistic').classList.remove('blackBut');
-           el('logistic').classList.add('colourBut');
-		   el('regression').classList.remove('colourBut');
-           el('regression').classList.add('blackBut');
-		   el('test').classList.remove('colourBut');
-           el('test').classList.add('blackBut');
-		   
-		   el('numLogClasses').hidden = false;
-           el('numLogClassesLab').hidden = false;
-		   break;
-		   
-		
-
-		case 'reg':
-		
-	       el('regression').classList.remove('blackBut');
-           el('regression').classList.add('colourBut');
-		   el('logistic').classList.remove('colourBut');
-           el('logistic').classList.add('blackBut');
-		   el('test').classList.remove('colourBut');
-           el('test').classList.add('blackBut');
-		   
-		   el('numLogClasses').hidden = true;
-           el('numLogClassesLab').hidden = true;
-		
-		   break;
-		   
-		case 'tst':
-		
-	       el('regression').classList.remove('colourBut');
-           el('regression').classList.add('blackBut');
-		   el('logistic').classList.remove('colourBut');
-           el('logistic').classList.add('blackBut');
-		   el('test').classList.remove('blackBut');
-           el('test').classList.add('colourBut');
-
-	       el('numLogClasses').hidden = true;
-           el('numLogClassesLab').hidden = true;
-			   
-		
-	   
-	   default:
-	   
-	
-	       break;
-		   }
- 
  }
  
  function elVal(elId) {
@@ -476,104 +317,38 @@ function learnBackground() {
 	}
     getParams();
 	
-	mlResults = [];
-	
 	clearCharts();
 	
 	testChart([],[]);
 	
-	switch (mlParams.module) {
-	    case 'reg': 
-		    w.postMessage({'action':'Go','params':mlParams});
-	      break;
-		 
-		case 'log':
-		   if (mlParams.numLogClasses > 2) { // multi class, use one vs all
-		       
-		       for (var i = 0;i < mlParams.numLogClasses;++i) {
-			      mlParams.currClassNum = i;
-		          w.postMessage({'action':'Go','params':mlParams});
-	           }
-			}
-			else {
-			    w.postMessage({'action':'Go','params':mlParams});
-			}
-
-          break;	
-
-		default:
-			break;
-			
-	}
-	
-    //w.postMessage({'action':'Go','params':mlParams});
-	
-
+    w.postMessage({'action':'Go','params':mlParams});
 }
 
 function learnForeground() {
     getParams();
 	
-	mlResults = [];
 
 	clearCharts();
 	
-	var res;
-	
-	switch (mlParams.module) {
-	    case 'reg': 
-		   res = learn(mlParams,learnProgressForeground);
-		   mlResults.push(res);
-	      break;
-		 
-		case 'log':
-		   if (mlParams.numLogClasses > 2) { // multi class, use one vs all
-		       
-		       for (var i = 0;i < mlParams.numLogClasses;++i) {
-			      mlParams.currClassNum = i;
-		          res = learn(mlParams,learnProgressForeground);
-		    	  mlResults.push(res);
-		       }
-			}
-			else {
-			    res = learn(mlParams,learnProgressForeground);
-		        mlResults.push(res);
-			}
-
-          break;	
-
-		default:
-			break;
-			
-	}
-	   
-	   
-	
-	res = mlParams.module == 'reg' ? mlResults[0] : mlResults[mlResults.length -1];
 	
 	
+	var res = learn(mlParams,learnProgressForeground);
 	
 	var costAr = res[0];
 	var iters = res[1];
 	var ThetaIdeal = res[2];
-	var IdealCost = res[3];
+	var IdeaCost = res[3];
 	var X = res[4];
 	var Y = res[5];
 	var minTheta = res[6];
-	var XUnscaled = res[7];
-	var minThetaUnscaled = res[8];
+	var XOrig = res[7];
+	var adjTh = res[8];
 	
 	var scaleFactors = res[9];
 	
-	if (mlParams.module == 'log') {
-	   el('blog').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled),minThetaUnscaled);
-	   el('blog').innerHTML += '<br>Accuracy: ' + accuracy(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),Y);
-	   el('blog').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
-	}
-	
 	testChart(costAr,iters);
 	
-	visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+	visualise(X,Y,minTheta, XOrig,adjTh,ThetaIdeal,scaleFactors);
 	
 	
 
@@ -608,40 +383,12 @@ function learnProgressForeground(targetEl,message,clearFlag) {
 }
 
 
-function updateVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,scatPointStyles) {
-    if (scatData) {
-	  visChart.data.datasets[0].data = scatData;
-	  
-	}
-    if (modelData) {
-	  visChart.data.datasets[1].data = modelData;
-	}
-	
-	if (idealData) {
-	    visChart.data.datasets[2].data = idealData;
-	}
-	
-	if (scatPointBackgroundColors) {
-	  visChart.data.datasets[0].pointBackgroundColor = scatPointBackgroundColors;
-	}
-	
-	
-	if (scatPointStyles) {
-	  visChart.data.datasets[0].pointStyle  = scatPointStyles;
-	}
-	
-  
-    visChart.update();
-	
-
-}
-
-
 function createVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,scatPointStyles) {
    var ctx = document.getElementById("visualiseChart");
 
    if (visChart) {
-     updateVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,scatPointStyles);
+
+  
 
   }
 
@@ -664,12 +411,6 @@ else {
 	
 	var scatterChart = new Chart(ctx, {
 		type: 'line',
-		options: {
-           title: {
-               display: true,
-               text: 'Training'
-           }
-        },
 		data: {
 			datasets: [{
 				label: 'Training Data',
@@ -677,9 +418,8 @@ else {
 				data: scatData,
 				pointBackgroundColor: scatPointBackgroundColors,
 				pointStyle:scatPointStyles,
-				//pointRadius: 1
 				
-				//fill: false
+				fill: false
 			},
 			{
 					
@@ -725,34 +465,12 @@ else {
 
 }
 
-
-function constructRegTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
- 
- 
-  var pointBackgroundColors = [];
-  var pointStyles = [];
+function visualiseLogTrainingOnly(XOrig,Y) {
+  var ctx = document.getElementById("visualiseChart");
   
-  var x1Ar = mRow(XUnscaled,1,true);
-
-  var yAr = mCol(Y,0,true);
-
-   var scatData = [];
-   x1Ar.forEach(function(x,i) {
-       var y = yAr[i];
-	   var plotPoint = {x:x,y:y};
-	   scatData.push(plotPoint);
-	 
-   });
-   
+  var x1Ar = mRow(XOrig,1,true);
   
-  return {'points':scatData,'colours':"#f0f",'styles':'circle'};
-
-}
-
-function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
-  var x1Ar = mRow(XUnscaled,1,true);
-  
-  var x2Ar = mRow(XUnscaled,2,true);
+  var x2Ar = mRow(XOrig,2,true);
   
   var yAr = mCol(Y,0,true);
   
@@ -761,154 +479,28 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
   var pointBackgroundColors = [];
   var pointStyles = [];
   
-  var acc;
-  
-  var multiClass = false;
-  if (math.max(yAr) > 1) { //contains multiple classes
-     multiClass = true;
-  }
-  
-  if (ThetaUnscaled) {
-     // if theta provided - check predictions and colour correct predictions green
-     acc = accuracy(math.transpose(XUnscaled),math.matrix(ThetaUnscaled),Y);
-	 
-  }
-  
-  
   x1Ar.forEach(function(x,i) {
      var x2 = x2Ar[i]; //"y" is actually just second x here
 	 var rad = yAr[i] == 1 ? 6 : 1;
 	 var plotPoint = {x:x,y:x2};
-	 
-	 var col;
-	 
 	 scatData.push(plotPoint);
-	 if (multiClass) {
-	     var shape;
-	     switch (yAr[i]) {
-		    case 1:
-			   shape = 'rect';
-			   col = '#000000';
-			   break;
-			   
-			   
-			case 2:
-			   shape = 'triangle';
-			   col = '#00ff00';
-			   break;
-			   
-			
-			
-			case 3:
-			   shape = 'circle';
-			   col = '#0000ff';
-			   break;
-			   
-			default:
-               shape = 'cross';
-			   col = '#000000';
-               break;			   
-			   
-		   
-		 }
-		 pointStyles.push(shape);
-	 } 
-	 else {
-	     pointStyles.push(yAr[i] == 1 ? 'triangle' : 'circle');
-		 col = yAr[i] == 1 ? "#00ff00" : "#0000ff";
-	 
-	 }
-	 
-	 if (ThetaUnscaled) {
-	    if (math.subset(acc[0],math.index(i,0)) == 0) {//accurate predictions
-		
-		    pointBackgroundColors.push(col);
-		}
-		else {
-		   pointBackgroundColors.push("#ff0000");
-		}
-	    
-	 }
-	 else {
-	    pointBackgroundColors.push(col);
-	}
-	 
+	 pointBackgroundColors.push(yAr[i] == 1 ? "#0f0" : "#0ff");
+	 pointStyles.push(yAr[i] == 1 ? "circle" : "square");
 	 
   });  
   
-  
-  return {'points':scatData,'colours':pointBackgroundColors,'styles':pointStyles};
+  createVisGraph(scatData,null,null,pointBackgroundColors,pointStyles);
 
 }
 
-function visualiseTrainingOnly(XUnscaled,Y) {
-  var ctx = document.getElementById("visualiseChart");
-  
-  
-  var res;
-  if (mlParams.module == 'log') {
-      res = constructLogTrainingPlotPoints(XUnscaled,Y);
-  }
-  else {
-      res = constructRegTrainingPlotPoints(XUnscaled,Y);
- 
-  }
-  
-  createVisGraph(res.points,null,null,res.colours,res.styles);
-
-}
-
-
-
-function visualiseLog(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors) {
-	var ctx = document.getElementById("visualiseChart");
-	
-	var res = constructLogTrainingPlotPoints(XUnscaled,Y,ThetaOrig);
-	createVisGraph(res.points,null,null,res.colours,res.styles);
-	
-	var incX = scaleFactors ? (scaleFactors[1][1] / 30) : 2000 / 10;
-    var endX = scaleFactors ?  scaleFactors[1][2] + scaleFactors[1][1] +  incX  : 2000;
-	
-	var modelData = [];
-
-    for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
-          //construct boundary, ie line/curve where Xt Theta = 0
-		  
-		  //i represents x1
-		  var Tmp = math.multiply(math.transpose(XUnscaled),ThetaOrig);
-		  var sum = math.subset(ThetaOrig,math.index(0,0)); //ThetaOrig[0];
-		  sum+= math.subset(ThetaOrig,math.index(1,0))  * i; //x1
-		  var thx2 = sum * -1;
-		  var x2 = thx2 / math.subset(ThetaOrig,math.index(2,0));
-
-		  var plotPoint = {x:i,y:x2};
-	      modelData.push(plotPoint);
-
-	}
-	
-	if (X.size()[0] > 3) {
-	
-	}
-	else {
-	
-	  updateVisGraph(null,modelData);
-	}
-
-
-}
-
-function visualise(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors) {
+function visualise(X,Y,Theta,XOrig,ThetaOrig,ThetaIdeal,scaleFactors) {
 
 var ctx = document.getElementById("visualiseChart");
 
-if (mlParams.module == 'log') {
-   visualiseLog(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors);	
-   return;
-}
 
-var rows = XUnscaled.size();
+var rows = XOrig.size();
 
-var x1Ar = mRow(XUnscaled,1,true);
+var x1Ar = mRow(XOrig,1,true);
 
 
 var yAr = mCol(Y,0,true);
@@ -991,12 +583,6 @@ if (visChart) {
 else {
 	var scatterChart = new Chart(ctx, {
 		type: 'line',
-		options: {
-           title: {
-               display: true,
-               text: 'Training'
-           }
-        },
 		data: {
 			datasets: [{
 				label: 'Training Data',
@@ -1179,7 +765,7 @@ costChart = myChart;
 
 
 </script>
-<script src="js/mlTools_routines.js"></script>
+<script src="tstformat_routines.js"></script>
 
 </body>
 
