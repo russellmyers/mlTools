@@ -26,6 +26,7 @@
 				msg.XUnscaled = JSON.stringify(mess[7]);
 				msg.minThetaUnscaled = JSON.stringify(mess[8]);
 				msg.scaleFactors = mess[9];//JSON.stringify(res[9]);
+				msg.YOrig = JSON.stringify(mess[10]);
 				postMessage(msg);
 			}
 			else {
@@ -44,12 +45,12 @@
  
  // return [ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors];
 
- self.onmessage = function (msg) {
-    switch (msg.data.action) {
+ self.onmessage = function (inMsg) {
+    switch (inMsg.data.action) {
         case 'Go':
-		    console.log('params in worker: ' + msg.data.params.input);
+		    console.log('params in worker: ' + inMsg.data.params.input);
             //var res = learn_background(inp,0.01,10,'0 0',1,true,true,false,0.00000001,msg.data.params); 
-			var res = learn(msg.data.params,progUpdateBackground);
+			var res = learn(inMsg.data.params,progUpdateBackground);
 			var tst = res[2];
 			var msg = {};
 			msg.action = 'fin';
@@ -65,9 +66,13 @@
 			msg.XUnscaled = JSON.stringify(res[7]);
 			msg.minThetaUnscaled = JSON.stringify(res[8]);
 			msg.scaleFactors = res[9];//JSON.stringify(res[9]);
+			msg.YOrig = JSON.stringify(res[10]);
 			//postMessage({'action':'fin','elToUpdate':'blog','mess':'<br>finished','minT':JSON.stringify(res[4])});	
 			postMessage(msg);
-            postMessage({'action':'progUp','elToUpdate':'blog','mess':'<br>finished'});			
+            postMessage({'action':'progUp','elToUpdate':'blog','mess':'<br>finished'});		
+	        if ((inMsg.data.params.module == 'log') && (inMsg.data.params.numLogClasses > 2) && (inMsg.data.params.currClassNum == inMsg.data.params.numLogClasses - 1)) {
+                postMessage({'action':'multiClassFin'});
+			}				
             break;
         default:
             throw 'no aTopic on incoming message to ChromeWorker';

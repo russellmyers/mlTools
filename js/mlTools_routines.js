@@ -1,4 +1,7 @@
 
+
+//Utility routines
+
 function matrixToArray(mat,rNum,cNum) {
 
  
@@ -54,6 +57,8 @@ function mCol(matrix, index,retAsArray) {
   }
   
 } 
+
+// ML routines
 
 function sigmoid(In) {
 	var Out = math.map(In,function(el) {
@@ -218,6 +223,8 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
    var ar =  mlParams.input.split('\n'); //document.getElementById('trainingInput').value.split('\n');
    //alert(ar);
    yAr = [];
+   yOrigAr = [];
+   
    ar = ar.map(function(el) {
        var inAr = el.split(' ');
 	   inAr = inAr.map(function(inEl) {
@@ -241,6 +248,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
 	   }
 	   
 	   yVal = inAr.pop();
+	   yOrigVal = yVal;
 	   
 	   if ((mlParams.module == 'log') && (mlParams.numLogClasses > 2) && (mlParams.currClassNum > -1)) {
 		   if (yVal == mlParams.currClassNum + 1) { //input class y vals are one based 
@@ -254,13 +262,17 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
 	   
 	   
 	   yAr.push([yVal]);
+	   yOrigAr.push([yOrigVal]);
 	   return inAr;
    });
  
    
    var Xt = math.matrix(ar);
 
-   var Y = math.matrix(yAr);
+   var Y = math.matrix(
+   yAr);
+   var YOrig = math.matrix(yOrigAr);
+   
    var X = math.transpose(Xt);	
    
    var XUnscaled = X.clone();
@@ -274,69 +286,10 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  	}
 	
    
-   return [X,Y, XUnscaled,scaleFactors];   
- 
- }
- /*
- function getXandY_background(inp,degrees,addOnesFlag,scalingFlag,polyFlag) {
- 
-   if (degrees) {
-      
-	}
-	else {
-	   degrees = 1;
-	}
-	
-   var ar =  inp.split('\n');//document.getElementById('trainingInput').value.split('\n');
-   //alert(ar);
-   yAr = [];
-   ar = ar.map(function(el) {
-       var inAr = el.split(' ');
-	   inAr = inAr.map(function(inEl) {
-	      return parseFloat(inEl);
-	   });
-	   var first = inAr[0];
-	   if  (polyFlag) {//(elVal('featurePoly')) {
-	   
-	      for (var i = 2; i <= degrees;++i) {
-				inAr.splice(i-1,0,Math.pow(inAr[0],i));
-   
-	      }
-		}
-	   
-	   if (addOnesFlag) {
-	   
-	     inAr.unshift(1);
-		 
-	   }
-	   
-	   yVal = inAr.pop();
-	   
-	   yAr.push([yVal]);
-	   return inAr;
-   });
- 
-   
-   var Xt = math.matrix(ar);
-
-   var Y = math.matrix(yAr);
-   var X = math.transpose(Xt);	
-   
-   var XUnscaled = X.clone();
-
-   //if (document.getElementById('scalingFlag').checked) {
-   ret = featureScale(X);
-   scaleFactors = ret[1];
-   if (scalingFlag) {
-      X = ret[0];
- 	}
-	
-   
-   return [X,Y, XUnscaled,scaleFactors];   
+   return [X,Y, XUnscaled,scaleFactors,YOrig];   
  
  }
  
- */
  function solveAnalytically(X,Y) {
  
  var Xt = math.transpose(X);
@@ -382,8 +335,11 @@ function learn(mlParams,progCallback) {
    var res = getXandY(mlParams);
    var X = res[0];
    var Y = res[1];
+   
    var XUnscaled = res[2];
    var scaleFactors = res[3];
+   var YOrig = res[4];
+   
    var Xt = math.transpose(X);
    
    var m = Y.size()[0];
@@ -513,10 +469,14 @@ function learn(mlParams,progCallback) {
 				if (progCallback) {
 					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
 					var acc = accuracy(Xt,minTheta,Y);
-					progCallback('rightBannerDiv','<br>Accuracy: ' + acc[1] + '/' + acc[2]);
+					
 					if (mlParams.numLogClasses > 2) {
 						progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
 					}
+					else {
+						progCallback('rightBannerDiv','<br>');
+					}
+					progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2]);
 					
 				}
 			}
@@ -589,7 +549,6 @@ function learn(mlParams,progCallback) {
 			}	
 			
 			
-			console.log('Cost: ' +  Cost + '\nTot cost: ' + math.sum(Cost))	;
 			
 			if (math.sum(Cost) > prevCost) {
 				if (math.sum(Cost) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
@@ -617,11 +576,11 @@ function learn(mlParams,progCallback) {
 			prevCost = math.sum(Cost);
 
 			//var Derivs = derivs(X,Theta,Y);
-			console.log('theta before: ' + Theta);
+			//console.log('theta before: ' + Theta);
 		
 			var res = gdUpdate(X,Theta,Y,lambda,logisticFlag);
 			Theta = res[0];
-			console.log('Theta after: ' + Theta);
+			//console.log('Theta after: ' + Theta);
 			
 			if  (mlParams.diagnosticsFlag) {//(elVal('diagnosticsFlag')) {
 			    if (progCallback) {
@@ -645,6 +604,8 @@ function learn(mlParams,progCallback) {
 			
 	}
 	
+	console.log('Cost: ' +  Cost + '\nTot cost: ' + math.sum(Cost))	;
+	
 	/*
 	var constAdj = 0;
 	var minThetaUnscaled = [];
@@ -660,10 +621,19 @@ function learn(mlParams,progCallback) {
 	if (progCallback) {
 		progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
 		var acc = accuracy(Xt,minTheta,Y);
+		/*
 		progCallback('rightBannerDiv','<br>Accuracy: ' + acc[1] + '/' + acc[2]);
 		if (mlParams.numLogClasses > 2) {
 			progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
 		}
+		*/
+		if (mlParams.numLogClasses > 2) {
+		   progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
+		}
+	    else {
+		   progCallback('rightBannerDiv','<br>');
+	    }
+	    progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2]);
 					
 	}
 	
@@ -724,7 +694,7 @@ function learn(mlParams,progCallback) {
 	//document.getElementById('blog').innerHTML+=  '<br>Cost: ' + Cost;
 	
 	
-	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors];
+	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig];
    
      
 
