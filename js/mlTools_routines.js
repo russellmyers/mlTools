@@ -2,6 +2,13 @@
 
 //Utility routines
 
+/**
+ *
+ * @param mat
+ * @param rNum
+ * @param cNum
+ * @returns {Array}
+ */
 function matrixToArray(mat,rNum,cNum) {
 
  
@@ -22,6 +29,13 @@ function matrixToArray(mat,rNum,cNum) {
 
 }
 
+/**
+ *
+ * @param matrix
+ * @param index
+ * @param retAsArray
+ * @returns {*} matrix or array
+ */
 function mRow(matrix, index,retAsArray) {
    var sz = math.size(matrix);
    var cols = math.size(matrix).valueOf()[1];
@@ -39,6 +53,13 @@ function mRow(matrix, index,retAsArray) {
   //return math.flatten(math.subset(matrix, math.index(index, [0, rows - 1])));
 }
 
+/**
+ *
+ * @param matrix
+ * @param index
+ * @param retAsArray
+ * @returns {*} matrix or array
+ */
 function mCol(matrix, index,retAsArray) {
   var rows = math.size(matrix).valueOf()[0];
   var elements = math.subset(matrix, math.index(math.range(0,rows),index));
@@ -60,6 +81,11 @@ function mCol(matrix, index,retAsArray) {
 
 // ML routines
 
+/**
+ *
+ * @param In
+ * @returns {Matrix}
+ */
 function sigmoid(In) {
 	var Out = math.map(In,function(el) {
 		
@@ -72,6 +98,13 @@ function sigmoid(In) {
 
 }
 
+/**
+ *
+ * @param Xt
+ * @param Theta
+ * @param Y
+ * @returns {*}
+ */
 function accuracy(Xt,Theta,Y) {
 	var pred = predict(Xt,Theta);
 	
@@ -89,6 +122,12 @@ function accuracy(Xt,Theta,Y) {
 	
 }
 
+/**
+ *
+ * @param Xt
+ * @param Theta
+ * @returns {*}
+ */
 function predict(Xt,Theta) {
 	//Logistic regression prediction
 	
@@ -100,7 +139,14 @@ function predict(Xt,Theta) {
 	
 	
 }
-	
+
+/**
+ *
+ * @param Xt
+ * @param Theta
+ * @param logisticFlag
+ * @returns {*}
+ */
 function h(Xt,Theta,logisticFlag) {
 	if (logisticFlag) {
 		return sigmoid(math.multiply(Xt,Theta));
@@ -110,15 +156,40 @@ function h(Xt,Theta,logisticFlag) {
 	}
 }
 
+/**
+ *
+ * @param Xt
+ * @param Theta
+ * @param Y
+ * @param logisticFlag
+ * @returns {*}
+ */
 function err(Xt,Theta,Y,logisticFlag) {
     return math.subtract(h(Xt,Theta,logisticFlag),Y);
 
 }
 
+/**
+ *
+ * @param Xt
+ * @param Theta
+ * @param Y
+ * @param logisticFlag
+ * @returns {*}
+ */
 function sqErr(Xt,Theta,Y,logisticFlag)  {
     return math.square(err(Xt,Theta,Y,logisticFlag));
 }
 
+/**
+ *
+ * @param X
+ * @param Theta
+ * @param Y
+ * @param lambda
+ * @param logisticFlag
+ * @returns {*}
+ */
 function gdUpdate(X,Theta,Y,lambda,logisticFlag) {
     var Derivs = derivs(X,Theta,Y,logisticFlag);
 	var adjDerivs = math.multiply(Derivs,lambda);
@@ -127,6 +198,15 @@ function gdUpdate(X,Theta,Y,lambda,logisticFlag) {
 	
 	
 }
+
+/**
+ *
+ * @param X
+ * @param Theta
+ * @param Y
+ * @param logisticFlag
+ * @returns {*|{commutative}}
+ */
  
 function derivs(X,Theta,Y,logisticFlag) {
     //console.log('X: ' + X);
@@ -145,7 +225,15 @@ function derivs(X,Theta,Y,logisticFlag) {
 
     
 }
-  
+
+/**
+ *
+ * @param Xt
+ * @param Theta
+ * @param Y
+ * @param logisticFlag
+ * @returns {*}
+ */
 
 function costFunction(Xt,Theta,Y,logisticFlag) {
 	
@@ -182,7 +270,12 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
          return Cost;
 
  }
- 
+
+/**
+ *
+ * @param mat
+ * @returns {*}
+ */
  function featureScale(mat) {
 	 //scale factors indexes: 0-mean, 1-range, 2-lowest
  
@@ -215,7 +308,12 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
    
  
  }
- 
+
+/**
+ *
+ * @param mlParams
+ * @returns {*}
+ */
  function getXandY(mlParams) {
 	 
 	  
@@ -304,8 +402,12 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  
  
  }
- 
- 
+
+/**
+ *
+ * @param Theta
+ * @returns {*}
+ */
 function thetaUnscale(Theta) {
 
 	var constAdj = 0;
@@ -323,8 +425,14 @@ function thetaUnscale(Theta) {
 	return math.matrix(ThetaUnscaled);
 
 
-}	
- 
+}
+
+/**
+ *
+ * @param mlParams
+ * @param progCallback
+ * @returns {*}
+ */
 function learn(mlParams,progCallback) {
   
    var minCost = null;

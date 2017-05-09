@@ -1,12 +1,19 @@
  importScripts('math.min.js');
- importScripts('mlTools_routines.js');  	
- 
-	
+ importScripts('mlTools_routines.js');
+
+
+
  postMessage('Hello from worker');	
  //var inp = '1 2\n3 4\n4 5\n5 7';
  var inp = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
- 
- 
+
+
+ /**
+  *
+  * @param elToUpdate
+  * @param mess
+  * @param clearFlag
+  */
  function progUpdateBackground(elToUpdate,mess,clearFlag) {
 	 
 	    if (elToUpdate == 'chart') {
@@ -44,6 +51,11 @@
  
  
  // return [ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors];
+
+ /**
+  *
+  * @param inMsg
+  */
 
  self.onmessage = function (inMsg) {
     switch (inMsg.data.action) {

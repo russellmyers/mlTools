@@ -5,11 +5,15 @@ var mlResults;
 var visChart;
 var costChart;
 
+
+
 init();
   
 startWorker();
 
- 
+/**
+ * 
+ */
 function init() {
 	
 	w = null;
@@ -32,9 +36,11 @@ function init() {
 	document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
 
 	
-} 
+}
 
-
+/**
+ * 
+ */
 function startWorker() {
 
 if (typeof	(Worker) !== "undefined") {
@@ -132,11 +138,13 @@ else {
         document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Tools</h2>' + "Sorry! No Web Worker support.";
     }
 
-}	
+}
 
 
- 
- function getParams() {
+/**
+ * 
+ */
+function getParams() {
     
 	//mlParams.featureType = featureType; //uses mvc
 	mlParams.input = elVal('trainingInput');
@@ -158,7 +166,11 @@ else {
 
 
 //Utility routines
-
+/**
+ * 
+ * @param string
+ * @returns {*}
+ */
 function stringifyToMatrix(string) {
   var obj = JSON.parse(string);
   //obj.__proto__ = math.matrix.prototype;
@@ -167,6 +179,11 @@ function stringifyToMatrix(string) {
   return mat;
 }
 
+/**
+ * 
+ * @param elId
+ * @returns {*}
+ */
 function elVal(elId) {
     var el = document.getElementById(elId);
 	
@@ -185,7 +202,12 @@ function elVal(elId) {
 	}
  
  }
- 
+
+/**
+ * 
+ * @param elId
+ * @returns {*}
+ */
  function el(elId) {
     return document.getElementById(elId	);
  
@@ -194,6 +216,10 @@ function elVal(elId) {
 
 
 //Event routines
+
+/**
+ * 
+ */
 function testButClicked() {
 
    mlParams.module = 'tst';
@@ -221,7 +247,9 @@ function testButClicked() {
 
 }
 
-
+/**
+ * 
+ */
 function logButClicked() {
    document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
  // document.getElementById('trainingInput').value = '1 1 1\n2 2 2\n3 3 3'	;
@@ -243,6 +271,9 @@ function logButClicked() {
 	
 }
 
+/**
+ * 
+ */
 function regButClicked() {
    document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
  
@@ -250,9 +281,12 @@ function regButClicked() {
    moduleUpdated();
    
  }
- 
-  
- function featureTypeClicked(event) {
+
+/**
+ * 
+  * @param event
+ */
+function featureTypeClicked(event) {
     if (event.target.id === 'featurePoly') {
 	    mlParams.featureType = 'poly';
 		
@@ -265,7 +299,11 @@ function regButClicked() {
 	featureTypeUpdated();
  
  }
- 
+
+/**
+ * 
+ * @param event
+ */
  function numLogClassesClicked(event) {
     mlParams.numLogClasses = parseInt(elVal('numLogClasses'));
 	numLogClassesUpdated();
@@ -274,6 +312,12 @@ function regButClicked() {
  
 //Callback routines
 
+/**
+ * 
+ * @param targetEl
+ * @param message
+ * @param clearFlag
+ */
 function learnProgressForeground(targetEl,message,clearFlag) {
    
    if (targetEl == 'chart') {
@@ -306,6 +350,10 @@ function learnProgressForeground(targetEl,message,clearFlag) {
 
 
 //Action routines
+
+/**
+ * 
+ */
 function applyInput() {
       
    getParams();
@@ -319,9 +367,10 @@ function applyInput() {
 }
 
 
- 
- 
- function featureTypeUpdated() {
+/**
+ * 
+ */
+function featureTypeUpdated() {
  
     //mlParams.featureType = featureType;
 	
@@ -354,16 +403,21 @@ function applyInput() {
 	
 	}
  }
- 
- 
- function numLogClassesUpdated() {
+
+/**
+ * 
+ */
+function numLogClassesUpdated() {
  
     
       el('numLogClasses').value = mlParams.numLogClasses;
 	
 
  }
- 
+
+/**
+ * 
+ */
  function moduleUpdated() {
  
     switch (mlParams.module) {
@@ -419,10 +473,12 @@ function applyInput() {
 		   }
  
  }
- 
- 
- 
- function clearCharts() {
+
+
+/**
+ * 
+ */
+function clearCharts() {
    if (visChart) {
      visChart.destroy();
 	 
@@ -437,7 +493,10 @@ function applyInput() {
 
  
  }
- 
+
+/**
+ * 
+ */
 function clearRes()  {
 
   
@@ -451,6 +510,10 @@ function clearRes()  {
   
 }
 
+/**
+ * 
+ * @returns {*}
+ */
 function checkAccuracyMultiClass() {
 	
 	
@@ -514,8 +577,11 @@ function checkAccuracyMultiClass() {
 		learnProgressForeground('rightBannerDiv','<br>Overall num Correct: ' + numCorrect + '/' + tot + ' (' + perc + '%)' );
 		
 	return acc;
-} 
+}
 
+/**
+ * 
+ */
 function learnBackground() {
 
     if (!w) {
@@ -560,7 +626,9 @@ function learnBackground() {
 }
 
 
-
+/**
+ * 
+ */
 function learnForeground() {
     getParams();
 	
@@ -702,6 +770,14 @@ function learnForeground() {
 
 //Visualisation routines
 
+/**
+ * 
+ * @param scatData
+ * @param modelData
+ * @param idealData
+ * @param scatPointBackgroundColors
+ * @param scatPointStyles
+ */
 function updateVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,scatPointStyles) {
     if (scatData) {
 	  visChart.data.datasets[0].data = scatData;
@@ -730,7 +806,14 @@ function updateVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,s
 
 }
 
-
+/**
+ * 
+ * @param scatData
+ * @param modelData
+ * @param idealData
+ * @param scatPointBackgroundColors
+ * @param scatPointStyles
+ */
 function createVisGraph(scatData,modelData,idealData,scatPointBackgroundColors,scatPointStyles) {
    var ctx = document.getElementById("visualiseChart");
 
@@ -819,7 +902,13 @@ else {
 
 }
 
-
+/**
+ * 
+ * @param XUnscaled
+ * @param Y
+ * @param ThetaUnscaled
+ * @returns {{points: Array, colours: string, styles: string}}
+ */
 function constructRegTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
  
  
@@ -843,6 +932,14 @@ function constructRegTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
 
 }
 
+/**
+ * 
+ * @param XUnscaled
+ * @param Y
+ * @param ThetaUnscaled
+ * @param showAccForMultiClass
+ * @returns {{points: Array, colours: Array, styles: Array}}
+ */
 function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMultiClass) {
   var x1Ar = mRow(XUnscaled,1,true);
   
@@ -940,6 +1037,11 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
 
 }
 
+/**
+ * 
+ * @param XUnscaled
+ * @param Y
+ */
 function visualiseTrainingOnly(XUnscaled,Y) {
   var ctx = document.getElementById("visualiseChart");
   
@@ -958,7 +1060,13 @@ function visualiseTrainingOnly(XUnscaled,Y) {
 }
 
 
-
+/**
+ * 
+ * @param XUnscaled
+ * @param Y
+ * @param ThetaOrig
+ * @param scaleFactors
+ */
 function visualiseLog(XUnscaled,Y,ThetaOrig,scaleFactors) { 
 	var ctx = document.getElementById("visualiseChart");
 	
@@ -996,6 +1104,16 @@ function visualiseLog(XUnscaled,Y,ThetaOrig,scaleFactors) {
 
 }
 
+/**
+ * 
+ * @param X
+ * @param Y
+ * @param Theta
+ * @param XUnscaled
+ * @param ThetaOrig
+ * @param ThetaIdeal
+ * @param scaleFactors
+ */
 function visualise(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors) {
 
 var ctx = document.getElementById("visualiseChart");
@@ -1200,7 +1318,11 @@ costChart.update();
 
 }
 
-
+/**
+ * 
+ * @param costAr
+ * @param iters
+ */
 function visualiseCostChart(costAr,iters) {
 
 //console.log('costar: ' + costAr);
