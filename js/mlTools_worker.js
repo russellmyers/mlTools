@@ -62,7 +62,7 @@
         case 'Go':
 		    console.log('params in worker: ' + inMsg.data.params.input);
             //var res = learn_background(inp,0.01,10,'0 0',1,true,true,false,0.00000001,msg.data.params); 
-			var res = learn(inMsg.data.params,progUpdateBackground);
+			var res = learn(inMsg.data.params,inMSg,data.X, inMsg.data.Y, inMsg.data.scaleFactors,progUpdateBackground);
 			var tst = res[2];
 			var msg = {};
 			msg.action = 'fin';

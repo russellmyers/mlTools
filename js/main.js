@@ -13,6 +13,7 @@ init();
   
 startWorker();
 
+
 /**
  * 
  */
@@ -37,7 +38,7 @@ function init() {
 	numLogClassesUpdated();
 	
 	document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-
+    
 	
 }
 
@@ -164,6 +165,8 @@ function getParams() {
 	mlParams.currClassNum = -1; //used for logisitic regression multi-class
 	
 	
+	
+	
  
  }
 
@@ -254,22 +257,29 @@ function testButClicked() {
  * 
  */
 function logButClicked() {
-   document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
+	
+   mlParams.module = 'log';
+   moduleUpdated();
+ 
+
+ document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
  // document.getElementById('trainingInput').value = '1 1 1\n2 2 2\n3 3 3'	;
 
 
  //el('initTheta').value = '-10 -10 10'; //set to non-optimal so that it is easier to see boundary adjusting
   
-  getParams();
-   var res = getXandY(mlParams);
-   var X = res[0];
-   var Y = res[1];
-   var XUnscaled = res[2];
-   visualiseTrainingOnly(XUnscaled,Y);
+  //getParams();
+  // var res = getXandY(mlParams);
+   applyInput();
    
-   mlParams.module = 'log';
-   moduleUpdated();
+  
+  
+   //var X = res[0];
+   //var Y = res[1];
+   //var XUnscaled = res[2];
    
+   //visualiseTrainingOnly(mlData.X,mlData.Y);
+
  
 	
 }
@@ -278,10 +288,19 @@ function logButClicked() {
  * 
  */
 function regButClicked() {
-   document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
- 
+	
    mlParams.module = 'reg';
    moduleUpdated();
+   
+   document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+  
+  applyInput();
+    
+ 
+   
+   //visualiseTrainingOnly(mlData.X,mlData.Y);
+   
+   
    
  }
 
@@ -359,7 +378,7 @@ function parseDataInput(data) {
 
 		}
 
-		yAr.push([yVal]);
+		yAr.push(yVal);
 
 		return elAr;
 	});
@@ -369,6 +388,13 @@ function parseDataInput(data) {
 	var X = math.transpose(Xt);
 
 	var Y = math.matrix(yAr);
+	
+	/*
+	var testX = math.matrix([[1,1,1],[20,5,10]]);
+	var testThetaT = math.matrix([2,2]);
+	testThetaT =  math.transpose(testThetaT);
+	var test =  math.multiply(testThetaT,testX);
+	*/
 
 	return [X,Y];
 
@@ -423,13 +449,19 @@ function applyInput() {
    getParams();
 
    var res = parseDataInput(elVal('trainingInput'));
+   mlData.X = res[0];
+   mlData.Y = res[1];
+   mlDataUpdated();
 
+   /*
    res = getXandY(mlParams,1);
    var X = res[0];
    var Y = res[1];
    var XUnscaled = res[2];
    visualiseTrainingOnly(XUnscaled,Y);
+   */
   
+    visualiseTrainingOnly(mlData.X,mlData.Y);
 
 }
 
@@ -540,6 +572,84 @@ function numLogClassesUpdated() {
 		   }
  
  }
+ 
+ /**
+ * Formats data for display
+ */
+ function formatData() {
+	 var str = '';
+	 var Xt = math.transpose(mlData.X);
+	 var Y = mlData.Y;
+	 
+	 var numFeatures = (Xt.size()[1] - 1) /  mlParams.degrees;
+	
+	 
+	 for (var i = 0;i < Xt.size()[0];++i) {
+		 var row = mRow(Xt,i,true);
+		 
+		 
+		 var firstDegree = true;
+		 row = row.map(function(el,j) {
+			 if (j == 0) {
+				 el = '[' + el + ']';
+			 }
+			 else {
+				 if ((j - 1) % numFeatures == 0) {
+					 if (!firstDegree) {
+					   el = '[' + el;
+					 }
+			     }
+			     if (j % numFeatures == 0) {
+					 if (!firstDegree) {
+				        el = el + ']';
+					 }
+					 firstDegree = false;
+			     }
+			 
+			 }
+			 return el;
+				 
+			
+		 });
+		 row.push(Y.get([i]));
+		 str+= arrayToString(row);
+	     if (i < Xt.size()[0]  - 1)  {
+			  str+= '\n';
+		 }
+		 
+		 
+	 }
+	 
+	 el('trainingInput').value = str;
+		 
+	 
+	 
+ }
+ 
+ 
+ function mlDataUpdated() {
+	 //Updates textarea showing X and Y
+	 // also triggers scaling etc
+	 
+	 getParams();
+	 
+	 formatData();
+	 
+
+     ret = featureScale(mlData.X);
+     scaleFactors = ret[1];
+     if (mlParams.scalingFlag) {
+       mlData.XScaled = ret[0];
+ 	 }
+	 else {
+	   mlData.XScaled = null;
+	 }
+	 
+	 mlData.scaleFactors = scaleFactors;
+	   
+   
+	 
+ }
 
 
 /**
@@ -616,7 +726,7 @@ function checkAccuracyMultiClass() {
 			var max = 0;
 			var maxI = -1;
 			for (var i = 0;i < mlParams.numLogClasses;++i) {
-				var conf = confAr[i].get([m,0]);
+				var conf = confAr[i].get([m]);
 				if (conf > max) {
 					max = conf;
 					maxI = i;
@@ -625,7 +735,7 @@ function checkAccuracyMultiClass() {
 			}
 					
 			
-			predAr.push([maxI + 1]);
+			predAr.push(maxI + 1);
 			
 			
 			
@@ -662,6 +772,9 @@ function learnBackground() {
 	clearCharts();
 	
 	visualiseCostChart([],[]);
+	
+	//Todo
+	//Also pass X, Y and scalefactors to background worker, may need to stringify
 	
 	switch (mlParams.module) {
 	    case 'reg': 
@@ -707,7 +820,7 @@ function learnForeground() {
 	
 	switch (mlParams.module) {
 	    case 'reg': 
-		   res = learn(mlParams,learnProgressForeground);
+		   res = learn(mlParams,mlData.X,mlData.Y,mlData.scaleFactors,learnProgressForeground);
 		   mlResults.push(res);
 	      break;
 		 
@@ -716,12 +829,12 @@ function learnForeground() {
 		       
 		       for (var i = 0;i < mlParams.numLogClasses;++i) {
 			      mlParams.currClassNum = i;
-		          res = learn(mlParams,learnProgressForeground);
+		          res = learn(mlParams,mlData.X, mlData.Y, mlData.scaleFactors,learnProgressForeground);
 		    	  mlResults.push(res);
 		       }
 			}
 			else {
-			    res = learn(mlParams,learnProgressForeground);
+			    res = learn(mlParams,mlData.X, mlData.Y, mlData.scaleFactors,learnProgressForeground);
 		        mlResults.push(res);
 			}
 
@@ -1083,7 +1196,7 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
 	 }
 	 
 	 if ((ThetaUnscaled) || ((multiClass) && (showAccForMultiClass))) {
-	    if (math.subset(accMatrix,math.index(i,0)) == 0) {//accurate predictions
+	    if (math.subset(accMatrix,math.index(i)) == 0) {//accurate predictions
 		
 		    pointBackgroundColors.push(col);
 		}
@@ -1150,10 +1263,10 @@ function visualiseLog(XUnscaled,Y,ThetaOrig,scaleFactors) {
 		  
 		  //i represents x1
 		  var Tmp = math.multiply(math.transpose(XUnscaled),ThetaOrig);
-		  var sum = math.subset(ThetaOrig,math.index(0,0)); //ThetaOrig[0];
-		  sum+= math.subset(ThetaOrig,math.index(1,0))  * i; //x1
+		  var sum = math.subset(ThetaOrig,math.index(0)); //ThetaOrig[0];
+		  sum+= math.subset(ThetaOrig,math.index(1))  * i; //x1
 		  var thx2 = sum * -1;
-		  var x2 = thx2 / math.subset(ThetaOrig,math.index(2,0));
+		  var x2 = thx2 / math.subset(ThetaOrig,math.index(2));
 
 		  var plotPoint = {x:i,y:x2};
 	      modelData.push(plotPoint);
@@ -1214,8 +1327,8 @@ var incX = scaleFactors ? (scaleFactors[1][1] / 30) : 2000 / 10;
 var endX = scaleFactors ?  scaleFactors[1][2] + scaleFactors[1][1] +  incX  : 2000;
 
 for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
-   var th0 = math.subset(Theta,math.index(0,0));
-   var th1 = math.subset(Theta,math.index(1,0)); 
+   var th0 = math.subset(Theta,math.index(0));
+   var th1 = math.subset(Theta,math.index(1)); 
  
    var xVal;
    
@@ -1226,21 +1339,21 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
 	var yValIdeal = 0;
 	
     if (document.getElementById('scalingFlag').checked)  {
-	   for (var ii = 0;ii < ThetaOrig.length;++ii) {
+	   for (var ii = 0;ii < ThetaOrig.size()[0];++ii) {
 	      
-	          yVal+= (ThetaOrig[ii] * Math.pow(i,ii));
+	          yVal+= (math.subset(ThetaOrig,math.index(ii)) * Math.pow(i,ii));
 			
 	   }
 	}
 	else {
 	   for (var ii = 0;ii < Theta.size()[0];++ii) {
-	       yVal += (math.subset(Theta,math.index(ii,0))  * Math.pow(i,ii));
+	       yVal += (math.subset(Theta,math.index(ii))  * Math.pow(i,ii));
 	   }
 	}
 	
 	
 	for (var ii = 0;ii < ThetaIdeal.size()[0];++ii) {
-	       yValIdeal += (math.subset(ThetaIdeal,math.index(ii,0))  * Math.pow(i,ii));
+	       yValIdeal += (math.subset(ThetaIdeal,math.index(ii))  * Math.pow(i,ii));
 	}
 	
 	
@@ -1261,7 +1374,7 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
    
 }
 
-Theta.subset(math.index(0, 0)); 
+Theta.subset(math.index(0)); 
 
 if (visChart) {
 
@@ -1464,3 +1577,4 @@ var myChart = new Chart(ctx, {
 });
 costChart = myChart;
 }
+
