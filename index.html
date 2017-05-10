@@ -12,9 +12,9 @@
 <div id = "bannerDiv">
 
 <div id = "leftBannerDiv">
- <label for "lambdaInput">Lambda</label>
+ <label for = "lambdaInput">Lambda</label>
  <input id = "lambdaInput" type="text" value = "0.1">
-  <label for "maxIterationsInput">Max Iterations</label>
+  <label for = "maxIterationsInput">Max Iterations</label>
  <input id = "maxIterationsInput" type="text" value = "10">
  <br>
  
@@ -23,18 +23,18 @@
   <br>
   <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
   <input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature
-  <label for "numLogClasses" id = "numLogClassesLab">Number of classes</label>
+  <label for = "numLogClasses" id = "numLogClassesLab">Number of classes</label>
   <input id = "numLogClasses" onchange = "numLogClassesClicked()" value = "0" type="text">
   <br>
-  <label for "initTheta">Initial Theta</label>
+  <label for = "initTheta">Initial Theta</label>
   <input id = "initTheta" type="text" value = "">
-   <label for "convThreshold">Convergence Threshold</label>
+   <label for = "convThreshold">Convergence Threshold</label>
   <input id = "convThreshold" type="text" value = "0.0000000001">
   <br>
-  <input type="radio" name="featureType" id = "featureMulti" onclick="featureTypeClicked(event)" value="multi">Multi Feature
-  <input type="radio" name="featureType" id="featurePoly" onclick="featureTypeClicked(event)" value="poly">Polynomial
+  <!--input type="radio" name="featureType" id = "featureMulti" onclick="featureTypeClicked(event)" value="multi">Multi Feature
+  <input type="radio" name="featureType" id="featurePoly" onclick="featureTypeClicked(event)" value="poly">Polynomial-->
   
-   <label for "degreesInput" id="degreesInputLab">Degrees</label>
+   <label for = "degreesInput" id="degreesInputLab">Poly Degrees</label>
  <input id = "degreesInput" type="text" value = "1"> 
  <br>
  

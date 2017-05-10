@@ -27,9 +27,11 @@ function init() {
     mlParams = {};
 	mlResults = [];
 	mlData = {};
-	
+
+	/*
     mlParams.featureType = "multi";
 	featureTypeUpdated();
+	*/
 	
 	mlParams.module = "reg";
 	moduleUpdated();
@@ -79,9 +81,16 @@ if (typeof	(Worker) !== "undefined") {
 					mlResults.push([costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig]);
 					
 					if (mlParams.module == 'log') {
-						   el('blog').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled),math.matrix(minThetaUnscaled));
-						   el('blog').innerHTML += '<br>Accuracy: ' + accuracy(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),Y);
-						   el('blog').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
+					       var acc = accuracy(math.transpose(XUnscaled), math.matrix(minThetaUnscaled), Y);
+						   if (elVal('diagnosticsFlag')) {
+							   el('rightTwo').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled), math.matrix(minThetaUnscaled));
+
+							   el('rightTwo').innerHTML += '<br>Accuracy: ' + acc;
+							   el('rightTwo').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled), math.matrix(minThetaUnscaled), true);
+						   }
+						   var perc  = (acc[1] / acc[2] * 100);
+					       el('blog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
+
 					}
 					
 					visualiseCostChart(costAr,iters);
@@ -305,7 +314,7 @@ function regButClicked() {
  }
 
 /**
- * 
+ * Now redundant
   * @param event
  */
 function featureTypeClicked(event) {
@@ -445,13 +454,29 @@ function learnProgressForeground(targetEl,message,clearFlag) {
  * 
  */
 function applyInput() {
-      
+
+   clearRes();
    getParams();
+
+	mlData = {};
+	mlResults = [];
 
    var res = parseDataInput(elVal('trainingInput'));
    mlData.X = res[0];
    mlData.Y = res[1];
    mlDataUpdated();
+
+   if (mlParams.module == 'log') {
+	   var yAr = mCol(mlData.Y, 0, true);
+	   var multiClass = false;
+	   if (math.max(yAr) > 1) { //contains multiple classes
+		   multiClass = true;
+
+		   if (math.max(yAr) != mlParams.numLogClasses) {
+			   alert('Num classes: ' + mlParams.numLogClasses + '  not equal to classes found in training set: ' + math.max(yAr));
+		   }
+	   }
+   }
 
    /*
    res = getXandY(mlParams,1);
@@ -467,7 +492,7 @@ function applyInput() {
 
 
 /**
- * 
+ * Now redundant
  */
 function featureTypeUpdated() {
  
@@ -765,11 +790,15 @@ function learnBackground() {
 	  alert('Background processing not available');
 	  return;
 	}
+
+	/*
     getParams();
 	
 	mlResults = [];
 	
 	clearCharts();
+	*/
+	applyInput();
 	
 	visualiseCostChart([],[]);
 	
@@ -778,7 +807,7 @@ function learnBackground() {
 	
 	switch (mlParams.module) {
 	    case 'reg': 
-		    w.postMessage({'action':'Go','params':mlParams});
+		    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
 	      break;
 		 
 		case 'log':
@@ -786,11 +815,11 @@ function learnBackground() {
 		       
 		       for (var i = 0;i < mlParams.numLogClasses;++i) {
 			      mlParams.currClassNum = i;
-		          w.postMessage({'action':'Go','params':mlParams});
+		          w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
 	           }
 			}
 			else {
-			    w.postMessage({'action':'Go','params':mlParams});
+			    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
 			}
 
           break;	
@@ -810,12 +839,16 @@ function learnBackground() {
  * 
  */
 function learnForeground() {
+
+	/*
     getParams();
 	
 	mlResults = [];
 
 	clearCharts();
-	
+	*/
+	applyInput();
+
 	var res;
 	
 	switch (mlParams.module) {
@@ -934,8 +967,11 @@ function learnForeground() {
 		
 		if (mlParams.module == 'log') {
 		   el('blog').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled),minThetaUnscaled);
-		   el('blog').innerHTML += '<br>Accuracy: ' + accuracy(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),Y);
+		   var acc = accuracy(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),Y);
+		   el('blog').innerHTML += '<br>Accuracy: ' + acc;
 		   el('blog').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
+		   var perc = (acc[1] / acc[2] * 100);
+		   el('blog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 		}
 		
 		visualiseCostChart(costAr,iters);

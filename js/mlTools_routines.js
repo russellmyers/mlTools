@@ -311,9 +311,9 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  function featureScale(mat) {
 	 //scale factors indexes: 0-mean, 1-range, 2-lowest
  
-   var scaledMat = mat.clone();
-   var rows = math.size(mat).valueOf()[0];
-   var cols = math.size(mat).valueOf()[1];
+   var scaledMat = math.clone(mat);
+   var rows = mat.size()[0];
+   var cols = mat.size()[1];
    var scaleFactors = [];
    scaleFactors.push([1,0,1]);
    for (var r = 1;r < rows;++r) {
@@ -476,7 +476,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  * @param Theta
  * @returns {*}
  */
-function thetaUnscale(Theta) {
+function thetaUnscale(Theta,scaleFactors) {
 
 	var constAdj = 0;
 	var ThetaUnscaled = [];
@@ -669,7 +669,8 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 					else {
 						progCallback('rightBannerDiv','<br>');
 					}
-					progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2]);
+                    var perc  = (acc[1] / acc[2] * 100);
+					progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)');
 					
 				}
 			}
@@ -716,7 +717,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 				    */
 					var minThetaUnscaled;
 					if (mlParams.scalingFlag) {
-					    minThetaUnscaled = thetaUnscale(minTheta);
+					    minThetaUnscaled = thetaUnscale(minTheta,scaleFactors);
 					}
 					else {
 						minThetaUnscaled = minTheta.clone();
@@ -826,14 +827,17 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 	    else {
 		   progCallback('rightBannerDiv','<br>');
 	    }
-	    progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2]);
+        var perc  = (acc[1] / acc[2] * 100);
+	    progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2] +  ' (' + perc.toFixed(4) + '%)');
+
+      
 					
 	}
 	
 	
 	var minThetaUnscaled;
     if (mlParams.scalingFlag) {
-          minThetaUnscaled  = thetaUnscale(minTheta);
+          minThetaUnscaled  = thetaUnscale(minTheta,scaleFactors);
 	}
 	else {
 		minThetaUnscaled = minTheta.clone();

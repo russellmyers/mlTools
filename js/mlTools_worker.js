@@ -61,8 +61,14 @@
     switch (inMsg.data.action) {
         case 'Go':
 		    console.log('params in worker: ' + inMsg.data.params.input);
-            //var res = learn_background(inp,0.01,10,'0 0',1,true,true,false,0.00000001,msg.data.params); 
-			var res = learn(inMsg.data.params,inMSg,data.X, inMsg.data.Y, inMsg.data.scaleFactors,progUpdateBackground);
+            //var res = learn_background(inp,0.01,10,'0 0',1,true,true,false,0.00000001,msg.data.params);
+			/*
+			inMsg.data.mlData.X.__proto__ = math.matrix.prototype;
+			inMsg.data.mlData.Y.__proto__ = math.matrix.prototype;
+			*/
+			var X = math.matrix(inMsg.data.mlData.X._data);
+            var Y = math.matrix(inMsg.data.mlData.Y._data)
+			var res = learn(inMsg.data.params,X, Y, inMsg.data.mlData.scaleFactors,progUpdateBackground);
 			var tst = res[2];
 			var msg = {};
 			msg.action = 'fin';
