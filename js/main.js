@@ -5,6 +5,8 @@ var mlResults;
 var visChart;
 var costChart;
 
+var mlData;
+
 
 
 init();
@@ -23,6 +25,7 @@ function init() {
 	
     mlParams = {};
 	mlResults = [];
+	mlData = {};
 	
     mlParams.featureType = "multi";
 	featureTypeUpdated();
@@ -309,6 +312,67 @@ function featureTypeClicked(event) {
 	numLogClassesUpdated();
  
  }
+
+
+/**
+ * 
+ * @param event
+ */
+function parseDataInput(data) {
+	//mlParams.input = elVal('trainingInput');
+
+
+	var ar=  data.split('\n'); //document.getElementById('trainingInput').value.split('\n');
+	//alert(ar);
+	yAr = [];
+	//yOrigAr = [];
+
+	ar = ar.map(function(line) {
+		line = line.replace(/\[.*?\] */g,''); //remove any input in square brackets
+		line = line.replace(/ +/g,' '); //remove extra spaces
+		var elAr = line.split(' ');
+		elAr = elAr.map(function(el) {
+			return parseFloat(el);
+		});
+
+		yVal = elAr.pop();
+		yOrigVal = yVal;
+
+		//var first = elAr[0];
+
+		//var out = (mlParams.addOnesFlag) ? [1] : [];
+
+		var extra  = [];
+		elAr.forEach(function(el) {
+
+			for (var i = 2; i <=  mlParams.degrees;++i) {
+				extra.push(Math.pow(el,i));
+			}
+
+
+		});
+		elAr = elAr.concat(extra);
+
+		if (mlParams.addOnesFlag) {
+
+			elAr.unshift(1);
+
+		}
+
+		yAr.push([yVal]);
+
+		return elAr;
+	});
+
+
+	var Xt = math.matrix(ar);
+	var X = math.transpose(Xt);
+
+	var Y = math.matrix(yAr);
+
+	return [X,Y];
+
+}
  
 //Callback routines
 
@@ -357,7 +421,10 @@ function learnProgressForeground(targetEl,message,clearFlag) {
 function applyInput() {
       
    getParams();
-   var res = getXandY(mlParams,1);
+
+   var res = parseDataInput(elVal('trainingInput'));
+
+   res = getXandY(mlParams,1);
    var X = res[0];
    var Y = res[1];
    var XUnscaled = res[2];

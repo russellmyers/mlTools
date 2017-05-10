@@ -314,11 +314,18 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  * @param mlParams
  * @returns {*}
  */
- function getXandY(mlParams) {
+ function getXandY(mlParams,data) {
 	 
 	  
 	
-   var ar =  mlParams.input.split('\n'); //document.getElementById('trainingInput').value.split('\n');
+   var ar;
+   if (data) {
+	   ar = data
+   }
+   else {
+	   ar = mlParams.input;
+   }
+	ar=  ar.input.split('\n'); //document.getElementById('trainingInput').value.split('\n');
    //alert(ar);
    yAr = [];
    yOrigAr = [];
