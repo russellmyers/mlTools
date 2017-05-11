@@ -218,13 +218,13 @@ function sqErr(Xt,Theta,Y,logisticFlag)  {
  * @param X
  * @param Theta
  * @param Y
- * @param lambda
+ * @param alpha
  * @param logisticFlag
  * @returns {*}
  */
-function gdUpdate(X,Theta,Y,lambda,logisticFlag) {
+function gdUpdate(X,Theta,Y,alpha,logisticFlag) {
     var Derivs = derivs(X,Theta,Y,logisticFlag);
-	var adjDerivs = math.multiply(Derivs,lambda);
+	var adjDerivs = math.multiply(Derivs,alpha);
 	var ThetaUpdated = math.subtract(Theta,adjDerivs);
 	return [ThetaUpdated,Derivs];
 	
@@ -276,14 +276,24 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
 		 if (logisticFlag) {
 			 var H = h(Xt,Theta,logisticFlag);
 			 var LogH = math.map(H,function(el) {
-				 return math.log(el);
+				 if (el == 0) {
+					 return 1e-20;
+				 }
+				 else {
+				   return math.log(el);
+				 }
 			 });
 			 
 			 var Cost1 = math.dotMultiply(Y,LogH);
              Cost1 = math.multiply(Cost1,-1);			 
 
 			 var OtherLogH = math.map(H,function(el) {
-				 return math.log(1 - el);
+				 if (1 - el == 0) {
+					 return 1e-20;
+				 }
+				 else {
+				     return math.log(1 - el);
+				 }
 			 });
 			 var OtherY = math.map(Y,function(el) {
 				 return 1 - el;
@@ -615,7 +625,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
    var iters = [];
    var iterNum = 0;
    
-   var lambda = mlParams.lambda; //parseFloat(document.getElementById('lambdaInput').value);
+   var alpha = mlParams.alpha; //parseFloat(document.getElementById('alphaInput').value);
    
    var maxIters = mlParams.maxIterations; //parseInt(document.getElementById('maxIterationsInput').value);
 
@@ -747,8 +757,8 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			if (math.sum(Cost) > prevCost) {
 				if (math.sum(Cost) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
 				   if (progCallback) {
-				      progCallback('blog','<br>Non Convergence. Try smaller lambda. ' + i + ' iterations');
-				      //document.getElementById('blog').innerHTML+='<br>Non Convergence. Try smaller lambda. ' + i + ' iterations';
+				      progCallback('blog','<br>Non Convergence. Try smaller alpha. ' + i + ' iterations');
+				      //document.getElementById('blog').innerHTML+='<br>Non Convergence. Try smaller alpha. ' + i + ' iterations';
 					}
 				   break;
 				}
@@ -772,7 +782,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			//var Derivs = derivs(X,Theta,Y);
 			//console.log('theta before: ' + Theta);
 		
-			var res = gdUpdate(X,Theta,Y,lambda,logisticFlag);
+			var res = gdUpdate(X,Theta,Y,alpha,logisticFlag);
 			Theta = res[0];
 			//console.log('Theta after: ' + Theta);
 			
@@ -860,7 +870,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 		//progCallback('blog','<br><br>get: ' + Math.toFixed(minThetaUnscaled.get([0,0])));
 
 	   progCallback('blog','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0)).toFixed(d)); //minThetaUnscaled[0]);
-       //document.getElementById('blog').innerHTML+= '<br><br>Lambda: ' + document.getElementById('lambdaInput').value + '<br>Model h(Theta) = ' + minThetaUnscaled[0]; // + ' + ' + minThetaUnscaled[1] + 'x1';
+       //document.getElementById('blog').innerHTML+= '<br><br>Alpha: ' + document.getElementById('alphaInput').value + '<br>Model h(Theta) = ' + minThetaUnscaled[0]; // + ' + ' + minThetaUnscaled[1] + 'x1';
 		for (var i = 1;i < n+1;++i) {
 		   progCallback('blog',' + ' + math.subset(minThetaUnscaled,math.index(i)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
 		   //document.getElementById('blog').innerHTML+= ' + ' + minThetaUnscaled[i] + 'x' + i;
@@ -876,7 +886,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 		   //document.getElementById('blog').innerHTML+= ' + ' + minTheta.subset(math.index(i, 0)) + 'x' + i;
 		}
 		progCallback('blog',')');
-			   progCallback('blog','<br>Lambda: ' +  mlParams.lambda) ;
+			   progCallback('blog','<br>Alpha: ' +  mlParams.alpha) ;
 
 		//document.getElementById('blog').innerHTML+= ')';
 	}	

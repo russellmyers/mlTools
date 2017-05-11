@@ -167,7 +167,7 @@ function getParams() {
 	mlParams.diagnosticsFlag = elVal('diagnosticsFlag');
 	mlParams.solveAnalytically = elVal('analyticFlag');
 	mlParams.initTheta = elVal('initTheta');
-	mlParams.lambda = parseFloat(elVal('lambdaInput'));
+	mlParams.alpha = parseFloat(elVal('alphaInput'));
 	mlParams.maxIterations = parseInt(elVal('maxIterationsInput'));
 	mlParams.convThreshold = parseFloat(elVal('convThreshold'));
 	
