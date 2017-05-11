@@ -599,6 +599,22 @@ function numLogClassesUpdated() {
  }
  
  /**
+ * Works out number of features (excluding x0) from an X matrix which has had extra polynomial degrees added
+ * @returns {Array}  Number of features excluding x0, index of first x1 poly feature, index of last x1 poly feature
+ */
+ function getNumFeatures() {
+	 var numFeatures = (mlData.X.size()[0]  - 1) /  mlParams.degrees;
+	 
+	 var x1PolyFrom = -1;
+	 var x1PolyTo = -1;
+	 if (mlParams.degrees > 1) {
+	    x1PolyFrom = numFeatures + 1;
+	    x1PolyTo =  numFeatures  + mlParams.degrees - 1;
+	 }
+	 return [numFeatures,x1PolyFrom,x1PolyTo];
+ }
+ 
+ /**
  * Formats data for display
  */
  function formatData() {
@@ -606,7 +622,7 @@ function numLogClassesUpdated() {
 	 var Xt = math.transpose(mlData.X);
 	 var Y = mlData.Y;
 	 
-	 var numFeatures = (Xt.size()[1] - 1) /  mlParams.degrees;
+	 var numFeatures =  getNumFeatures()[0]; //(Xt.size()[1] - 1) /  mlParams.degrees;
 	
 	 
 	 for (var i = 0;i < Xt.size()[0];++i) {
@@ -1359,12 +1375,12 @@ var modelData =[];
 
 var idealData = [];
 
-var incX = scaleFactors ? (scaleFactors[1][1] / 30) : 2000 / 10;
+var incX = scaleFactors ? (scaleFactors[1][1] / 60) : 2000 / 10;
 var endX = scaleFactors ?  scaleFactors[1][2] + scaleFactors[1][1] +  incX  : 2000;
 
 for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
-   var th0 = math.subset(Theta,math.index(0));
-   var th1 = math.subset(Theta,math.index(1)); 
+   //var th0 = math.subset(Theta,math.index(0));
+   //var th1 = math.subset(Theta,math.index(1)); 
  
    var xVal;
    
@@ -1374,22 +1390,58 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
 	var yVal = 0;
 	var yValIdeal = 0;
 	
-    if (document.getElementById('scalingFlag').checked)  {
-	   for (var ii = 0;ii < ThetaOrig.size()[0];++ii) {
-	      
-	          yVal+= (math.subset(ThetaOrig,math.index(ii)) * Math.pow(i,ii));
-			
-	   }
+	var ThetaModel =  document.getElementById('scalingFlag').checked ? ThetaOrig : Theta;
+  
+//  if (document.getElementById('scalingFlag').checked)  {
+	
+	// Only visualising x1 against y for model (including any additional x1 poly terms)
+    for (var ii = 0;ii < 2;++ii) {  //ThetaOrig.size()[0];++ii) {
+	  
+		  yVal+= (math.subset(ThetaModel,math.index(ii)) * Math.pow(i,ii));
+		
+    }
+    if (mlParams.degrees > 1) {
+	  var res = getNumFeatures();
+	  var firstPolyX1 = res[1];
+	  var lastPolyX1 = res[2];
+	  var ind = 2;
+	  for (ii = firstPolyX1;ii < lastPolyX1 + 1;++ii) {
+		  yVal+= (math.subset(ThetaModel,math.index(ii)) * Math.pow(i,ind));
+		  ++ind;
+	  }
+    
 	}
+	/*
 	else {
 	   for (var ii = 0;ii < Theta.size()[0];++ii) {
 	       yVal += (math.subset(Theta,math.index(ii))  * Math.pow(i,ii));
 	   }
 	}
+	*/
 	
 	
+	/*
 	for (var ii = 0;ii < ThetaIdeal.size()[0];++ii) {
 	       yValIdeal += (math.subset(ThetaIdeal,math.index(ii))  * Math.pow(i,ii));
+	}
+	*/
+	
+	//Only visualise x1 and its polys against y
+	for (var ii = 0;ii < 2;++ii) {  
+	  
+		  yValIdeal+= (math.subset(ThetaIdeal,math.index(ii)) * Math.pow(i,ii));
+		
+    }
+    if (mlParams.degrees > 1) {
+	  var res = getNumFeatures();
+	  var firstPolyX1 = res[1];
+	  var lastPolyX1 = res[2];
+	  var ind = 2;
+	  for (ii = firstPolyX1;ii < lastPolyX1 + 1;++ii) {
+		  yValIdeal+= (math.subset(ThetaIdeal,math.index(ii)) * Math.pow(i,ind));
+		  ++ind;
+	  }
+    
 	}
 	
 	
