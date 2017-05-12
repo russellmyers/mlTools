@@ -168,6 +168,11 @@ function getParams() {
 	mlParams.solveAnalytically = elVal('analyticFlag');
 	mlParams.initTheta = elVal('initTheta');
 	mlParams.alpha = parseFloat(elVal('alphaInput'));
+	var lam = elVal('lambdaInput');
+	if (lam == '') {
+		lam = '0';
+	}
+	mlParams.lambda = parseFloat(lam);
 	mlParams.maxIterations = parseInt(elVal('maxIterationsInput'));
 	mlParams.convThreshold = parseFloat(elVal('convThreshold'));
 	
@@ -239,6 +244,25 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
+   
+   //var magicX = math.matrix([[1,1,1],[8,3,4],[1,5,9],[6,7,2]]);
+   var magicX = math.matrix([[1,8,1,6],[1,3,5,7],[1,4,9,2]]);
+   var testY = math	.matrix([1,0,1]);
+   var testTh = math.matrix([-2,-1,1,2]);
+   var c = costFunction(magicX,testTh,testY,4);
+   
+   
+   
+   
+   var testXt = math.matrix([[1,2],[1,3],[1,4]]);
+   var testY = math.matrix([4,6,9]);
+   var testTh = math.matrix([2,3]);
+   var testLambda = 0.5;
+   var c = costFunction(testXt,testTh,testY,testLambda);
+   
+   var testX = math.transpose(testXt);	
+   var d = derivs(testX,testTh,testY,testLambda);
+   
 
   var testIn = math.matrix([[120000],[-25000],[0]]);
   var sig = sigmoid(testIn);
@@ -255,7 +279,7 @@ function testButClicked() {
   
   var pred = predict(testXT,testTheta);
  
-  var C = costFunction(testXT,testTheta,testY,true);
+  var C = costFunction(testXT,testTheta,testY,lambda,true);
   var c = math.sum(C);
   
   var x = 1;
