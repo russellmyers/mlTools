@@ -83,14 +83,22 @@ function mRow(matrix, index,retAsArray) {
  * @param retAsArray
  * @returns {*} matrix or array
  */
-function mCol(matrix, index,retAsArray) {
+function mCol(matrix, index,retAsArray,assumeRowVector) {
   if (matrix.size().length == 1) { //vector
-     if (retAsArray) {
-		 return matrix._data;
-	 }
-	 else {
-		 return matrix;
-	 }
+      if (assumeRowVector) {
+		  return [matrix.get([index])];
+	  }
+	
+	  else {
+		  	  if (retAsArray) {
+				 return matrix._data;
+			 }
+			 else {
+				 return matrix;
+			 }
+	  }
+		  
+	  
 
   }  
   var rows = math.size(matrix).valueOf()[0];
@@ -137,8 +145,8 @@ function sigmoid(In) {
  * @param Y
  * @returns {*}
  */
-function accuracy(Xt,Theta,Y) {
-	var pred = predict(Xt,Theta);
+function accuracy(Theta,X,Y) {
+	var pred = predict(Theta,X);
 	
 	var accMatrix =  math.subtract(Y,pred);
 	
@@ -160,11 +168,11 @@ function accuracy(Xt,Theta,Y) {
  * @param Theta
  * @returns {*}
  */
-function predict(Xt,Theta) {
+function predict(Theta,X) {
 	//Logistic regression prediction
 	
 	var thresh = 0.5; // predict true if >= this
-	var H = h(Xt,Theta,true);
+	var H = h(Theta,X,true);
 	return math.map(H,function(el) {
 		return el >= 0.5 ? 1 : 0;
 	});
@@ -179,12 +187,12 @@ function predict(Xt,Theta) {
  * @param logisticFlag
  * @returns {*}
  */
-function h(Xt,Theta,logisticFlag) {
+function h(Theta,X,logisticFlag) {
 	if (logisticFlag) {
-		return sigmoid(math.multiply(Xt,Theta));
+		return sigmoid(math.multiply(Theta,X));
 	}
     else {	
-        return math.multiply(Xt,Theta);
+        return math.multiply(Theta,X);
 	}
 }
 
@@ -196,8 +204,8 @@ function h(Xt,Theta,logisticFlag) {
  * @param logisticFlag
  * @returns {*}
  */
-function err(Xt,Theta,Y,logisticFlag) {
-    return math.subtract(h(Xt,Theta,logisticFlag),Y);
+function err(Theta,X,Y,logisticFlag) {
+    return math.subtract(h(Theta,X,logisticFlag),Y);
 
 }
 
@@ -209,8 +217,8 @@ function err(Xt,Theta,Y,logisticFlag) {
  * @param logisticFlag
  * @returns {*}
  */
-function sqErr(Xt,Theta,Y,logisticFlag)  {
-    return math.square(err(Xt,Theta,Y,logisticFlag));
+function sqErr(Theta,X,Y,logisticFlag)  {
+    return math.square(err(Theta,X,Y,logisticFlag));
 }
 
 /**
@@ -223,8 +231,8 @@ function sqErr(Xt,Theta,Y,logisticFlag)  {
  * @param logisticFlag
  * @returns {*}
  */
-function gdUpdate(X,Theta,Y,alpha,lambda,logisticFlag) {
-    var Derivs = derivs(X,Theta,Y,lambda,logisticFlag);
+function gdUpdate(Theta,X,Y,alpha,lambda,logisticFlag) {
+    var Derivs = derivs(Theta,X,Y,lambda,logisticFlag);
 	var adjDerivs = math.multiply(Derivs,alpha);
 	var ThetaUpdated = math.subtract(Theta,adjDerivs);
 	return [ThetaUpdated,Derivs];
@@ -242,11 +250,11 @@ function gdUpdate(X,Theta,Y,alpha,lambda,logisticFlag) {
  * @returns {*|{commutative}}
  */
  
-function derivs(X,Theta,Y,lambda,logisticFlag) {
+function derivs(Theta,X,Y,lambda,logisticFlag) {
   
     var Xt = math.transpose(X);
 
-	var errs = err(Xt,Theta,Y,logisticFlag);
+	var errs = err(Theta,X,Y,logisticFlag);
     var Derivs = math.multiply(X,errs);
   
     var sz = Y.size();
@@ -284,14 +292,14 @@ function regCost(Theta,lambda,m) {
  * @returns {*}
  */
 
-function costFunction(Xt,Theta,Y,lambda,logisticFlag) {
+function costFunction(Theta,X,Y,lambda,logisticFlag) {
 	
 	     var Cost;
 		 
 		 var m = Y.size()[0];
 		 
 		 if (logisticFlag) {
-			 var H = h(Xt,Theta,logisticFlag);
+			 var H = h(Theta,X,logisticFlag);
 			 var LogH = math.map(H,function(el) {
 				 if (el == 0) {
 					 return 1e-20;
@@ -323,11 +331,11 @@ function costFunction(Xt,Theta,Y,lambda,logisticFlag) {
 			 
 		 }
 		 else {
-            var SqErrCost = sqErr(Xt,Theta,Y);
+            var SqErrCost = sqErr(Theta,X,Y);
 			
 			var RegCost = regCost(Theta,lambda,m);
 			
-		    Cost = math.multiply(SqErrCost,1 / (2 * m));   /
+		    Cost = math.multiply(SqErrCost,1 / (2 * m));   
 		 }
          var	 costSum = math.sum(Cost) + math.sum(RegCost);
 		 
@@ -569,7 +577,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			  progCallback('blog',' + ' +  math.subset(ThetaIdeal,math.index(i)).toFixed(d) + 'x' + i); 
 	        }
 		}
-	  IdealCost =  costFunction(math.transpose(XUnscaled),ThetaIdeal,Y,0,logisticFlag)[0];    //zero lambda
+	  IdealCost =  costFunction(ThetaIdeal,XUnscaled,Y,0,logisticFlag)[0];    //zero lambda
 	  if (progCallback) {
 	       progCallback('blog','<br> Ideal Cost: ' + math.sum(IdealCost));
 	      
@@ -618,7 +626,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 		
 	for (var i = 0;i < maxIters;++i) {
  
-			var res =  costFunction(Xt,Theta,Y,lambda,logisticFlag);
+			var res =  costFunction(Theta,X,Y,lambda,logisticFlag);
 			var Cost = res[0];
 			var RegCost = res[1];
 			
@@ -627,7 +635,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			if (i % 50 == 0) {
 				if (progCallback) {
 					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)),true);
-					var acc = accuracy(Xt,minTheta,Y);
+					var acc = accuracy(minTheta,X,Y);
 					
 					if (mlParams.numLogClasses > 2) {
 						progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
@@ -721,7 +729,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			
 			prevCost = math.sum(Cost) + math.sum(RegCost);
 
-			var res = gdUpdate(X,Theta,Y,alpha,lambda,logisticFlag);
+			var res = gdUpdate(Theta,X,Y,alpha,lambda,logisticFlag);
 			Theta = res[0];
 			
 			if  (mlParams.diagnosticsFlag) {
@@ -804,4 +812,163 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
     
 
 }
+
+function NeuralNetwork(architecture,X,Y,randomTheta) {
+	this.architecture = architecture;
+	this.numLayers = architecture.length;
+	this.numInputFeatures = architecture[0];
+	this.numOutputs = architecture[architecture.length-1];
+	this.numHiddenLayers = this.numLayers - 2;
+	this.X = X;
+	this.Y = Y;
+	this.randomTheta = randomTheta;
+	
+	this.layers = [];
+	
+	
+	this.toString = function() {
+		var str = 
+		      'Layers: ' + this.numLayers
+		   +  '\nInput Features: ' + this.numInputFeatures
+		   +  '\nOutputs: ' + this.numOutputs
+		   +  '\nHidden Layers: ' + this.numHiddenLayers;
+		   
+		this.layers.forEach(function(lay) {
+              str+= '\n' + lay.toString();
+		});
+
+        return str;		
+		   
+		   
+	};
+	
+	this.forward = function() {
+		
+		for (var j = 0;j < this.layers.length - 1;++j) {
+			if (j == 0) { 
+				this.layers[j].X = this.X;
+			}
+			else {
+				this.layers[j].X = math.clone(this.layers[j-1].A);
+				this.layers[j].addBias();
+			}
+			this.layers[j].forward();
+			console.log(this.layers[j].singleMs());
+			
+		}
+		
+		this.layers[this.layers.length - 1].X = math.clone(this.layers[this.layers.length - 2].A);
+		
+		
+	};
+	
+	this.init = function() {
+		
+				
+		for (var i = 0;i < this.numLayers;++i) {
+			var next = i == this.numLayers -1 ? -1 : this.architecture[i+1];
+			var lay = new NNLayer(i+1,this.architecture[i],next,randomTheta);
+			this.layers.push(lay);
+			if (i == 0) {
+				lay.X = this.X;
+			}
+			
+		}
+		
+	};
+	
+	this.init();
+		
+	
+}
  
+ function NNLayer(layerNum,n,nextLayerN,randomTheta) {
+	 this.layerNum = layerNum;
+	 this.n = n;
+	 this.nextLayerN = nextLayerN;
+	 this.Theta = null;
+	 this.X = []; //input
+	 this.Z = []; //intermediate
+	 this.A = []; //output
+	 
+	 
+	 this.toString = function() {
+	 return 'Layer num: ' + this.layerNum  + ' Features: ' + n + '\nTheta: ' + this.Theta + '\nX In: ' + this.X +  '\nZ: ' + this.Z + '\nA Out: ' + this.A;
+	 };
+	 
+	 
+	 this.init = function() {
+		 
+		 if (this.nextLayerN == -1) {
+			 this.Theta = [];
+		 }
+		 else {
+			 
+			if (randomTheta) {
+                this.Theta =  math.random([this.n + 1, this.nextLayerN],-1,1);
+			}
+            else {			
+		        this.Theta =  math.zeros(this.n + 1, this.nextLayerN);
+			}
+		 }
+		 
+		 /*
+		 if (this.X.size()[0] == this.n + 1)  {
+			 
+		 }
+		 else {
+			 console.log('Error: num rows of X does not match architecture');
+		 }
+		 */
+		 
+		 
+			 
+		 
+	 };
+	 
+	 this.singleMs = function() {
+		 var str = '';
+		 for (var i = 0;i < this.X.size()[1];++i) {
+			 var ins = mCol(this.X,i,true);
+			 ins = ins.map(function(el) {
+				 return math.round(el,3);
+			 });
+			 var outs =  mCol(this.A,i,true,true);
+			 outs = outs.map(function(el) {
+				 return math.round(el,3);
+			 });
+			 
+			  str+= '\nInputs: ' + ins + ' Activations: ' + outs	;
+		 }
+		
+		 return str;
+		 
+	 };
+	 
+	 this.addBias = function() {
+		 /*
+		 var ar = matrixToArray(this.X);
+		 var ones= [];
+		 for (var i = 0;i < this.X.size()[1];++i) {
+		     ones.push(1);
+		 }
+		 ar.unshift(ones);
+		 return math.matrix(ar);
+		 */
+		 var ones = math.ones(1,this.X.size()[1]);
+		 
+		 this.X = math.concat(ones,this.X,0);
+	 
+	 };
+	 
+	 
+	 this.forward = function() {
+		 this.Z = h(math.transpose(this.Theta),this.X,false);
+		 this.A = h(math.transpose(this.Theta),this.X,true);
+		 
+	 };
+	 
+	 this.init();
+	 
+	 
+ }

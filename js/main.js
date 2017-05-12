@@ -83,10 +83,10 @@ if (typeof	(Worker) !== "undefined") {
 					if (mlParams.module == 'log') {
 					       var acc = accuracy(math.transpose(XUnscaled), math.matrix(minThetaUnscaled), Y);
 						   if (elVal('diagnosticsFlag')) {
-							   el('rightTwo').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled), math.matrix(minThetaUnscaled));
+							   el('rightTwo').innerHTML += '<br>Predictions: ' + predict(math.matrix(minThetaUnscaled),XUnscaled);
 
 							   el('rightTwo').innerHTML += '<br>Accuracy: ' + acc;
-							   el('rightTwo').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled), math.matrix(minThetaUnscaled), true);
+							   el('rightTwo').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled, true);
 						   }
 						   var perc  = (acc[1] / acc[2] * 100);
 					       el('blog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
@@ -244,6 +244,49 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
+   
+   
+   /*
+   var magicX = math.matrix([[1,1,1],[2,3,4],[2,3,4],[2,3,4]]);
+   var Th = math.matrix([1,2,3,4]);
+   var res = math.multiply(Th,magicX);
+   */
+   
+   var nnXt = math.matrix([[1,0,0],[1,0,1],[1,1,0],[1,1,1]]);
+   var nnTht = math.matrix([[-20,30,30],[30,-20,-20]]);
+   var nnTh = math.transpose(nnTht);
+   var nnX = math.transpose(nnXt);
+   var nnY = math.matrix([0,1,1,0]);
+   
+   var nnTht2 = math.matrix([-30,20,20]);
+   var nnTh2 = math.transpose(nnTht2);
+   
+   
+   
+   var randomTheta = true;
+   
+   
+   var nn = new NeuralNetwork([2,2,1],nnX,nnY,randomTheta);
+   nn.layers[0].Theta = nnTh;
+   nn.layers[1].Theta = nnTh2;
+   
+   console.log('nn: ' + nn.architecture + ' str: ' + nn.toString());
+   nn.forward();
+   
+   /*
+   nn.layers[0].forward();
+   console.log('nn: ' + nn.architecture + ' str: ' + nn.toString());
+   
+   console.log('Singles: ' + nn.layers[0].singleMs());
+   
+   nn.layers[1].Theta = nnTh2;
+   nn.layers[1].X = math.clone(nn.layers[0].A);
+   nn.layers[1].addBias();
+   nn.layers[1].forward();
+   
+   console.log('Singles 2: ' + nn.layers[1].singleMs());
+  */ 
+   
    
    //var magicX = math.matrix([[1,1,1],[8,3,4],[1,5,9],[6,7,2]]);
    var magicX = math.matrix([[1,8,1,6],[1,3,5,7],[1,4,9,2]]);
@@ -778,7 +821,7 @@ function checkAccuracyMultiClass() {
 				var scaleFactors = res[9];
 				var YOrig = res[10];
 				
-				var conf = h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
+				var conf = h(math.matrix(minThetaUnscaled),XUnscaled,true);
 				confAr.push(conf);
 			
 		}
@@ -1006,10 +1049,10 @@ function learnForeground() {
 		var scaleFactors = res[9];
 		
 		if (mlParams.module == 'log') {
-		   el('blog').innerHTML += '<br>Predictions: ' + predict(math.transpose(XUnscaled),minThetaUnscaled);
-		   var acc = accuracy(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),Y);
+		   el('blog').innerHTML += '<br>Predictions: ' + predict(minThetaUnscaled,XUnscaled);
+		   var acc = accuracy(math.matrix(minThetaUnscaled),XUnscaled,Y);
 		   el('blog').innerHTML += '<br>Accuracy: ' + acc;
-		   el('blog').innerHTML += '<br>Confidence: ' + h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
+		   el('blog').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled,true);
 		   var perc = (acc[1] / acc[2] * 100);
 		   el('blog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 		}
@@ -1221,7 +1264,7 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
   }
   else if (ThetaUnscaled) {
      // if theta provided - check predictions and colour correct predictions green
-     var acc = accuracy(math.transpose(XUnscaled),math.matrix(ThetaUnscaled),Y);
+     var acc = accuracy(math.matrix(ThetaUnscaled),XUnscaled,Y);
 	 accMatrix = acc[0];
 	 
   }
