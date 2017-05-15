@@ -50,23 +50,34 @@ font-size:medium;
 
 .blackBut {
 	color: black;
-	background-color: none;
+	background-color: initial;
 }
 .colourBut  {
 	color: white;
 	background-color: blue;
 }
 
+.visBut {
+    float:left;
+    height: 20px;
+}
+
+#neural {
+    float: right;
+    height: 20px;
+}
+
+
 #regression {
   float: right;	
   height: 20px;
 }
 
-#mfkTools {
+#inputOutputDiv {
   background-color: yellow;
 }
 
-#mfkInputTools {
+#inputDiv {
   background-color: lightgrey;
 
 }
@@ -79,8 +90,8 @@ font-size:medium;
    background-color: red;
 }
 
-#rightTwo {
-   background-color:orange;
+#diagnosticDiv {
+   background-color:beige;
    height: 203px;
    width: 220px;
    float: right;
@@ -93,7 +104,7 @@ font-size:medium;
    background-color: pink;
 }
 
-#blog {
+#outputBlog {
   display:inline-block;
   vertical-align: top;
   width: 550px;
@@ -104,6 +115,31 @@ font-size:medium;
 #trainingInput {
   height: 200px;
  
+}
+
+#visualDiv {
+
+  width: 1000px;
+  height: 200px;
+
+}
+
+#chartsDiv {
+    display:none;
+
+}
+
+#nnDiv {
+    display:none;
+
+}
+
+#nnCanvas {
+
+}
+
+#regressionDiv {
+    display:none;
 }
 
 #chartDiv {

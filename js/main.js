@@ -1,9 +1,28 @@
 var w;
 
 var mlParams;
+
+/**
+ * mlResults: [ Array
+ *   0 - costAr
+ *   1 - iters
+ *   2 - ThetaIdeal //only used for linear regression
+ *   3 - IdealCost //only used for linear regression
+ *   4 - X
+ *   5 - Y
+ *   6 - minTheta
+ *   7 - XUnscaled
+ *   8 - minThetaUnscaled
+ *   9 - scaleFactors
+ *   10- YOrig // Y is altered in once vs all logistic regression for individual runs
+ *   ]
+ */
 var mlResults;
+
 var visChart;
 var costChart;
+
+var vGraph;
 
 var mlData;
 
@@ -38,8 +57,16 @@ function init() {
 	
 	mlParams.numLogClasses = 2;
 	numLogClassesUpdated();
+
+    mlParams.displayTrainingNum = 0;
+
+    mlParams.visualDisplay = 'chartsDiv';
+    visualDisplayUpdated();
+
+
 	
 	document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+
     
 	
 }
@@ -83,13 +110,13 @@ if (typeof	(Worker) !== "undefined") {
 					if (mlParams.module == 'log') {
 					       var acc = accuracy(math.transpose(XUnscaled), math.matrix(minThetaUnscaled), Y);
 						   if (elVal('diagnosticsFlag')) {
-							   el('rightTwo').innerHTML += '<br>Predictions: ' + predict(math.matrix(minThetaUnscaled),XUnscaled);
+							   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(math.matrix(minThetaUnscaled),XUnscaled);
 
-							   el('rightTwo').innerHTML += '<br>Accuracy: ' + acc;
-							   el('rightTwo').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled, true);
+							   el('diagnosticDiv').innerHTML += '<br>Accuracy: ' + acc;
+							   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled, true);
 						   }
 						   var perc  = (acc[1] / acc[2] * 100);
-					       el('blog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
+					       el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 
 					}
 					
@@ -237,6 +264,34 @@ function elVal(elId) {
 
 //Event routines
 
+
+function visualButClicked() {
+
+    //toggle visual display
+    switch (mlParams.visualDisplay) {
+        case 'chartsDiv':
+            mlParams.visualDisplay = 'nnDiv';
+            break;
+
+        case 'nnDiv':
+            mlParams.visualDisplay = 'regressionDiv';
+            break;
+        
+        case 'regressionDiv':
+            mlParams.visualDisplay = 'chartsDiv';
+            break;
+
+        default:
+
+            break;
+
+    }
+
+    visualDisplayUpdated();
+
+
+}
+
 /**
  * 
  */
@@ -244,7 +299,8 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
-   
+
+    drawNN();
    
    /*
    var magicX = math.matrix([[1,1,1],[2,3,4],[2,3,4],[2,3,4]]);
@@ -329,6 +385,20 @@ function testButClicked() {
 
 }
 
+function neuralButClicked() {
+
+        mlParams.module = 'neu';
+        moduleUpdated();
+
+        mlParams.visualDisplay = 'nnDiv';
+        visualDisplayUpdated();
+
+        document.getElementById('trainingInput').value = '0 0 0\n0 1 1\n1 0 1\n1 1 0';
+
+        applyInput();
+
+}
+
 /**
  * 
  */
@@ -379,6 +449,17 @@ function regButClicked() {
    
    
  }
+
+function stepTraining(inc) {
+    mlParams.displayTrainingNum+= inc; // used for neural network
+
+    if (mlParams.displayTrainingNum < 0) {
+        mlParams.displayTrainingNum = 0;
+    }
+
+    drawNN(true);
+
+}
 
 /**
  * Now redundant
@@ -503,8 +584,8 @@ function learnProgressForeground(targetEl,message,clearFlag) {
 	}
 	
 	
-	if (targetEl == 'blog') {
-	   var elem = el('blog');
+	if (targetEl == 'outputBlog') {
+	   var elem = el('outputBlog');
        elem.scrollTop = elem.scrollHeight;
 	
 	}
@@ -622,14 +703,32 @@ function numLogClassesUpdated() {
            el('regression').classList.add('blackBut');
 		   el('test').classList.remove('colourBut');
            el('test').classList.add('blackBut');
+           el('neural').classList.remove('colourBut');
+           el('neural').classList.add('blackBut');
 		   
 		   el('numLogClasses').hidden = false;
            el('numLogClassesLab').hidden = false;
 		   break;
-		   
-		
 
-		case 'reg':
+        case 'neu':
+            el('logistic').classList.remove('colourBut');
+            el('logistic').classList.add('blackBut');
+            el('regression').classList.remove('colourBut');
+            el('regression').classList.add('blackBut');
+            el('test').classList.remove('colourBut');
+            el('test').classList.add('blackBut');
+            el('neural').classList.remove('blackBut');
+            el('neural').classList.add('colourBut');
+
+
+
+            el('numLogClasses').hidden = false;
+            el('numLogClassesLab').hidden = false;
+            break;
+
+
+
+        case 'reg':
 		
 	       el('regression').classList.remove('blackBut');
            el('regression').classList.add('colourBut');
@@ -637,8 +736,12 @@ function numLogClassesUpdated() {
            el('logistic').classList.add('blackBut');
 		   el('test').classList.remove('colourBut');
            el('test').classList.add('blackBut');
-		   
-		   el('numLogClasses').hidden = true;
+            el('neural').classList.remove('colourBut');
+            el('neural').classList.add('blackBut');
+
+
+
+            el('numLogClasses').hidden = true;
            el('numLogClassesLab').hidden = true;
 		
 		   break;
@@ -651,8 +754,11 @@ function numLogClassesUpdated() {
            el('logistic').classList.add('blackBut');
 		   el('test').classList.remove('blackBut');
            el('test').classList.add('colourBut');
+           el('neural').classList.remove('colourBut');
+           el('neural').classList.add('blackBut');
 
-	       el('numLogClasses').hidden = true;
+
+            el('numLogClasses').hidden = true;
            el('numLogClassesLab').hidden = true;
 			   
 		
@@ -664,8 +770,25 @@ function numLogClassesUpdated() {
 		   }
  
  }
- 
- /**
+
+ function visualDisplayUpdated() {
+
+     var visDivs = document.getElementsByClassName('visClass');
+
+     [].forEach.call(visDivs,(function(vd) {
+        if (vd.id === mlParams.visualDisplay) {
+            vd.style.display = "block";
+        }
+        else {
+            vd.style.display = "none";
+        }
+     }));
+     var xx = 1;
+
+ }
+
+
+        /**
  * Works out number of features (excluding x0) from an X matrix which has had extra polynomial degrees added
  * @returns {Array}  Number of features excluding x0, index of first x1 poly feature, index of last x1 poly feature
  */
@@ -785,8 +908,8 @@ function clearCharts() {
 function clearRes()  {
 
   
-  el('blog').innerHTML = '';
-  el('rightTwo').innerHTML = '';
+  el('outputBlog').innerHTML = '';
+  el('diagnosticDiv').innerHTML = '';
   
   clearCharts();
   
@@ -954,8 +1077,13 @@ function learnForeground() {
 		        mlResults.push(res);
 			}
 
-          break;	
+          break;
 
+        case 'neu':
+            //res = learn(mlParams,mlData.X,mlData.Y,mlData.scaleFactors,learnProgressForeground);
+            drawNN(false);
+            mlResults.push(res);
+            break;
 		default:
 			break;
 			
@@ -1032,6 +1160,11 @@ function learnForeground() {
 	
 	}
     else {
+
+        if (mlParams.module == 'neu') {
+            el('outputBlog').innerHTML += '<br>Neural done';
+            return;
+        }
 	
 	
 		res = mlParams.module == 'reg' ? mlResults[0] : mlResults[mlResults.length -1];
@@ -1049,12 +1182,12 @@ function learnForeground() {
 		var scaleFactors = res[9];
 		
 		if (mlParams.module == 'log') {
-		   el('blog').innerHTML += '<br>Predictions: ' + predict(minThetaUnscaled,XUnscaled);
+		   el('outputBlog').innerHTML += '<br>Predictions: ' + predict(minThetaUnscaled,XUnscaled);
 		   var acc = accuracy(math.matrix(minThetaUnscaled),XUnscaled,Y);
-		   el('blog').innerHTML += '<br>Accuracy: ' + acc;
-		   el('blog').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled,true);
+		   el('outputBlog').innerHTML += '<br>Accuracy: ' + acc;
+		   el('outputBlog').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled,true);
 		   var perc = (acc[1] / acc[2] * 100);
-		   el('blog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
+		   el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 		}
 		
 		visualiseCostChart(costAr,iters);
@@ -1068,6 +1201,92 @@ function learnForeground() {
 }
 
 //Visualisation routines
+
+function drawNN(useExisting) {
+
+    var c=document.getElementById("nnCanvas");
+    var ctx=c.getContext("2d");
+
+    if (useExisting) {
+        vGraph.display(ctx,mlParams.displayTrainingNum);
+        return;
+    }
+
+
+    /*
+    ctx.beginPath();
+    ctx.arc(100,75,50,0,2*Math.PI);
+    ctx.stroke();
+    */
+
+    var nnXt = math.matrix([[1,0,0],[1,0,1],[1,1,0],[1,1,1]]);
+    var nnTht = math.matrix([[-20,30,30],[30,-20,-20]]);
+    var nnTh = math.transpose(nnTht);
+    var nnX = math.transpose(nnXt);
+    var nnY = math.matrix([0,1,1,0]);
+    var nnTht2 = math.matrix([-30,20,20]);
+    var nnTh2 = math.transpose(nnTht2);
+    var randomTheta = true;
+
+    var YUnits;
+    if (mlData.Y.size().length == 1) {
+        YUnits = 1;
+    }
+    else {
+        YUnits = mlData.Y.size()[0];
+    }
+
+    var nn = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] - 1,YUnits],mlData.X,mlData.Y,randomTheta);
+    nn.layers[0].Theta = nnTh;
+    nn.layers[1].Theta = nnTh2;
+
+    nn.forward();
+/*
+    var tstXT = math.matrix([[1,3,4,5,6],[1,4,5,6,7],[1,115,116,117,118]]);
+    var tstX = math.transpose(tstXT);
+    var nn = new NeuralNetwork([4,2,1],tstX,nnY,randomTheta);
+    nn.forward();
+*/
+    var vController = new VNetworkController(nn);
+
+    vGraph = new VNetwork('Neural Network',c.width,c.height,vController);
+    vGraph.display(ctx,mlParams.displayTrainingNum);
+
+    /*
+    var v1 = new VNode();
+    v1.display(ctx);
+
+    var v2 = new VNode('L12',[20,80],10,20,'#0000FF');
+    v2.display(ctx);
+
+    var v3 = new VNode('L13',[20,140],10,4);
+    v3.display(ctx);
+
+    var v4 = new VNode('L21',[200,80],10,1);
+    v4.display(ctx);
+
+    var con1 = new VEdge('Connect:',v1,v4,3);
+    con1.display(ctx);
+
+    var con2 = new VEdge('Connect:',v2,v4,5);
+    con2.display(ctx);
+
+    var con3 = new VEdge('Connect:',v3,v4,7);
+    con3.display(ctx);
+    */
+
+    /*
+    var l = c.clientLeft;
+    var t = c.clientTop;
+    var w = c.clientWidth;
+    var h = c.clientHeight;
+    ctx.rect(l,t,w,h);
+    ctx.stroke();
+    */
+
+
+}
+
 
 /**
  * 
@@ -1733,3 +1952,351 @@ var myChart = new Chart(ctx, {
 costChart = myChart;
 }
 
+function VGraph(l,w,h) {
+    this.label = (l == null) ? 'Graph' : l;
+    this.w = (w == null) ? 100 : w;
+    this.h = (h == null) ? 100 : h;
+
+    this.display = function(ctx) {
+
+        ctx.clearRect(0,0,this.w,this.h);
+
+        var txtLen = ctx.measureText(this.label).width;
+        var xPos = (this.w / 3) - (txtLen / 2);
+        var yPos = 10;
+        ctx.fillText(this.label,xPos,yPos);
+
+
+
+    };
+
+};
+
+function VNetworkController(nn) {
+    this.nn = nn;
+
+    this.VNodesCached = {};
+
+    this.VEdgesCached = {};
+
+    //datasource "interface" methods
+    this.getArchitecture = function() {
+      return this.nn.architecture;
+
+    };
+
+    this.layers = function() {
+        return this.nn.numLayers;
+    };
+
+    this.unitsForLayer = function(lNum) {
+        if (lNum == this.nn.numLayers - 1)  {
+            return this.nn.architecture[lNum];
+        }
+        else {
+            return this.nn.architecture[lNum] + 1; //include bias
+        }
+
+
+    };
+
+    this.VEdgesForLayerAndUnit = function(lNum,uNum,m) {
+
+        var vEdges;
+        var key = lNum + '-' + uNum;
+        if (key in this.VEdgesCached) {
+
+            vEdges = this.VEdgesCached[key];
+        }
+
+        else {
+
+            vEdges = [];
+            var v1 = this.VNodeForLayerAndUnit(lNum,uNum,m);
+
+            var stJ = lNum+1 == this.layers() -1 ? 0 : 1;
+            for (var j = stJ;j < this.unitsForLayer(lNum+1);++j) {
+                var v2 = this.VNodeForLayerAndUnit(lNum + 1, j,m);
+                var vEdge = new VEdge('Th:', v1, v2, 4);
+                vEdges.push(vEdge);
+
+            }
+
+            this.VEdgesCached[key] = vEdges;
+
+
+        }
+
+        var svdThis = this;
+        vEdges.forEach(function(vEdge,edNum)  {
+            var th =  svdThis.nn.layers[lNum].getThetaForUnitToUnit(uNum,edNum);
+            th = th.toFixed(3);
+            vEdge.weight = th;
+            switch (edNum % 3) {
+                case 0:
+                    vEdge.colour = "#FF00FF";
+                    break;
+                case 1:
+                    vEdge.colour = "#0000FF";
+                    break;
+                case 2:
+                    vEdge.colour = "#00FFFF";
+                    break;
+            }
+        });
+
+        return vEdges;
+
+
+    };
+
+    this.VNodeForLayerAndUnit = function(lNum,uNum,m) {
+        var vNode;
+        var key = lNum + '-' + uNum;
+        if (key in this.VNodesCached) {
+
+            vNode = this.VNodesCached[key];
+        }
+
+        else {
+            var col;
+            if (lNum == this.layers() - 1) {
+                col = '#000000';
+            }
+            else {
+                col = uNum == 0 ? '#B0B0B0' : '#000000';
+            }
+
+            vNode = new VNode('' + lNum + '-' + uNum, null, null, 0, col);
+            this.VNodesCached[key] = vNode;
+            //return vNode;
+        }
+
+        var nodeWeight = this.nn.layers[lNum].getAForSingleM(m, uNum);
+        if (nodeWeight) {
+            nodeWeight = nodeWeight.toFixed(3);
+            if (nodeWeight > 0.5) {
+                vNode.colour = "#00FF00";
+            }
+            else if (nodeWeight < 0.5) {
+                vNode.colour = "#FF0000";
+            }
+            if (lNum == this.layers() - 1) {
+
+            }
+            else {
+                if (uNum == 0) {
+                    vNode.colour = '#B0B0B0';
+                }
+            }
+        }
+        vNode.weight = nodeWeight;
+
+        if (lNum == this.layers() -1) {
+            //output layer
+            var nodeY = this.nn.layers[lNum].getYForSingleM(m, uNum);
+            vNode.yVal = nodeY;
+
+        }
+
+        return vNode;
+
+
+    };
+
+
+};
+
+function VNetwork(label,w,h,datasource) {
+
+    VGraph.apply(this,[label,w,h]);
+
+    this.datasource = datasource;
+
+    this.parentDisplay = this.display;
+
+    this.display = function(ctx,m) {
+
+
+      this.parentDisplay(ctx);
+
+      var layerYMargin = 30;
+      var layerXMargin = 20;
+
+
+      var layerXStart = layerXMargin;
+      var layerXEnd = this.w - layerXMargin;
+      var layerXInc = (layerXEnd - layerXStart) / (this.datasource.layers() - 1);
+
+      var layerX = layerXStart;
+
+      for (var s = 0;s < this.datasource.layers();++s) {
+          var layerYStart;
+          var layerYEnd;
+          var layerYInc;
+
+          layerYMargin = this.datasource.unitsForLayer(s) == 2 ? 50 : 30;
+
+          if (this.datasource.unitsForLayer(s) == 1) {
+              layerYStart = this.h / 2;
+              layerYEnd   = this.h / 2;
+              layerYInc   = 0;
+          }
+          else {
+              layerYStart = layerYMargin;
+              layerYEnd = this.h - layerYMargin;
+              layerYInc = (layerYEnd - layerYStart) / (this.datasource.unitsForLayer(s) - 1);
+          }
+
+          var layerY = layerYStart;
+
+          for (var j = 0; j < this.datasource.unitsForLayer(s);++j) {
+              //var vNode = new VNode('' + s + '-' + j,[layerX,layerY],null,3);
+              var vNode = this.datasource.VNodeForLayerAndUnit(s,j,m);
+              vNode.centre = [layerX,layerY];
+              vNode.display(ctx);
+             // ctx.fillText('x',layerX,layerY);
+              layerY+=layerYInc;
+
+          }
+          layerX += layerXInc;
+
+
+      }
+
+      for (var lay = 0;lay < this.datasource.layers() - 1;++lay) {
+
+           for (var i = 0;i < this.datasource.unitsForLayer(lay);++i) {
+               /*
+               var v1 = this.datasource.VNodeForLayerAndUnit(lay,i);
+               var stJ = lay+1 == this.datasource.layers() -1 ? 0 : 1;
+               for (var j = stJ;j < this.datasource.unitsForLayer(lay+1);++j) {
+                   var v2 = this.datasource.VNodeForLayerAndUnit(lay+1, j);
+                   var vEdge = new VEdge('lab:', v1, v2, 4);
+                   vEdge.display(ctx);
+               }
+               */
+               var vEdges = this.datasource.VEdgesForLayerAndUnit(lay,i,m);
+               vEdges.forEach(function(vEdge) {
+                  vEdge.display(ctx);
+               });
+           }
+      }
+
+    };
+
+    
+};
+
+function VEdge(l,v1,v2,w,col) {
+
+    this.v1 = v1;
+    this.v2 = v2;
+    this.colour = (col == null) ? '#00000' : col;
+    this.label =  (l == null) ? 'Connection' : l;
+    this.weight = (w == null) ? 0 : w;
+
+	/*
+	this.getTransformedCoordinates = function(coords) {
+			var self = this;
+			var obj = self.activeObj;
+			var angle = (obj.angle*-1) * Math.PI / 180;
+			var x2 = coords.x - obj.left;
+			var y2 = coords.y - obj.top;
+			var cos = Math.cos(angle);
+			var sin = Math.sin(angle);
+
+			var newx = x2*cos - y2*sin + obj.left;
+			var newy = x2*sin + y2*cos + obj.top;
+
+			return {
+				x : newx,
+				y : newy
+			};
+		}
+	};
+	*/
+
+    this.display = function(ctx) {
+
+        var weightVertOffset = 2;
+
+        var start = [30,30];
+        var end =   [100,30];
+        if ((this.v1) && (this.v2)) {
+            var startX = this.v1.centre[0] + this.v1.radius;
+            var endX =   this.v2.centre[0] - this.v2.radius;
+            var startY = this.v1.centre[1];
+            var endY   = this.v2.centre[1];
+            start = [startX,startY];
+            end   = [endX,endY];
+        }
+
+        ctx.beginPath();
+        var svdStrokeStyle = ctx.strokeStyle;
+        ctx.strokeStyle = this.colour;
+
+        ctx.moveTo(start[0],start[1]);
+        ctx.lineTo(end[0],end[1]);
+        ctx.stroke();
+
+        var vertTxtOffset = -2;
+
+		ctx.save();
+
+		/*
+		var ang = Math.atan2(end[1] - start[1], end[0] - start[0]);
+		ctx.rotate(ang);
+		//ctx.translate(..,..); need to work out new relative pos using sin, cos etc
+        */
+
+        var txt = this.label + '' + this.weight;
+        var txtWidth = ctx.measureText(txt).width;
+        var txtPosX = start[0] + ((end[0] - start[0]) / 4) - (txtWidth / 2);
+        var txtPosY = start[1] + ((end[1] - start[1]) / 4) + vertTxtOffset;
+        ctx.fillText(txt,txtPosX,txtPosY);
+
+		ctx.restore();
+
+        ctx.strokeStyle = svdStrokeStyle;
+
+    };
+
+
+}
+
+function VNode(l,c,r,w,col) {
+
+    this.radius = (r == null) ? 15 : r;
+    this.centre = (c == null) ? [30,30] : c;
+    this.colour = (col == null) ? '#0000FF' : col;
+    this.label =  (l == null) ? 'Unit' : l;
+    this.weight = (w == null) ? 0 : w;
+
+    this.yVal = -1;
+
+    this.display = function(ctx) {
+        var svdStrokeStyle = ctx.strokeStyle;
+
+        var weightVertOffset = 2;
+
+        ctx.beginPath();
+        ctx.strokeStyle = this.colour;
+        ctx.arc(this.centre[0],this.centre[1],this.radius,0,2*Math.PI);
+        ctx.stroke();
+        ctx.strokeStyle = svdStrokeStyle;
+
+        ctx.fillText(this.label,this.centre[0] - this.radius,this.centre[1] - this.radius - 1);
+        var txtWidth = ctx.measureText(this.weight).width;
+        ctx.fillText(this.weight,this.centre[0] - txtWidth /2,this.centre[1] + weightVertOffset);
+
+        if (this.yVal == -1) {
+        }
+
+        else {
+            ctx.fillText(this.yVal, this.centre[0] - this.radius, this.centre[1] + this.radius + 1);
+        }
+
+    };
+
+}

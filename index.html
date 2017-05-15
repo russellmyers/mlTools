@@ -55,29 +55,49 @@
 <h2>Machine Learning Tools</h2>
 
 </div>
+
 <div>
+<button id = "visual" onclick="visualButClicked()"  class = "visBut blackBut">Toggle Display</button>
+<button id = "rewindM" onclick="stepTraining(-1)" class = "visBut blackBut"><</button>
+<button id = "forwardM" onclick="stepTraining(1)" class = "visBut blackBut">></button>
+
 <button id = "test"  onclick="testButClicked()" class="moduleBut blackBut">Test</button>
 <button id = "logistic"  onclick="logButClicked()" class="moduleBut blackBut">Logistic Regression</button>
 <button id = "regression" onclick="regButClicked()" class="moduleBut colourBut">Regression</button>
+<button id = "neural" onclick="neuralButClicked()" class="moduleBut blackBut">Neural Network</button>
 </div>
 
 </div>
 
-<div id = "rightTwo">Diagnostics</div>
+<div id = "diagnosticDiv">Diagnostics</div>
 
-<div id = "mfkTools">
-    <div id = "mfkInputTools">
+<div id = "inputOutputDiv">
+    <div id = "inputDiv">
     <textarea id = "trainingInput" cols=50 rows=10 ></textarea>
-	<div id = "blog">Results</div>
+	<div id = "outputBlog">Results</div>
    </div>	
  
-</div>	
-<div id = "chartDiv">		
-<canvas id="costChart" width="400" height="300"></canvas>
 </div>
-<div id = "chart2Div">
-<canvas id="visualiseChart"  width="400" height="250"></canvas>
-</div>	
+<div id = "visualDiv">
+    <div id = "chartsDiv" class="visClass">
+        <div id = "chartDiv">
+        <canvas id="costChart" width="400" height="200"></canvas>
+        </div>
+        <div id = "chart2Div">
+        <canvas id="visualiseChart"  width="400" height="200"></canvas>
+        </div>
+    </div>
+    <div id = "nnDiv" class = "visClass">
+        <canvas id = "nnCanvas" width="1200px" height="200px">
+
+        </canvas>
+    </div>
+    <div id = 'regressionDiv' class = "visClass">
+        Regression display
+    </div>
+</div>
+
+
 <script src = "js/main.js"></script>
 <script src="js/mlTools_routines.js"></script>
 

@@ -31,6 +31,29 @@
 //Utility routines
 
 /**
+* This should be in gen utilities
+*/
+function arrayToString(ar,sep) {
+    var str = ''
+    if (sep == null) {
+        sep = ' ';
+    }
+    
+    ar.forEach(function(el,i) {
+        if (i == ar.length - 1) {
+            str += el;
+        }
+        else {
+            str += el + sep;
+        }
+        
+    });
+    
+    return str;
+    
+}
+
+/**
  *
  * @param mat
  * @param rNum
@@ -78,7 +101,7 @@ function mRow(matrix, index,retAsArray) {
    else {
      return elements;
    }	
-  //return math.flatten(math.subset(matrix, math.index(index, [0, rows - 1])));
+  
 }
 
 /**
@@ -88,17 +111,38 @@ function mRow(matrix, index,retAsArray) {
  * @param retAsArray
  * @returns {*} matrix or array
  */
-function mCol(matrix, index,retAsArray) {
+function mCol(matrix, index,retAsArray,assumeRowVector) {
+  if (matrix.size().length == 1) { //vector
+      if (assumeRowVector) {
+		  return [matrix.get([index])];
+	  }
+	
+	  else {
+		  	  if (retAsArray) {
+				 return matrix._data;
+			 }
+			 else {
+				 return matrix;
+			 }
+	  }
+		  
+	  
+
+  }  
   var rows = math.size(matrix).valueOf()[0];
   var elements = math.subset(matrix, math.index(math.range(0,rows),index));
   if (retAsArray) {
-  
-     var flat = math.flatten(elements);
-	 var ar = [];
-	 flat.forEach(function(el) {
-	    ar.push(el);
-	 });
-	 return ar;
+     if (rows == 1) {
+		 return elements;
+	 }
+	 else {
+		 var flat = math.flatten(elements);
+		 var ar = [];
+		 flat.forEach(function (el) {
+			 ar.push(el);
+		 });
+		 return ar;
+	 }
   }
   else {
      return elements;
@@ -133,8 +177,8 @@ function sigmoid(In) {
  * @param Y
  * @returns {*}
  */
-function accuracy(Xt,Theta,Y) {
-	var pred = predict(Xt,Theta);
+function accuracy(Theta,X,Y) {
+	var pred = predict(Theta,X);
 	
 	var accMatrix =  math.subtract(Y,pred);
 	
@@ -156,11 +200,11 @@ function accuracy(Xt,Theta,Y) {
  * @param Theta
  * @returns {*}
  */
-function predict(Xt,Theta) {
+function predict(Theta,X) {
 	//Logistic regression prediction
 	
 	var thresh = 0.5; // predict true if >= this
-	var H = h(Xt,Theta,true);
+	var H = h(Theta,X,true);
 	return math.map(H,function(el) {
 		return el >= 0.5 ? 1 : 0;
 	});
@@ -175,12 +219,12 @@ function predict(Xt,Theta) {
  * @param logisticFlag
  * @returns {*}
  */
-function h(Xt,Theta,logisticFlag) {
+function h(Theta,X,logisticFlag) {
 	if (logisticFlag) {
-		return sigmoid(math.multiply(Xt,Theta));
+		return sigmoid(math.multiply(Theta,X));
 	}
     else {	
-        return math.multiply(Xt,Theta);
+        return math.multiply(Theta,X);
 	}
 }
 
@@ -192,8 +236,8 @@ function h(Xt,Theta,logisticFlag) {
  * @param logisticFlag
  * @returns {*}
  */
-function err(Xt,Theta,Y,logisticFlag) {
-    return math.subtract(h(Xt,Theta,logisticFlag),Y);
+function err(Theta,X,Y,logisticFlag) {
+    return math.subtract(h(Theta,X,logisticFlag),Y);
 
 }
 
@@ -205,8 +249,8 @@ function err(Xt,Theta,Y,logisticFlag) {
  * @param logisticFlag
  * @returns {*}
  */
-function sqErr(Xt,Theta,Y,logisticFlag)  {
-    return math.square(err(Xt,Theta,Y,logisticFlag));
+function sqErr(Theta,X,Y,logisticFlag)  {
+    return math.square(err(Theta,X,Y,logisticFlag));
 }
 
 /**
@@ -214,13 +258,14 @@ function sqErr(Xt,Theta,Y,logisticFlag)  {
  * @param X
  * @param Theta
  * @param Y
+ * @param alpha
  * @param lambda
  * @param logisticFlag
  * @returns {*}
  */
-function gdUpdate(X,Theta,Y,lambda,logisticFlag) {
-    var Derivs = derivs(X,Theta,Y,logisticFlag);
-	var adjDerivs = math.multiply(Derivs,lambda);
+function gdUpdate(Theta,X,Y,alpha,lambda,logisticFlag) {
+    var Derivs = derivs(Theta,X,Y,lambda,logisticFlag);
+	var adjDerivs = math.multiply(Derivs,alpha);
 	var ThetaUpdated = math.subtract(Theta,adjDerivs);
 	return [ThetaUpdated,Derivs];
 	
@@ -232,26 +277,42 @@ function gdUpdate(X,Theta,Y,lambda,logisticFlag) {
  * @param X
  * @param Theta
  * @param Y
+ * @param lambda
  * @param logisticFlag
  * @returns {*|{commutative}}
  */
  
-function derivs(X,Theta,Y,logisticFlag) {
-    //console.log('X: ' + X);
+function derivs(Theta,X,Y,lambda,logisticFlag) {
+  
     var Xt = math.transpose(X);
-    //console.log('Xt: ' + Xt);
-	var errs = err(Xt,Theta,Y,logisticFlag);
-    var Derivs = math.multiply(X,errs);
-    //console.log('der: ' + Derivs);
 
+	var errs = err(Theta,X,Y,logisticFlag);
+    var Derivs = math.multiply(X,errs);
+  
     var sz = Y.size();
     var m = sz[0];
-    //console.log('sz: ' + sz);
+	
+	var RegPart = math.multiply(Theta,lambda);
+	RegPart.set([0],0); // don't regularise theta0
+	
+	Derivs = math.add(Derivs,RegPart);
     Derivs = math.multiply(Derivs,1 / m);
-    //console.log('m: ' + m + ' 1 on m: ' + 1 / m);
+   
     return Derivs;
-
     
+}
+
+/**
+* cost of regularisation term
+*/
+function regCost(Theta,lambda,m) {
+		var RegCost = math.square(Theta);
+		RegCost = math.multiply(RegCost,(lambda / (2 * m)));
+				
+		RegCost.set([0],0); //don't regularise theta0
+		
+		return RegCost;
+	
 }
 
 /**
@@ -263,63 +324,75 @@ function derivs(X,Theta,Y,logisticFlag) {
  * @returns {*}
  */
 
-function costFunction(Xt,Theta,Y,logisticFlag) {
+function costFunction(Theta,X,Y,lambda,logisticFlag) {
 	
 	     var Cost;
 		 
 		 var m = Y.size()[0];
 		 
 		 if (logisticFlag) {
-			 var H = h(Xt,Theta,logisticFlag);
+			 var H = h(Theta,X,logisticFlag);
 			 var LogH = math.map(H,function(el) {
-				 return math.log(el);
+				 if (el == 0) {
+					 return 1e-20;
+				 }
+				 else {
+				   return math.log(el);
+				 }
 			 });
 			 
 			 var Cost1 = math.dotMultiply(Y,LogH);
              Cost1 = math.multiply(Cost1,-1);			 
 
 			 var OtherLogH = math.map(H,function(el) {
-				 return math.log(1 - el);
+				 if (1 - el == 0) {
+					 return 1e-20;
+				 }
+				 else {
+				     return math.log(1 - el);
+				 }
 			 });
 			 var OtherY = math.map(Y,function(el) {
 				 return 1 - el;
 			 });
 			 var Cost2 = math.dotMultiply(OtherY,OtherLogH);
 			 
+			 var RegCost = regCost(Theta,lambda,m);
 			 
-			 return math.multiply((math.subtract(Cost1,Cost2)),1 / m);
+			 return [math.multiply((math.subtract(Cost1,Cost2)),1 / m),RegCost];
 			 
 		 }
 		 else {
-            Cost = sqErr(Xt,Theta,Y);
-		    Cost = math.multiply(Cost,1 / (2 * Y.size()[0]));//math.square(math.subtract(h(Xt,Theta),Y));
+            var SqErrCost = sqErr(Theta,X,Y);
+			
+			var RegCost = regCost(Theta,lambda,m);
+			
+		    Cost = math.multiply(SqErrCost,1 / (2 * m));   
 		 }
-         var costSum = math.sum(Cost);
-         return Cost;
+         var	 costSum = math.sum(Cost) + math.sum(RegCost);
+		 
+         return [Cost,RegCost];
 
  }
 
 /**
- *
+ * scale factors indexes: 0-mean, 1-range, 2-lowest
  * @param mat
  * @returns {*}
  */
  function featureScale(mat) {
-	 //scale factors indexes: 0-mean, 1-range, 2-lowest
- 
-   var scaledMat = mat.clone();
-   var rows = math.size(mat).valueOf()[0];
-   var cols = math.size(mat).valueOf()[1];
+	 
+   var scaledMat = math.clone(mat);
+   var rows = mat.size()[0];
+   var cols = mat.size()[1];
    var scaleFactors = [];
    scaleFactors.push([1,0,1]);
    for (var r = 1;r &lt; rows;++r) {
-    ///don't scale 1st feature, ie r = 0, as this is always 1
+       //don't scale 1st feature, ie r = 0, as this is always 1
 	   var row = mRow(scaledMat,r);
-	   //var sum = math.sum(row);
 	   var min = math.min(row);
 	   var max = math.max(row);
 	   var range = max - min;
-	   //var mean = sum / cols;
 	   var mean = math.mean(row);
 	   
 	   row = math.subtract(row,mean);
@@ -336,20 +409,50 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
    
  
  }
+ 
+ function factorYForOneVsAll(mlParams, Y) {
+	 
+	    var YFactored = Y.clone();
+	 
+	    for (var i = 0;i &lt; Y.size()[0];++i) {
+			   if ((mlParams.module == 'log') &amp;&amp; (mlParams.numLogClasses > 2) &amp;&amp; (mlParams.currClassNum > -1)) {
+				     var yVal  = YFactored.get([i]);
+		             if (yVal == mlParams.currClassNum + 1) { //input class y vals are one based 
+		                   yVal = 1;
+		             }
+		             else {
+			               yVal = 0;
+		             }
+					 YFactored.set([i],yVal); //math.set(YFactored,[i],yVal);
+					 
+			   }
+		   
+	   }
+	   
+	   return YFactored;
+	 
+	 
+ }
 
 /**
  *
  * @param mlParams
  * @returns {*}
  */
- function getXandY(mlParams) {
+ function getXandY(mlParams,data) {
 	 
 	  
 	
-   var ar =  mlParams.input.split('\n'); //document.getElementById('trainingInput').value.split('\n');
-   //alert(ar);
-   yAr = [];
-   yOrigAr = [];
+   var ar;
+   if (data) {
+	   ar = data
+   }
+   else {
+	   ar = mlParams.input;
+   }
+	ar=  ar.input.split('\n'); 
+    yAr = [];
+    yOrigAr = [];
    
    ar = ar.map(function(el) {
        var inAr = el.split(' ');
@@ -357,16 +460,14 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
 	      return parseFloat(inEl);
 	   });
 	   var first = inAr[0];
-	   //if (elVal('featurePoly')) {
 	   if (mlParams.featureType == 'poly') {
 	   
-	      for (var i = 2; i &lt;=  mlParams.degrees;++i) { //parseInt(elVal('degreesInput'));++i) {
+	      for (var i = 2; i &lt;=  mlParams.degrees;++i) { 
 				inAr.splice(i-1,0,Math.pow(inAr[0],i));
    
 	      }
 		}
 	   
-	   //if (elVal('addOnesFlag')) {
 	   if (mlParams.addOnesFlag) {
 	   
 	     inAr.unshift(1);
@@ -391,6 +492,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
 	   yOrigAr.push([yOrigVal]);
 	   return inAr;
    });
+   
  
    
    var Xt = math.matrix(ar);
@@ -402,16 +504,13 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
    var X = math.transpose(Xt);	
    
    var XUnscaled = X.clone();
-
-   //if (document.getElementById('scalingFlag').checked) {
+   
    ret = featureScale(X);
    scaleFactors = ret[1];
-   //if (document.getElementById('scalingFlag').checked) {
    if (mlParams.scalingFlag) {
       X = ret[0];
  	}
-	
-   
+  
    return [X,Y, XUnscaled,scaleFactors,YOrig];   
  
  }
@@ -436,7 +535,7 @@ function costFunction(Xt,Theta,Y,logisticFlag) {
  * @param Theta
  * @returns {*}
  */
-function thetaUnscale(Theta) {
+function thetaUnscale(Theta,scaleFactors) {
 
 	var constAdj = 0;
 	var ThetaUnscaled = [];
@@ -444,12 +543,12 @@ function thetaUnscale(Theta) {
 	var n = Theta.size()[0] - 1;
 	
 	for (var a = 1;a &lt; n+1;++a) {
-			var ThetaUnscaledEntry =  Theta.subset(math.index(a, 0)) / scaleFactors[a][1];
-			ThetaUnscaled.push([ThetaUnscaledEntry]);
-			constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] * Theta.subset(math.index(a, 0));
+			var ThetaUnscaledEntry =  Theta.subset(math.index(a)) / scaleFactors[a][1];
+			ThetaUnscaled.push(ThetaUnscaledEntry);
+			constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] * Theta.subset(math.index(a));
 	}
 
-	ThetaUnscaled.unshift([Theta.subset(math.index(0,0)) + constAdj]);
+	ThetaUnscaled.unshift(Theta.subset(math.index(0)) + constAdj);
 	return math.matrix(ThetaUnscaled);
 
 
@@ -461,21 +560,25 @@ function thetaUnscale(Theta) {
  * @param progCallback
  * @returns {*}
  */
-function learn(mlParams,progCallback) {
+function learn(mlParams,X,Y,scaleFactors,progCallback) {
   
    var minCost = null;
+   var minReg = null;
    var minCostSum = 99999999999999999999;
    var minTheta = [];
    
    var degrees = mlParams.degrees; //parseInt(elVal('degreesInput'));
-   var res = getXandY(mlParams);
-   var X = res[0];
-   var Y = res[1];
+
+   var res = featureScale(X);
+   var XUnscaled = X;
+   X = res[0];
+   var scaleFactors = res[1];
    
-   var XUnscaled = res[2];
-   var scaleFactors = res[3];
-   var YOrig = res[4];
-   
+   var YOrig = Y;
+   if ((mlParams.module == 'log') &amp;&amp; (mlParams.numLogClasses > 2) &amp;&amp; (mlParams.currClassNum > -1)) {
+	   Y = factorYForOneVsAll(mlParams,YOrig); 
+   }
+  
    var Xt = math.transpose(X);
    
    var m = Y.size()[0];
@@ -485,88 +588,53 @@ function learn(mlParams,progCallback) {
    
    
    if (progCallback) {
-       progCallback('blog','&lt;br>----------------------------------------------------------------------------------------');  // document.getElementById('blog').innerHTML+='&lt;br>----========================-------------------------------------';
+       progCallback('outputBlog','&lt;br>----------------------------------------------------------------------------------------');  
 	   if (mlParams.diagnosticsFlag) {
-          progCallback('rightTwo',	'&lt;br>-----------');   
+          progCallback('diagnosticDiv',	'&lt;br>-----------');   
 	   }
        if (mlParams.numLogClasses > 2) {
-		progCallback('blog','&lt;br>Training class: ' + (mlParams.currClassNum + 1));
+		progCallback('outputBlog','&lt;br>Training class: ' + (mlParams.currClassNum + 1));
 	   }	   
 	}
 	
-	/*
-	if (elVal('diagnosticsFlag')) {
-		   document.getElementById('rightTwo').innerHTML += '&lt;br>-----------';
-		   
-	}
-	*/
-   
-   //var solveFlag = elVal('analyticFlag');
+ 
    var ThetaIdea,IdealCost;
    if ((mlParams.solveAnalytically) &amp;&amp; (mlParams.module == 'reg')) {
        ThetaIdeal = solveAnalytically(math.transpose(XUnscaled),Y);
 	   var d = 4;
 	   if (progCallback) {
-	        progCallback('blog','&lt;br>Ideal h(Theta) = ' + math.subset(ThetaIdeal,math.index(0,0)).toFixed(d));
-			
-	        //document.getElementById('blog').innerHTML+= '&lt;br>Ideal h(Theta) = ' + math.subset(ThetaIdeal,math.index(0,0)); //minThetaUnscaled[0]; // + ' + ' + minThetaUnscaled[1] + 'x1';
-  
+	        progCallback('outputBlog','&lt;br>Ideal h(Theta) = ' +  math.subset(ThetaIdeal,math.index(0)).toFixed(d)); 
+	    
             for (var i = 1;i &lt; n+1;++i) {
-			   progCallback('blog',' + ' + math.subset(ThetaIdeal,math.index(i,0)).toFixed(d) + 'x' + i);
-	           //document.getElementById('blog').innerHTML+= ' + ' + math.subset(ThetaIdeal,math.index(i,0)) + 'x' + i;
+			  progCallback('outputBlog',' + ' +  math.subset(ThetaIdeal,math.index(i)).toFixed(d) + 'x' + i); 
 	        }
 		}
-	//  document.getElementById('blog').innerHTML+='&lt;br>Analytics result: ' + ThetaIdeal;
-	  IdealCost =  costFunction(math.transpose(XUnscaled),ThetaIdeal,Y,logisticFlag);
+	  IdealCost =  costFunction(ThetaIdeal,XUnscaled,Y,0,logisticFlag)[0];    //zero lambda
 	  if (progCallback) {
-	       progCallback('blog','&lt;br> Ideal Cost: ' + math.sum(IdealCost));
-	       //document.getElementById('blog').innerHTML+='&lt;br> Ideal Cost: ' + math.sum(IdealCost);
+	       progCallback('outputBlog','&lt;br> Ideal Cost: ' + math.sum(IdealCost));
+	      
 		}   
    }
    else {
-	   IdealCost = math.matrix([[0],[0]]);
-	   ThetaIdeal = math.matrix([[0],[0]]);
+	   IdealCost = math.matrix([0,0]);
+	   ThetaIdeal = math.matrix([0,0]);
 	   
    }
    
-  
-  /*
-   var ar = document.getElementById('trainingInput').value.split('\n');
-   //alert(ar);
-   yAr = [];
-   ar = ar.map(function(el) {
-       var inAr = el.split(' ');
-	   inAr = inAr.map(function(inEl) {
-	      return parseFloat(inEl) / 1000;
-	   });
-	   inAr.unshift(1);
-	   yVal = inAr.pop();
-	   
-	 
-
-	 yAr.push([yVal]);
-	   return inAr;
-   });
- 
-   
-   var Xt = math.matrix(ar);
-
-   var Y = math.matrix(yAr);
-   var X = math.transpose(Xt);	  
-*/   
    
    var iters = [];
    var iterNum = 0;
    
-   var lambda = mlParams.lambda; //parseFloat(document.getElementById('lambdaInput').value);
+   var alpha = mlParams.alpha; 
+   var lambda = mlParams.lambda;
    
-   var maxIters = mlParams.maxIterations; //parseInt(document.getElementById('maxIterationsInput').value);
+   var maxIters = mlParams.maxIterations; 
 
     var prevCost = 9999999999999999999;
 	var prevMinus1Cost = 9999999999999999999;
 	var costAr = [];
    
-    var startThetaInput = mlParams.initTheta;//document.getElementById('initTheta').value;
+    var startThetaInput = mlParams.initTheta;
 	if (startThetaInput.length == 0) {
 	   for (var i = 0;i &lt; n +1;++i) {
 			startThetaInput+='0';
@@ -578,33 +646,28 @@ function learn(mlParams,progCallback) {
 		
 	startThetaInput = startThetaInput.split(' ');
 	startTheta = startThetaInput.map(function(el) {
-		 return [parseFloat(el)];
+		 return parseFloat(el);
 	});
 	
-	//var startTheta = [[0],[0]];
 	
 	var degrees = mlParams.degrees;//parseInt(elVal('degreesInput'));
-	/*
-	for (var i = 0;i &lt; extra;++i) {
-	   startTheta.push([0]);
-	}
-	*/
+
 	var Theta = math.matrix(startTheta);
 	minTheta = Theta.clone();
 		
 		
 	for (var i = 0;i &lt; maxIters;++i) {
-			//var Theta = math.matrix([[th1],[th2]]);
+ 
+			var res =  costFunction(Theta,X,Y,lambda,logisticFlag);
+			var Cost = res[0];
+			var RegCost = res[1];
 			
-			
-  
-			var Cost =  costFunction(Xt,Theta,Y,logisticFlag);
 			++iterNum;
 			
 			if (i % 50 == 0) {
 				if (progCallback) {
-					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
-					var acc = accuracy(Xt,minTheta,Y);
+					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)),true);
+					var acc = accuracy(minTheta,X,Y);
 					
 					if (mlParams.numLogClasses > 2) {
 						progCallback('rightBannerDiv','&lt;br>Training class: ' + (mlParams.currClassNum + 1));
@@ -612,12 +675,13 @@ function learn(mlParams,progCallback) {
 					else {
 						progCallback('rightBannerDiv','&lt;br>');
 					}
-					progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2]);
+                    var perc  = (acc[1] / acc[2] * 100);
+					progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)');
 					
 				}
 			}
 		//	if (i % 50 == 0) {
-				costAr.push(math.sum(Cost));
+				costAr.push(math.sum(Cost) + math.sum(RegCost));
 			 
 				iters.push(iterNum);
 		//	}
@@ -646,20 +710,10 @@ function learn(mlParams,progCallback) {
 						itersRed = itersRed;
 					}
 					
-					/*
-					var constAdj = 0;
-	                var minThetaUnscaled = [];
-	                for (var a = 1;a &lt; n+1;++a) {
-	                        var minThetaUnscaledEntry =  minTheta.subset(math.index(a, 0)) / scaleFactors[a][1];
-	                    	minThetaUnscaled.push(minThetaUnscaledEntry);
-	                    	constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] * minTheta.subset(math.index(a, 0));
-	                }
-	
-	                minThetaUnscaled.unshift(minTheta.subset(math.index(0,0)) + constAdj);
-				    */
+
 					var minThetaUnscaled;
 					if (mlParams.scalingFlag) {
-					    minThetaUnscaled = thetaUnscale(minTheta);
+					    minThetaUnscaled = thetaUnscale(minTheta,scaleFactors);
 					}
 					else {
 						minThetaUnscaled = minTheta.clone();
@@ -678,105 +732,77 @@ function learn(mlParams,progCallback) {
 		
 			if  (mlParams.diagnosticsFlag) {//(elVal('diagnosticsFlag')) {
 			   if (progCallback) {
-			      progCallback('rightTwo','&lt;br> Cost: ' +  math.sum(Cost));
-			      //document.getElementById('rightTwo').innerHTML += '&lt;br> Cost: ' +  math.sum(Cost);
-			     //document.getElementById('rightTwo').innerHTML += '&lt;br>' +  Cost;
+				  
+			      progCallback('diagnosticDiv','&lt;br>&lt;br> Iter: ' + i + ' Cost: ' +  (math.sum(Cost) + math.sum(RegCost)) );
 				}
 			}	
 			
 			
 			
-			if (math.sum(Cost) > prevCost) {
-				if (math.sum(Cost) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
+			if ((math.sum(Cost) + math.sum(RegCost)) > prevCost) {
+				if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
 				   if (progCallback) {
-				      progCallback('blog','&lt;br>Non Convergence. Try smaller lambda. ' + i + ' iterations');
-				      //document.getElementById('blog').innerHTML+='&lt;br>Non Convergence. Try smaller lambda. ' + i + ' iterations';
+				      progCallback('outputBlog','&lt;br>Non Convergence. Try smaller alpha. ' + i + ' iterations');
 					}
 				   break;
 				}
 			}
 			
-			//document.getElementById('navDiv').innerHTML +='&lt;br>' + math.sum(Cost);
 			
-			if ((prevCost - math.sum(Cost) >= 0) &amp;&amp; (prevCost - math.sum(Cost) &lt;  mlParams.convThreshold)) { //parseFloat(elVal('convThreshold')))) { //0.0000000001)) {
+			if ((prevCost - (math.sum(Cost) + math.sum(RegCost)) >= 0) &amp;&amp; (prevCost - (math.sum(Cost) + math.sum(RegCost)) &lt;  mlParams.convThreshold)) { 
 				console.log('Converged after: ' + i);
 				if (progCallback) {
-				    progCallback('blog','&lt;br>Converged after: ' + i + ' iterations');
-				   //document.getElementById('blog').innerHTML+='&lt;br>Converged after: ' + i + ' iterations';
+				    progCallback('outputBlog','&lt;br>Converged after: ' + i + ' iterations');
 				}
 				break;
 			}	
 			
 			prevMinus1Cost = prevCost;
 			
-			prevCost = math.sum(Cost);
+			prevCost = math.sum(Cost) + math.sum(RegCost);
 
-			//var Derivs = derivs(X,Theta,Y);
-			//console.log('theta before: ' + Theta);
-		
-			var res = gdUpdate(X,Theta,Y,lambda,logisticFlag);
+			var res = gdUpdate(Theta,X,Y,alpha,lambda,logisticFlag);
 			Theta = res[0];
-			//console.log('Theta after: ' + Theta);
 			
-			if  (mlParams.diagnosticsFlag) {//(elVal('diagnosticsFlag')) {
+			if  (mlParams.diagnosticsFlag) {
 			    if (progCallback) {
-				  progCallback('rightTwo','&lt;br>Grad: ' + res[1]);
-				  progCallback('rightTwo','&lt;br>Theta: ' + Theta);
-			      //document.getElementById('rightTwo').innerHTML+='&lt;br>Grad: ' + res[1];
-			      //document.getElementById('rightTwo').innerHTML+='&lt;br>Theta: ' + Theta;
+				  progCallback('diagnosticDiv','&lt;br>Grad: ' + res[1]);
+				  progCallback('diagnosticDiv','&lt;br>Theta: ' + Theta);
 				}
 			}
 
-			//console.log('derivs: ' + Derivs);
-
-			if ( math.sum(Cost) &lt; minCostSum) {
+			if ( (math.sum(Cost) + math.sum(RegCost)) &lt; minCostSum) {
 				minCost = Cost;
-				minCostSum = math.sum(Cost);
+				minReg = RegCost;
+				minCostSum = math.sum(Cost) + math.sum(RegCost);
 				minTheta = Theta;
 			}
-	
-			//document.getElementById('stats').innerHTML+= 'cost sum: th1: ' + th1 + ' th2: ' + th2 + ' ' + math.sum(Cost) + '&lt;br>';
-			
-			
+		
 	}
 	
-	console.log('Cost: ' +  Cost + '\nTot cost: ' + math.sum(Cost))	;
-	
-	/*
-	var constAdj = 0;
-	var minThetaUnscaled = [];
-	for (var i = 1;i &lt; n+1;++i) {
-	    var minThetaUnscaledEntry =  minTheta.subset(math.index(i, 0)) / scaleFactors[i][1];
-		minThetaUnscaled.push(minThetaUnscaledEntry);
-		constAdj += (scaleFactors[i][0] * -1) / scaleFactors[i][1] * minTheta.subset(math.index(i, 0));
-	}
-	
-	minThetaUnscaled.unshift(minTheta.subset(math.index(0,0)) + constAdj);
-    */
+	console.log('Cost: ' +  Cost + '\nTot cost: ' + (math.sum(Cost) + math.sum(RegCost)))	;
 	
 	if (progCallback) {
-		progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + math.sum(Cost),true);
+		progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)),true);
 		var acc = accuracy(Xt,minTheta,Y);
-		/*
-		progCallback('rightBannerDiv','&lt;br>Accuracy: ' + acc[1] + '/' + acc[2]);
-		if (mlParams.numLogClasses > 2) {
-			progCallback('rightBannerDiv','&lt;br>Training class: ' + (mlParams.currClassNum + 1));
-		}
-		*/
+
 		if (mlParams.numLogClasses > 2) {
 		   progCallback('rightBannerDiv','&lt;br>Training class: ' + (mlParams.currClassNum + 1));
 		}
 	    else {
 		   progCallback('rightBannerDiv','&lt;br>');
 	    }
-	    progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2]);
+        var perc  = (acc[1] / acc[2] * 100);
+	    progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2] +  ' (' + perc.toFixed(4) + '%)');
+
+      
 					
 	}
 	
 	
 	var minThetaUnscaled;
     if (mlParams.scalingFlag) {
-          minThetaUnscaled  = thetaUnscale(minTheta);
+          minThetaUnscaled  = thetaUnscale(minTheta,scaleFactors);
 	}
 	else {
 		minThetaUnscaled = minTheta.clone();
@@ -785,8 +811,8 @@ function learn(mlParams,progCallback) {
 	
 
 	if (progCallback) {
-		var g = minThetaUnscaled.get([0,0]);
-		var h = math.subset(minThetaUnscaled,math.index(0,0));
+		var g = minThetaUnscaled.get([0]);
+		var h = math.subset(minThetaUnscaled,math.index(0));
 		
 		var gg = parseFloat(g);
 		var aa = math.format(g,8);
@@ -796,46 +822,253 @@ function learn(mlParams,progCallback) {
 		
 		var d = 4;
 		
-		//progCallback('blog','&lt;br>&lt;br>get: ' + Math.toFixed(minThetaUnscaled.get([0,0])));
 
-	   progCallback('blog','&lt;br>&lt;br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d)); //minThetaUnscaled[0]);
-       //document.getElementById('blog').innerHTML+= '&lt;br>&lt;br>Lambda: ' + document.getElementById('lambdaInput').value + '&lt;br>Model h(Theta) = ' + minThetaUnscaled[0]; // + ' + ' + minThetaUnscaled[1] + 'x1';
-		for (var i = 1;i &lt; n+1;++i) {
-		   progCallback('blog',' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
-		   //document.getElementById('blog').innerHTML+= ' + ' + minThetaUnscaled[i] + 'x' + i;
+	   progCallback('outputBlog','&lt;br>&lt;br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0)).toFixed(d));
+  		for (var i = 1;i &lt; n+1;++i) {
+		   progCallback('outputBlog',' + ' + math.subset(minThetaUnscaled,math.index(i)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
 		}
 			
-	    progCallback('blog','&lt;br>Model Cost: ' + minCostSum);
-	   //document.getElementById('blog').innerHTML+=  '&lt;br>Model 								Cost: ' + minCostSum;
+	    progCallback('outputBlog','&lt;br>Model Cost: ' + minCostSum);
 	
-		progCallback('blog','&lt;br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0, 0)).toFixed(d));
-		//document.getElementById('blog').innerHTML+= '&lt;br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0, 0));//+ ' + ' + minTheta.subset(math.index(1, 0)) + 'x1)';
-		 for (var i = 1;i &lt; n+1;++i) {
-		   progCallback('blog',' + ' + minTheta.subset(math.index(i, 0)).toFixed(d) + 'x' + i);
-		   //document.getElementById('blog').innerHTML+= ' + ' + minTheta.subset(math.index(i, 0)) + 'x' + i;
+		progCallback('outputBlog','&lt;br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0)).toFixed(d));
+	    for (var i = 1;i &lt; n+1;++i) {
+		   progCallback('outputBlog',' + ' + minTheta.subset(math.index(i)).toFixed(d) + 'x' + i);
 		}
-		progCallback('blog',')');
-			   progCallback('blog','&lt;br>Lambda: ' +  mlParams.lambda) ;
+		progCallback('outputBlog',')');
+			   progCallback('outputBlog','&lt;br>Alpha: ' +  mlParams.alpha) ;
 
-		//document.getElementById('blog').innerHTML+= ')';
 	}	
 	
- /*
-	
-	for (var e = 0;e &lt; extra;++e) {
-	   document.getElementById('blog').innerHTML+= ' + ' + minTheta.subset(math.index(e+2, 0)) + 'x' + (e+2);
-	}
-	*/
-
-	//document.getElementById('blog').innerHTML+=  '&lt;br>Cost: ' + Cost;
-	
-	
+ 	
 	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig];
-   
-     
+    
 
 }
- </code></pre>
+
+function NeuralNetwork(architecture,X,Y,randomTheta) {
+	this.architecture = architecture;
+	this.numLayers = architecture.length;
+	this.numInputFeatures = architecture[0];
+	this.numOutputs = architecture[architecture.length-1];
+	this.numHiddenLayers = this.numLayers - 2;
+	this.X = X;
+	this.Y = Y;
+	this.randomTheta = randomTheta;
+	
+	this.layers = [];
+	
+	
+	this.toString = function() {
+		var str = 
+		      'Layers: ' + this.numLayers
+		   +  '\nInput Features: ' + this.numInputFeatures
+		   +  '\nOutputs: ' + this.numOutputs
+		   +  '\nHidden Layers: ' + this.numHiddenLayers;
+		   
+		this.layers.forEach(function(lay) {
+              str+= '\n' + lay.toString();
+		});
+
+        return str;		
+		   
+		   
+	};
+	
+	this.forward = function() {
+		
+		for (var j = 0;j &lt; this.layers.length - 1;++j) {
+			if (j == 0) { 
+				this.layers[j].X = this.X;
+			}
+			else {
+				this.layers[j].X = math.clone(this.layers[j-1].A);
+				this.layers[j].addBias();
+			}
+			this.layers[j].forward();
+			console.log(this.layers[j].singleMs());
+			
+		}
+		
+		this.layers[this.layers.length - 1].X = math.clone(this.layers[this.layers.length - 2].A);
+
+		
+		
+	};
+	
+	this.init = function() {
+		
+				
+		for (var i = 0;i &lt; this.numLayers;++i) {
+			var next = i == this.numLayers -1 ? -1 : this.architecture[i+1];
+			var lay = new NNLayer(i+1,this.architecture[i],next,randomTheta);
+			this.layers.push(lay);
+			if (i == 0) {
+				lay.X = this.X;
+			}
+			if (i == this.numLayers - 1) {
+				lay.Y = this.Y;
+			}
+			
+		}
+		
+	};
+	
+	this.init();
+		
+	
+}
+ 
+ function NNLayer(layerNum,n,nextLayerN,randomTheta) {
+	 this.layerNum = layerNum;
+	 this.n = n;
+	 this.nextLayerN = nextLayerN;
+	 this.Theta = null;
+	 this.X = null; //input
+	 this.Z = []; //intermediate
+	 this.A = []; //output
+	 
+	 
+	 this.toString = function() {
+	 return 'Layer num: ' + this.layerNum  + ' Features: ' + n + '\nTheta: ' + this.Theta + '\nX In: ' + this.X +  '\nZ: ' + this.Z + '\nA Out: ' + this.A;
+	 };
+	 
+	 
+	 this.init = function() {
+		 
+		 if (this.nextLayerN == -1) {
+			 this.Theta = [];
+		 }
+		 else {
+			 
+			if (randomTheta) {
+                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-1,1));
+			}
+            else {			
+		        this.Theta =  math.zeros(this.n + 1, this.nextLayerN);
+			}
+		 }
+		 
+		 /*
+		 if (this.X.size()[0] == this.n + 1)  {
+			 
+		 }
+		 else {
+			 console.log('Error: num rows of X does not match architecture');
+		 }
+		 */
+		 
+		 
+			 
+		 
+	 };
+	 
+	 this.getThetaForUnitToUnit = function(un1,un2) {
+		var thVal;
+
+		if (this.Theta.size().length == 1) {
+			thVal = this.Theta.get([un1]);
+		}
+		 else {
+			thVal = this.Theta.get([un1, un2]);
+		}
+		 
+		 return thVal;
+		 
+	 };
+	 
+	 this.getXForSingleM = function(m,uNum) {
+		 //get Xn for training example m for this layer
+		 if (this.X) {
+
+		 }
+		 else {
+			 return 0;
+		 }
+
+
+		 var ins = mCol(this.X,m,true,true);
+		 if (this.X.size()[0] == 1) {
+			 return ins;
+		 }
+		 else {
+			 return ins[uNum];
+		 }
+		 
+	 };
+
+	 this.getYForSingleM = function(m,uNum) {
+		 //get Xn for training example m for this layer
+		 if (this.Y) {
+
+		 }
+		 else {
+			 return -1;
+		 }
+
+		 var outs = mCol(this.Y,m,true,true);
+		 if (this.Y.size()[0] == 1) {
+            return outs;
+		 }
+		 else {
+			 return outs[uNum];
+
+		 }
+
+	 };
+	 
+	 
+	 
+	 this.singleMs = function() {
+		 var str = '';
+		 for (var i = 0;i &lt; this.X.size()[1];++i) {
+			 var ins = mCol(this.X,i,true);
+			 ins = ins.map(function(el) {
+				 return math.round(el,3);
+			 });
+			 var outs =  mCol(this.A,i,true,true);
+			 if (this.A.size()[0] == 1) {
+
+			 }
+			 else {
+				 outs = outs.map(function (el) {
+					 return math.round(el, 3);
+				 });
+			 }
+			 
+			  str+= '\nInputs: ' + ins + ' Activations: ' + outs	;
+		 }
+		
+		 return str;
+		 
+	 };
+	 
+	 this.addBias = function() {
+		 /*
+		 var ar = matrixToArray(this.X);
+		 var ones= [];
+		 for (var i = 0;i &lt; this.X.size()[1];++i) {
+		     ones.push(1);
+		 }
+		 ar.unshift(ones);
+		 return math.matrix(ar);
+		 */
+		 var ones = math.ones(1,this.X.size()[1]);
+		 
+		 this.X = math.concat(ones,this.X,0);
+	 
+	 };
+	 
+	 
+	 this.forward = function() {
+		 this.Z = h(math.transpose(this.Theta),this.X,false);
+		 this.A = h(math.transpose(this.Theta),this.X,true);
+		 
+	 };
+	 
+	 this.init();
+	 
+	 
+ }</code></pre>
         </article>
     </section>
 
@@ -845,13 +1078,13 @@ function learn(mlParams,progCallback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#accuracy">accuracy</a></li><li><a href="global.html#applyInput">applyInput</a></li><li><a href="global.html#checkAccuracyMultiClass">checkAccuracyMultiClass</a></li><li><a href="global.html#clearCharts">clearCharts</a></li><li><a href="global.html#clearRes">clearRes</a></li><li><a href="global.html#constructLogTrainingPlotPoints">constructLogTrainingPlotPoints</a></li><li><a href="global.html#constructRegTrainingPlotPoints">constructRegTrainingPlotPoints</a></li><li><a href="global.html#costFunction">costFunction</a></li><li><a href="global.html#createVisGraph">createVisGraph</a></li><li><a href="global.html#derivs">derivs</a></li><li><a href="global.html#el">el</a></li><li><a href="global.html#elVal">elVal</a></li><li><a href="global.html#err">err</a></li><li><a href="global.html#featureScale">featureScale</a></li><li><a href="global.html#featureTypeClicked">featureTypeClicked</a></li><li><a href="global.html#featureTypeUpdated">featureTypeUpdated</a></li><li><a href="global.html#gdUpdate">gdUpdate</a></li><li><a href="global.html#getParams">getParams</a></li><li><a href="global.html#getXandY">getXandY</a></li><li><a href="global.html#h">h</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#learn">learn</a></li><li><a href="global.html#learnBackground">learnBackground</a></li><li><a href="global.html#learnForeground">learnForeground</a></li><li><a href="global.html#learnProgressForeground">learnProgressForeground</a></li><li><a href="global.html#logButClicked">logButClicked</a></li><li><a href="global.html#matrixToArray">matrixToArray</a></li><li><a href="global.html#mCol">mCol</a></li><li><a href="global.html#moduleUpdated">moduleUpdated</a></li><li><a href="global.html#mRow">mRow</a></li><li><a href="global.html#numLogClassesClicked">numLogClassesClicked</a></li><li><a href="global.html#numLogClassesUpdated">numLogClassesUpdated</a></li><li><a href="global.html#predict">predict</a></li><li><a href="global.html#progUpdateBackground">progUpdateBackground</a></li><li><a href="global.html#regButClicked">regButClicked</a></li><li><a href="global.html#sigmoid">sigmoid</a></li><li><a href="global.html#sqErr">sqErr</a></li><li><a href="global.html#startWorker">startWorker</a></li><li><a href="global.html#stringifyToMatrix">stringifyToMatrix</a></li><li><a href="global.html#testButClicked">testButClicked</a></li><li><a href="global.html#thetaUnscale">thetaUnscale</a></li><li><a href="global.html#updateVisGraph">updateVisGraph</a></li><li><a href="global.html#visualise">visualise</a></li><li><a href="global.html#visualiseCostChart">visualiseCostChart</a></li><li><a href="global.html#visualiseLog">visualiseLog</a></li><li><a href="global.html#visualiseTrainingOnly">visualiseTrainingOnly</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#accuracy">accuracy</a></li><li><a href="global.html#applyInput">applyInput</a></li><li><a href="global.html#arrayToString">arrayToString</a></li><li><a href="global.html#checkAccuracyMultiClass">checkAccuracyMultiClass</a></li><li><a href="global.html#clearCharts">clearCharts</a></li><li><a href="global.html#clearRes">clearRes</a></li><li><a href="global.html#constructLogTrainingPlotPoints">constructLogTrainingPlotPoints</a></li><li><a href="global.html#constructRegTrainingPlotPoints">constructRegTrainingPlotPoints</a></li><li><a href="global.html#costFunction">costFunction</a></li><li><a href="global.html#createVisGraph">createVisGraph</a></li><li><a href="global.html#derivs">derivs</a></li><li><a href="global.html#el">el</a></li><li><a href="global.html#elVal">elVal</a></li><li><a href="global.html#err">err</a></li><li><a href="global.html#featureScale">featureScale</a></li><li><a href="global.html#featureTypeClicked">featureTypeClicked</a></li><li><a href="global.html#featureTypeUpdated">featureTypeUpdated</a></li><li><a href="global.html#formatData">formatData</a></li><li><a href="global.html#gdUpdate">gdUpdate</a></li><li><a href="global.html#getNumFeatures">getNumFeatures</a></li><li><a href="global.html#getParams">getParams</a></li><li><a href="global.html#getXandY">getXandY</a></li><li><a href="global.html#h">h</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#learn">learn</a></li><li><a href="global.html#learnBackground">learnBackground</a></li><li><a href="global.html#learnForeground">learnForeground</a></li><li><a href="global.html#learnProgressForeground">learnProgressForeground</a></li><li><a href="global.html#logButClicked">logButClicked</a></li><li><a href="global.html#matrixToArray">matrixToArray</a></li><li><a href="global.html#mCol">mCol</a></li><li><a href="global.html#mlResults">mlResults</a></li><li><a href="global.html#moduleUpdated">moduleUpdated</a></li><li><a href="global.html#mRow">mRow</a></li><li><a href="global.html#numLogClassesClicked">numLogClassesClicked</a></li><li><a href="global.html#numLogClassesUpdated">numLogClassesUpdated</a></li><li><a href="global.html#parseDataInput">parseDataInput</a></li><li><a href="global.html#predict">predict</a></li><li><a href="global.html#progUpdateBackground">progUpdateBackground</a></li><li><a href="global.html#regButClicked">regButClicked</a></li><li><a href="global.html#regCost">regCost</a></li><li><a href="global.html#sigmoid">sigmoid</a></li><li><a href="global.html#sqErr">sqErr</a></li><li><a href="global.html#startWorker">startWorker</a></li><li><a href="global.html#stringifyToMatrix">stringifyToMatrix</a></li><li><a href="global.html#testButClicked">testButClicked</a></li><li><a href="global.html#thetaUnscale">thetaUnscale</a></li><li><a href="global.html#updateVisGraph">updateVisGraph</a></li><li><a href="global.html#visualise">visualise</a></li><li><a href="global.html#visualiseCostChart">visualiseCostChart</a></li><li><a href="global.html#visualiseLog">visualiseLog</a></li><li><a href="global.html#visualiseTrainingOnly">visualiseTrainingOnly</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Tue May 09 2017 18:05:06 GMT+1000 (AUS Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Sun May 14 2017 09:44:29 GMT+1000 (AUS Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

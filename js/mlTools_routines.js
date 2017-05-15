@@ -25,24 +25,37 @@ function arrayToString(ar,sep) {
     
 }
 
+
+
 /**
  *
  * @param mat
- * @param rNum
- * @param cNum
+ * @param rNum rownum to remove, optional
+ * @param cNum colnum to remove, optional
  * @returns {Array}
  */
 function matrixToArray(mat,rNum,cNum) {
 
+	rNum = rNum == null ? -1 : rNum;
+	cNum = cNum == null ? -1 : cNum;
  
   var ar = [];
   var rows = math.size(mat).valueOf()[0];
   for (var i = 0;i < rows;++i) {
-  
+
+	 if (i == rNum) {
+		 continue;
+	 }
+
      var row = mRow(mat,i);
 	 var arEntry = [];
-	 row.forEach(function(el) {
-	    arEntry.push(el);
+	 row.forEach(function(el,j) {
+		if (j == cNum) {
+
+		}
+		else {
+			arEntry.push(el);
+		}
 	 });
 	 ar.push(arEntry);
  
@@ -104,13 +117,17 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
   var rows = math.size(matrix).valueOf()[0];
   var elements = math.subset(matrix, math.index(math.range(0,rows),index));
   if (retAsArray) {
-  
-     var flat = math.flatten(elements);
-	 var ar = [];
-	 flat.forEach(function(el) {
-	    ar.push(el);
-	 });
-	 return ar;
+     if (rows == 1) {
+		 return elements;
+	 }
+	 else {
+		 var flat = math.flatten(elements);
+		 var ar = [];
+		 flat.forEach(function (el) {
+			 ar.push(el);
+		 });
+		 return ar;
+	 }
   }
   else {
      return elements;
@@ -556,12 +573,12 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
    
    
    if (progCallback) {
-       progCallback('blog','<br>----------------------------------------------------------------------------------------');  
+       progCallback('outputBlog','<br>----------------------------------------------------------------------------------------');  
 	   if (mlParams.diagnosticsFlag) {
-          progCallback('rightTwo',	'<br>-----------');   
+          progCallback('diagnosticDiv',	'<br>-----------');   
 	   }
        if (mlParams.numLogClasses > 2) {
-		progCallback('blog','<br>Training class: ' + (mlParams.currClassNum + 1));
+		progCallback('outputBlog','<br>Training class: ' + (mlParams.currClassNum + 1));
 	   }	   
 	}
 	
@@ -571,15 +588,15 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
        ThetaIdeal = solveAnalytically(math.transpose(XUnscaled),Y);
 	   var d = 4;
 	   if (progCallback) {
-	        progCallback('blog','<br>Ideal h(Theta) = ' +  math.subset(ThetaIdeal,math.index(0)).toFixed(d)); 
+	        progCallback('outputBlog','<br>Ideal h(Theta) = ' +  math.subset(ThetaIdeal,math.index(0)).toFixed(d)); 
 	    
             for (var i = 1;i < n+1;++i) {
-			  progCallback('blog',' + ' +  math.subset(ThetaIdeal,math.index(i)).toFixed(d) + 'x' + i); 
+			  progCallback('outputBlog',' + ' +  math.subset(ThetaIdeal,math.index(i)).toFixed(d) + 'x' + i); 
 	        }
 		}
 	  IdealCost =  costFunction(ThetaIdeal,XUnscaled,Y,0,logisticFlag)[0];    //zero lambda
 	  if (progCallback) {
-	       progCallback('blog','<br> Ideal Cost: ' + math.sum(IdealCost));
+	       progCallback('outputBlog','<br> Ideal Cost: ' + math.sum(IdealCost));
 	      
 		}   
    }
@@ -701,7 +718,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			if  (mlParams.diagnosticsFlag) {//(elVal('diagnosticsFlag')) {
 			   if (progCallback) {
 				  
-			      progCallback('rightTwo','<br><br> Iter: ' + i + ' Cost: ' +  (math.sum(Cost) + math.sum(RegCost)) );
+			      progCallback('diagnosticDiv','<br><br> Iter: ' + i + ' Cost: ' +  (math.sum(Cost) + math.sum(RegCost)) );
 				}
 			}	
 			
@@ -710,7 +727,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			if ((math.sum(Cost) + math.sum(RegCost)) > prevCost) {
 				if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
 				   if (progCallback) {
-				      progCallback('blog','<br>Non Convergence. Try smaller alpha. ' + i + ' iterations');
+				      progCallback('outputBlog','<br>Non Convergence. Try smaller alpha. ' + i + ' iterations');
 					}
 				   break;
 				}
@@ -720,7 +737,7 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			if ((prevCost - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCost - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
 				console.log('Converged after: ' + i);
 				if (progCallback) {
-				    progCallback('blog','<br>Converged after: ' + i + ' iterations');
+				    progCallback('outputBlog','<br>Converged after: ' + i + ' iterations');
 				}
 				break;
 			}	
@@ -734,8 +751,8 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 			
 			if  (mlParams.diagnosticsFlag) {
 			    if (progCallback) {
-				  progCallback('rightTwo','<br>Grad: ' + res[1]);
-				  progCallback('rightTwo','<br>Theta: ' + Theta);
+				  progCallback('diagnosticDiv','<br>Grad: ' + res[1]);
+				  progCallback('diagnosticDiv','<br>Theta: ' + Theta);
 				}
 			}
 
@@ -791,19 +808,19 @@ function learn(mlParams,X,Y,scaleFactors,progCallback) {
 		var d = 4;
 		
 
-	   progCallback('blog','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0)).toFixed(d));
+	   progCallback('outputBlog','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0)).toFixed(d));
   		for (var i = 1;i < n+1;++i) {
-		   progCallback('blog',' + ' + math.subset(minThetaUnscaled,math.index(i)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
+		   progCallback('outputBlog',' + ' + math.subset(minThetaUnscaled,math.index(i)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
 		}
 			
-	    progCallback('blog','<br>Model Cost: ' + minCostSum);
+	    progCallback('outputBlog','<br>Model Cost: ' + minCostSum);
 	
-		progCallback('blog','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0)).toFixed(d));
+		progCallback('outputBlog','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0)).toFixed(d));
 	    for (var i = 1;i < n+1;++i) {
-		   progCallback('blog',' + ' + minTheta.subset(math.index(i)).toFixed(d) + 'x' + i);
+		   progCallback('outputBlog',' + ' + minTheta.subset(math.index(i)).toFixed(d) + 'x' + i);
 		}
-		progCallback('blog',')');
-			   progCallback('blog','<br>Alpha: ' +  mlParams.alpha) ;
+		progCallback('outputBlog',')');
+			   progCallback('outputBlog','<br>Alpha: ' +  mlParams.alpha) ;
 
 	}	
 	
@@ -844,20 +861,40 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 	
 	this.forward = function() {
 		
-		for (var j = 0;j < this.layers.length - 1;++j) {
+		for (var j = 0;j < this.layers.length;++j) {
 			if (j == 0) { 
 				this.layers[j].X = this.X;
+				this.layers[j].A = math.matrix(matrixToArray(this.X,0)); //remove first row of 1s
 			}
 			else {
 				this.layers[j].X = math.clone(this.layers[j-1].A);
+				/*
+				if (j == 1) {
+				   // first A has bias already added. May need to change this
+				}
+				else {
+					this.layers[j].addBias();
+				}
+				*/
 				this.layers[j].addBias();
+
+				this.layers[j].forward();
+
 			}
-			this.layers[j].forward();
-			console.log(this.layers[j].singleMs());
+
+			/*
+			if (j == this.layers.length - 1) {
+
+			}
+			else {
+			*/
+				console.log(this.layers[j].singleMs());
+			//}
 			
 		}
 		
-		this.layers[this.layers.length - 1].X = math.clone(this.layers[this.layers.length - 2].A);
+		//this.layers[this.layers.length - 1].X = math.clone(this.layers[this.layers.length - 2].A);
+
 		
 		
 	};
@@ -865,12 +902,16 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 	this.init = function() {
 		
 				
+
 		for (var i = 0;i < this.numLayers;++i) {
 			var next = i == this.numLayers -1 ? -1 : this.architecture[i+1];
-			var lay = new NNLayer(i+1,this.architecture[i],next,randomTheta);
+			var lay = new NNLayer(i+1,this.architecture[i],next,this.layers[i-1],randomTheta);
 			this.layers.push(lay);
 			if (i == 0) {
 				lay.X = this.X;
+			}
+			if (i == this.numLayers - 1) {
+				lay.Y = this.Y;
 			}
 			
 		}
@@ -882,14 +923,15 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 	
 }
  
- function NNLayer(layerNum,n,nextLayerN,randomTheta) {
+ function NNLayer(layerNum,n,nextLayerN,prevLayer,randomTheta) {
 	 this.layerNum = layerNum;
 	 this.n = n;
 	 this.nextLayerN = nextLayerN;
 	 this.Theta = null;
-	 this.X = []; //input
+	 this.X = null; //input
 	 this.Z = []; //intermediate
 	 this.A = []; //output
+	 this.prevLayer = prevLayer;
 	 
 	 
 	 this.toString = function() {
@@ -903,9 +945,9 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 			 this.Theta = [];
 		 }
 		 else {
-			 
+
 			if (randomTheta) {
-                this.Theta =  math.random([this.n + 1, this.nextLayerN],-1,1);
+                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-1,1));
 			}
             else {			
 		        this.Theta =  math.zeros(this.n + 1, this.nextLayerN);
@@ -926,6 +968,63 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 		 
 	 };
 	 
+	 this.getThetaForUnitToUnit = function(un1,un2) {
+		var thVal;
+
+		if (this.Theta.size().length == 1) {
+			thVal = this.Theta.get([un1]);
+		}
+		 else {
+			thVal = this.Theta.get([un1, un2]);
+		}
+		 
+		 return thVal;
+		 
+	 };
+	 
+	 this.getAForSingleM = function(m,uNum) {
+		 //get An for training example m for this layer
+		 if (this.A) {
+
+		 }
+		 else {
+			 return 0;
+		 }
+
+
+		 var ins = mCol(this.A,m,true,true);
+		 if (this.A.size().length == 1) {
+			 return ins[0];
+		 }
+		 else {
+			 return uNum == 0 ? 1 : ins[uNum - 1];
+
+		 }
+		 
+	 };
+
+	 this.getYForSingleM = function(m,uNum) {
+		 //get Xn for training example m for this layer
+		 if (this.Y) {
+
+		 }
+		 else {
+			 return -1;
+		 }
+
+		 var outs = mCol(this.Y,m,true,true);
+		 if (this.Y.size()[0] == 1) {
+            return outs;
+		 }
+		 else {
+			 return outs[uNum];
+
+		 }
+
+	 };
+	 
+	 
+	 
 	 this.singleMs = function() {
 		 var str = '';
 		 for (var i = 0;i < this.X.size()[1];++i) {
@@ -934,9 +1033,14 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 				 return math.round(el,3);
 			 });
 			 var outs =  mCol(this.A,i,true,true);
-			 outs = outs.map(function(el) {
-				 return math.round(el,3);
-			 });
+			 if (this.A.size()[0] == 1) {
+
+			 }
+			 else {
+				 outs = outs.map(function (el) {
+					 return math.round(el, 3);
+				 });
+			 }
 			 
 			  str+= '\nInputs: ' + ins + ' Activations: ' + outs	;
 		 }
@@ -963,8 +1067,8 @@ function NeuralNetwork(architecture,X,Y,randomTheta) {
 	 
 	 
 	 this.forward = function() {
-		 this.Z = h(math.transpose(this.Theta),this.X,false);
-		 this.A = h(math.transpose(this.Theta),this.X,true);
+		 this.Z = h(math.transpose(this.prevLayer.Theta),this.X,false); //this.X = prev layer A with bias 1s added
+		 this.A = h(math.transpose(this.prevLayer.Theta),this.X,true);
 		 
 	 };
 	 
