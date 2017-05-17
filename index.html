@@ -12,39 +12,50 @@
 <div id = "bannerDiv">
 
 <div id = "leftBannerDiv">
- <label for = "alphaInput">Learning Rate - Alpha</label>
- <input id = "alphaInput" type="text" value = "0.1">
-  <label for = "maxIterationsInput">Max Iterations</label>
- <input id = "maxIterationsInput" type="text" value = "10">
- <br>
- <label for = "lambdaInput">Regularisation - Lambda</label>
- <input id = "lambdaInput" type="text" value = "0">
+ <label for = "alphaInput">Learning Rate (&alpha;)</label>
+ <input id = "alphaInput" class="smallInput" type="text" value = "0.1">
+ <label for = "lambdaInput">Regularisation (&lambda;)</label>
+ <input id = "lambdaInput"  class="smallInput" type="text" value = "0">
  
-  <input id = "scalingFlag" type="checkbox" checked>feature Scaling
-  <input id = "analyticFlag" type="checkbox" checked>Also solve analytically
-  <br>
-  <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
-  <input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature
-  <label for = "numLogClasses" id = "numLogClassesLab">Number of classes</label>
-  <input id = "numLogClasses" onchange = "numLogClassesClicked()" value = "0" type="text">
-  <br>
-  <label for = "initTheta">Initial Theta</label>
-  <input id = "initTheta" type="text" value = "">
-   <label for = "convThreshold">Convergence Threshold</label>
-  <input id = "convThreshold" type="text" value = "0.0000000001">
-  <br>
+ <label for = "maxIterationsInput">Max Iterations</label>
+ <input id = "maxIterationsInput" class="mediumInput" type="text" value = "10">
+   <input id = "scalingFlag" type="checkbox" checked>feature Scaling
+
+ 
+ <br><br>
+ 
+
+  <!--input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature-->
+ 
+  <label for = "convThreshold">Convergence Threshold</label>
+  <input id = "convThreshold" class="mediumInput" type="text" value = "0.0000000001">
+  
   <!--input type="radio" name="featureType" id = "featureMulti" onclick="featureTypeClicked(event)" value="multi">Multi Feature
   <input type="radio" name="featureType" id="featurePoly" onclick="featureTypeClicked(event)" value="poly">Polynomial-->
+
+  <label for = "degreesInput" id="degreesInputLab">Poly Degrees</label>
+  <input id = "degreesInput" class="smallInput" type="text" value = "1"> 
+  <label for = "numLogClasses" id = "numLogClassesLab">Number of classes</label>
+  <input id = "numLogClasses" class="smallInput" onchange = "numLogClassesClicked()" value = "0" type="text">
+  <br><br>
+  <label for = "initTheta">Initial Theta</label>
+  <input id = "initTheta" class="mediumInput" type="text" value = "">
+   <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
+  <input id = "copyThetaFlag" type="checkbox" checked >Update initial Theta after run
+  <input id = "analyticFlag" type="checkbox" checked>
+  <label for "analyticFlag" id = "analyticFlagLab">Also solve analytically</label>
+
   
-   <label for = "degreesInput" id="degreesInputLab">Poly Degrees</label>
- <input id = "degreesInput" type="text" value = "1"> 
- <br>
+ 
+
+ 
+ <br><br>
  
  
  
  <button onclick="learnForeground()">Learn</button>
  <button onclick="learnBackground()">Learn Background</button>
- <button onclick="clearRes()">Clear</button>
+ <button onclick="clearButtonPressed()">Clear</button>
  <button onclick="applyInput()">Apply Input</button>
  
 
@@ -73,21 +84,26 @@
 
 <div id = "inputOutputDiv">
     <div id = "inputDiv">
-    <textarea id = "trainingInput" cols=50 rows=10 ></textarea>
-	<div id = "outputBlog">Results</div>
-   </div>	
+    <textarea id = "trainingInput" cols=40 rows=10 ></textarea>
+	</div>
+    <div id = "outputDiv">
+     	<div id = "outputBlog">Results</div>
+        
+		<div id = "outputIndiv"></div>
+	</div>
  
 </div>
 <div id = "visualDiv">
     <div id = "chartsDiv" class="visClass">
+	    <div id = "chart2Div">
+        <canvas id="visualiseChart"  width="400" height="200"></canvas>
+        </div>
         <div id = "chartDiv">
         <canvas id="costChart" width="400" height="200"></canvas>
         </div>
-        <div id = "chart2Div">
-        <canvas id="visualiseChart"  width="400" height="200"></canvas>
-        </div>
+  
     </div>
-    <div id = "nnDiv" class = "visClass">
+    <div id = "architectureDiv" class = "visClass">
         <canvas id = "nnCanvas" width="1200px" height="200px">
 
         </canvas>

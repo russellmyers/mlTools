@@ -68,11 +68,11 @@
 			*/
 			var X = math.matrix(inMsg.data.mlData.X._data);
             var Y = math.matrix(inMsg.data.mlData.Y._data)
-			var res = learn(inMsg.data.params,X, Y, inMsg.data.mlData.scaleFactors,progUpdateBackground);
+			var res = learn(inMsg.data.params,X, Y, progUpdateBackground);
 			var tst = res[2];
 			var msg = {};
 			msg.action = 'fin';
-			msg.elToUpdate = 'blog';
+			msg.elToUpdate = 'outputBlog';
 			msg.mess = '<br>finished';
 			msg.costAr = res[0];//JSON.stringify(res[0]);
 			msg.iters = res[1];//JSON.stringify(res[1]);
@@ -87,7 +87,7 @@
 			msg.YOrig = JSON.stringify(res[10]);
 			//postMessage({'action':'fin','elToUpdate':'blog','mess':'<br>finished','minT':JSON.stringify(res[4])});	
 			postMessage(msg);
-            postMessage({'action':'progUp','elToUpdate':'blog','mess':'<br>finished'});		
+            postMessage({'action':'progUp','elToUpdate':'outputBlog','mess':'<br>finished'});		
 	        if ((inMsg.data.params.module == 'log') && (inMsg.data.params.numLogClasses > 2) && (inMsg.data.params.currClassNum == inMsg.data.params.numLogClasses - 1)) {
                 postMessage({'action':'multiClassFin'});
 			}				

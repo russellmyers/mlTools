@@ -25,6 +25,7 @@ var costChart;
 var vGraph;
 
 var mlData;
+var mlNN;
 
 
 
@@ -46,6 +47,7 @@ function init() {
     mlParams = {};
 	mlResults = [];
 	mlData = {};
+	mlNN = null;
 
 	/*
     mlParams.featureType = "multi";
@@ -108,12 +110,12 @@ if (typeof	(Worker) !== "undefined") {
 					mlResults.push([costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig]);
 					
 					if (mlParams.module == 'log') {
-					       var acc = accuracy(math.transpose(XUnscaled), math.matrix(minThetaUnscaled), Y);
+					       var acc = accuracy(math.transpose(minThetaUnscaled),XUnscaled,Y);
 						   if (elVal('diagnosticsFlag')) {
-							   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(math.matrix(minThetaUnscaled),XUnscaled);
+							   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(math.transpose(minThetaUnscaled),XUnscaled);
 
 							   el('diagnosticDiv').innerHTML += '<br>Accuracy: ' + acc;
-							   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled, true);
+							   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(math.transpose(minThetaUnscaled),XUnscaled, true);
 						   }
 						   var perc  = (acc[1] / acc[2] * 100);
 					       el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
@@ -121,8 +123,14 @@ if (typeof	(Worker) !== "undefined") {
 					}
 					
 					visualiseCostChart(costAr,iters);
+					
+					if (mlParams.module == 'neu') {
+						var minThStr = applyNNThetaFromLearn(minTheta);
+					}
+					else {
 		
-					visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					   visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					}
 					
 					
 				}
@@ -155,7 +163,12 @@ if (typeof	(Worker) !== "undefined") {
 					var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
 					
 					updateCostChart(event.data.costAr,event.data.iters);
-					visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					if (mlParams.module == 'neu') {
+						var minThStr = applyNNThetaFromLearn(minTheta);
+					}
+					else {
+					  visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					}
 				}
 				
 				else if (event.data.action == 'chartInit') {
@@ -189,7 +202,7 @@ function getParams() {
 	//mlParams.featureType = featureType; //uses mvc
 	mlParams.input = elVal('trainingInput');
 	mlParams.degrees = parseInt(elVal('degreesInput'));
-	mlParams.addOnesFlag = elVal('addOnesFlag');
+	mlParams.addOnesFlag = true;     //elVal('addOnesFlag');
 	mlParams.scalingFlag = elVal('scalingFlag');
 	mlParams.diagnosticsFlag = elVal('diagnosticsFlag');
 	mlParams.solveAnalytically = elVal('analyticFlag');
@@ -202,6 +215,8 @@ function getParams() {
 	mlParams.lambda = parseFloat(lam);
 	mlParams.maxIterations = parseInt(elVal('maxIterationsInput'));
 	mlParams.convThreshold = parseFloat(elVal('convThreshold'));
+	
+	mlParams.updateInitialThetaFlag = elVal('copyThetaFlag');
 	
 	mlParams.currClassNum = -1; //used for logisitic regression multi-class
 	
@@ -270,14 +285,14 @@ function visualButClicked() {
     //toggle visual display
     switch (mlParams.visualDisplay) {
         case 'chartsDiv':
-            mlParams.visualDisplay = 'nnDiv';
+            mlParams.visualDisplay = 'architectureDiv';
             break;
 
-        case 'nnDiv':
-            mlParams.visualDisplay = 'regressionDiv';
+        case 'architectureDiv':
+            mlParams.visualDisplay = 'chartsDiv';
             break;
         
-        case 'regressionDiv':
+        case 'regressionDiv': // Not used
             mlParams.visualDisplay = 'chartsDiv';
             break;
 
@@ -299,6 +314,112 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
+   
+   var mat32 = math.matrix([[1,2],[2,3],[4,5]]);
+   var mat25 = math.matrix([[4,5,6,7,8],[6,7,8,9,10]]);
+   
+   var res = math.multiply(mat32,mat25);
+   console.log('siz 32 25: ' + res.size());
+   
+   var mat21arr = math.matrix([[1],[4]]);
+   res = math.multiply(mat32,mat21arr);
+   console.log('size 32 21arr: dim: ' + res.size().length + ' size: ' + res.size());
+   
+    var mat2vec = math.matrix([1,4]);
+   res = math.multiply(mat32,mat2vec);
+   console.log('size 32 2vec: dim: ' + res.size().length + ' size: ' + res.size());
+   
+    var mat3vec = math.matrix([1,4,3]);
+    res = math.multiply(mat3vec,mat32);
+   console.log('size 2vec 32: dim: ' + res.size().length + ' size: ' + res.size());
+   
+   var thVec = math.matrix([1,3,4]);
+   //var cols = thVec.size()[1];
+   //var rows = thVec.size()[0];
+   //var firstRow = math.subset(thVec, math.index(0, math.range(0,2)));
+   //var firstCol = math.subset(thVec, math.index(math.range(0,2),0));
+  // console.log('first row: ' + firstRow + ' first col: ' + firstCol);
+   var XVec = math.matrix([[1,2],[2,3],[3,4]]);
+   res = math.multiply(thVec,XVec);
+   console.log('size thvec3 XVec32: dim: ' + res.size().length + ' size: ' + res.size());
+   
+    var thVecAr = math.matrix([[1],[3],[4]]);
+   var XVec = math.matrix([[1,2],[2,3],[3,4]]);
+   var thvecartrans = math.transpose(thVecAr);
+   console.log('thvecar trans: ' + thvecartrans);
+   res = math.multiply(thvecartrans,XVec);
+   console.log('size thvecar3 XVec32: dim: ' + res.size().length + ' size: ' + res.size());
+   
+   var ar51 = math.matrix([[5],[4],[3],[2],[1]]);
+   var ar13  = math.matrix([[4,5,6]]);
+   res = math.multiply(ar51,ar13);
+   console.log('size ar51 ar13: dim: ' + res.size().length + ' size: ' + res.size());
+   
+   var g = res.get([0,0]);
+   
+   res.forEach(function(el) {
+	   console.log('el: ' + el);
+   });
+   
+   math.forEach(res,function(el) {
+	   console.log('ell: ' + el);
+   });
+   
+   var cols = res.size()[1];
+   var rows = res.size()[0];
+   var firstRow = math.subset(res, math.index(0, math.range(0,cols)));
+   var firstCol = math.subset(res, math.index(math.range(0,rows),0));
+   console.log('first row: ' + firstRow + ' first col: ' + firstCol);
+   
+   var ar15 = math.matrix([[5,4,3,2,1]]);
+   var ar31  = math.matrix([[4],[5],[6]]);
+   res = math.multiply(ar15,ar51);
+   console.log('size ar51 ar13: dim: ' + res.size().length + ' size: ' + res.size());
+   
+   var g = res.get([0,0]);
+   
+    var cols = res.size()[1];
+   var rows = res.size()[0];
+   var firstRow = math.subset(res, math.index(0, math.range(0,cols)));
+   var firstCol = math.subset(res, math.index(math.range(0,rows),0));
+   console.log('first row: ' + firstRow + ' first col: ' + firstCol);
+   
+   
+   var tst = math.matrix([1]);
+   
+   var tst2 = math.matrix([[3,4,5],[2,3,4],[5,6,7]]);
+   var tst3 = math.subset(tst2,math.index(math.range(0,1),math.range(1,2)));
+   var tst4 = mRow(tst2,1);
+   var tst5 = mCol(tst2,1);
+   
+   var mattoar = matrixToArray(tst2);
+   var tst6 = math.matrix([[2],[3]]);
+   var mattoar2 = matrixToArray(tst6);
+   
+   
+   var mat21 = math.matrix([[2],[3]]);
+   var r = mRow(mat21,0);
+   
+    var rAr = mRow(mat21,0,true);
+    var cAr = mCol(mat21,0,true);
+    var rMat = mRow(mat21,0);
+    var cMat = mCol(mat21,0);
+	
+	var testY = math.matrix([[1],[2],[3]]);
+	
+	var testA = math.matrix([[1],[2],[3]]);
+	
+	var tst = math.dotMultiply(testA,testY);
+	
+   
+   
+   /* Fails A col2, B row1
+     var mat2vec = math.matrix([[1,4]]);
+   res = math.multiply(mat32,mat2vec);
+   console.log('size 32 2vec: dim: ' + res.size().length + ' size: ' + res.size());
+   */
+
+
 
     drawNN();
    
@@ -322,7 +443,7 @@ function testButClicked() {
    var randomTheta = true;
    
    
-   var nn = new NeuralNetwork([2,2,1],nnX,nnY,randomTheta);
+   var nn = new NeuralNetwork([2,2,1],nnX,nnY,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
    nn.layers[0].Theta = nnTh;
    nn.layers[1].Theta = nnTh2;
    
@@ -378,7 +499,7 @@ function testButClicked() {
   
   var pred = predict(testXT,testTheta);
  
-  var C = costFunction(testXT,testTheta,testY,lambda,true);
+  var C = costFunction(testXT,testTheta,testY,lambda,'log');
   var c = math.sum(C);
   
   var x = 1;
@@ -390,10 +511,10 @@ function neuralButClicked() {
         mlParams.module = 'neu';
         moduleUpdated();
 
-        mlParams.visualDisplay = 'nnDiv';
+        mlParams.visualDisplay = 'architectureDiv';
         visualDisplayUpdated();
 
-        document.getElementById('trainingInput').value = '0 0 0\n0 1 1\n1 0 1\n1 1 0';
+        document.getElementById('trainingInput').value = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
 
         applyInput();
 
@@ -406,6 +527,9 @@ function logButClicked() {
 	
    mlParams.module = 'log';
    moduleUpdated();
+   
+   mlParams.visualDisplay = 'chartsDiv';
+   visualDisplayUpdated();
  
 
  document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
@@ -438,6 +562,10 @@ function regButClicked() {
    mlParams.module = 'reg';
    moduleUpdated();
    
+   mlParams.visualDisplay = 'chartsDiv';
+   visualDisplayUpdated();
+ 
+   
    document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
   
   applyInput();
@@ -457,7 +585,9 @@ function stepTraining(inc) {
         mlParams.displayTrainingNum = 0;
     }
 
-    drawNN(true);
+    //drawNN(true);
+	nnUpdated();
+	
 
 }
 
@@ -535,7 +665,7 @@ function parseDataInput(data) {
 
 		}
 
-		yAr.push(yVal);
+		yAr.push([yVal]);
 
 		return elAr;
 	});
@@ -544,7 +674,36 @@ function parseDataInput(data) {
 	var Xt = math.matrix(ar);
 	var X = math.transpose(Xt);
 
-	var Y = math.matrix(yAr);
+	
+	var Y;
+	if (mlParams.module == 'neu') {
+		var mx = math.max(yAr);
+		if (mx > 1) {//multi output layers
+			var multi = yAr.map(function(el) {
+				var newAr = [];
+				for (var i = 0;i < mx;++i) {
+					if (i == el - 1) {
+						newAr.push(1);
+					}
+					else {
+						newAr.push(0);
+					}
+				}
+				return newAr;
+				
+			});
+			Y = math.matrix(multi);
+			Y = math.transpose(Y);
+		}
+		else {
+			Y = math.matrix(yAr);
+			Y = math.transpose(Y);
+		}
+	}
+	else {
+ 	  Y = math.matrix(yAr);
+	  Y = math.transpose(Y);
+	}
 	
 	/*
 	var testX = math.matrix([[1,1,1],[20,5,10]]);
@@ -607,6 +766,8 @@ function applyInput() {
    getParams();
 
 	mlData = {};
+	mlNN = null;
+	
 	mlResults = [];
 
    var res = parseDataInput(elVal('trainingInput'));
@@ -614,16 +775,64 @@ function applyInput() {
    mlData.Y = res[1];
    mlDataUpdated();
 
+   var yUnits = 1;
+   
    if (mlParams.module == 'log') {
-	   var yAr = mCol(mlData.Y, 0, true);
+	   var yAr = mRow(mlData.Y, 0, true);
 	   var multiClass = false;
 	   if (math.max(yAr) > 1) { //contains multiple classes
 		   multiClass = true;
+		   yUnits = math.max(yAr);
 
 		   if (math.max(yAr) != mlParams.numLogClasses) {
-			   alert('Num classes: ' + mlParams.numLogClasses + '  not equal to classes found in training set: ' + math.max(yAr));
+			   console.log('Num classes: ' + mlParams.numLogClasses + '  not equal to classes found in training set: ' + math.max(yAr) + ' auto fixing');
+			   //alert('Num classes: ' + mlParams.numLogClasses + '  not equal to classes found in training set: ' + math.max(yAr));
 		   }
+		   
+		
 	   }
+	   else {
+		   yUnits = 1; //binary
+	   }
+	   
+	   
+   }
+   else if (mlParams.module == 'neu') {
+	   var yAr = mCol(mlData.Y, 0, true);
+	   yUnits = yAr.length;
+	   
+   }
+   
+   mlParams.numLogClasses = yUnits;
+   numLogClassesUpdated();
+  // el('numLogClasses').value = yUnits;
+   
+   
+   
+   if (mlParams.module == 'neu') {
+	      var randomTheta = true;
+		  
+	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] - 1,yUnits],mlData.X,mlData.Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+		  
+		  if (mlParams.initTheta == '') {
+			  var InTh = mlNN.unrollThetas();
+			  var inThAr = matrixToArray(InTh);
+			  var inThStr = arrayToString(inThAr);
+			  mlParams.initTheta = inThStr;
+			  initThetaUpdated();
+			  
+		  }
+		  
+		  nnUpdated();
+		  /*
+		  mlNN.forward(); // initial forward propagate based on initial Thetas
+		  nnUpdated();
+		  for (var i = 0;i < 5000;++i) {
+		     mlNN.gradientCheck();
+		  }
+		  nnUpdated();
+		  */
+   	   
    }
 
    /*
@@ -686,6 +895,11 @@ function numLogClassesUpdated() {
 	
 
  }
+ 
+ function initThetaUpdated() {
+	 el('initTheta').value = mlParams.initTheta;
+	 
+ }
 
 /**
  * 
@@ -708,6 +922,10 @@ function numLogClassesUpdated() {
 		   
 		   el('numLogClasses').hidden = false;
            el('numLogClassesLab').hidden = false;
+		   
+		   el('analyticFlag').hidden = true;
+           el('analyticFlagLab').hidden = true;
+
 		   break;
 
         case 'neu':
@@ -724,6 +942,11 @@ function numLogClassesUpdated() {
 
             el('numLogClasses').hidden = false;
             el('numLogClassesLab').hidden = false;
+			
+		    el('analyticFlag').hidden = true;
+            el('analyticFlagLab').hidden = true;
+
+			
             break;
 
 
@@ -736,13 +959,17 @@ function numLogClassesUpdated() {
            el('logistic').classList.add('blackBut');
 		   el('test').classList.remove('colourBut');
            el('test').classList.add('blackBut');
-            el('neural').classList.remove('colourBut');
-            el('neural').classList.add('blackBut');
+           el('neural').classList.remove('colourBut');
+           el('neural').classList.add('blackBut');
 
 
 
-            el('numLogClasses').hidden = true;
+           el('numLogClasses').hidden = true;
            el('numLogClassesLab').hidden = true;
+		   
+		   el('analyticFlag').hidden = false;
+           el('analyticFlagLab').hidden = false;
+
 		
 		   break;
 		   
@@ -771,6 +998,14 @@ function numLogClassesUpdated() {
  
  }
 
+ function nnUpdated() {
+	 drawNN();
+	 el('outputIndiv').innerHTML = 'Individual: ' + (mlParams.displayTrainingNum + 1) + ' Inputs: ' + mlNN.getInputsForSingleM(mlParams.displayTrainingNum) + ' Cost contrib per output layer: ' + mlNN.getCost('CM',mlParams.displayTrainingNum,4);
+	 el('outputIndiv').innerHTML += ' Tot output layers: ' + mlNN.getCost('CM',mlParams.displayTrainingNum);
+	 el('outputIndiv').innerHTML += '<br>Tot overall cost all training: ' + mlNN.getCost('C') + ' Tot Reg Cost: ' + mlNN.getCost('R') + ' Tot cost both: ' + mlNN.getCost('T');
+
+ }
+ 
  function visualDisplayUpdated() {
 
      var visDivs = document.getElementsByClassName('visClass');
@@ -842,7 +1077,29 @@ function numLogClassesUpdated() {
 				 
 			
 		 });
-		 row.push(Y.get([i]));
+		 //row.push(Y.get([i]));
+		 
+		 if (mlParams.module == 'neu') {
+			 
+			 var yColumn = mCol(Y,i,true);
+			 if (yColumn.length == 1) {
+				 row.push(yColumn); //just binary value
+			 }
+			 else {
+				 //multi output layers
+				 var yVal = -1;
+				 for (var k = 0;k < yColumn.length;++k) {
+					 if (yColumn[k] == 1) {
+						 yVal = k+1;
+						 break;
+					 }
+				 }
+				 row.push(yVal);
+			 }
+		 }
+		 else {
+		    row.push(mCol(Y,i,true));
+		 }
 		 str+= arrayToString(row);
 	     if (i < Xt.size()[0]  - 1)  {
 			  str+= '\n';
@@ -867,6 +1124,7 @@ function numLogClassesUpdated() {
 	 formatData();
 	 
 
+	 /*
      ret = featureScale(mlData.X);
      scaleFactors = ret[1];
      if (mlParams.scalingFlag) {
@@ -877,7 +1135,7 @@ function numLogClassesUpdated() {
 	 }
 	 
 	 mlData.scaleFactors = scaleFactors;
-	   
+	   */
    
 	 
  }
@@ -901,6 +1159,13 @@ function clearCharts() {
 
  
  }
+ 
+ function clearButtonPressed() {
+	 
+	 el('initTheta').value = '';
+	 
+	  clearRes();
+ }
 
 /**
  * 
@@ -910,6 +1175,8 @@ function clearRes()  {
   
   el('outputBlog').innerHTML = '';
   el('diagnosticDiv').innerHTML = '';
+  
+  
   
   clearCharts();
   
@@ -944,7 +1211,7 @@ function checkAccuracyMultiClass() {
 				var scaleFactors = res[9];
 				var YOrig = res[10];
 				
-				var conf = h(math.matrix(minThetaUnscaled),XUnscaled,true);
+				var conf = h(math.transpose(minThetaUnscaled),XUnscaled,true);
 				confAr.push(conf);
 			
 		}
@@ -953,11 +1220,11 @@ function checkAccuracyMultiClass() {
 		
 		var Y = mlResults[0][10]; // get Y original from first result (will be same for all)
 		
-		for (var m = 0;m < Y.size()[0];++m) {
+		for (var m = 0;m < Y.size()[1];++m) {
 			var max = 0;
 			var maxI = -1;
 			for (var i = 0;i < mlParams.numLogClasses;++i) {
-				var conf = confAr[i].get([m]);
+				var conf = confAr[i].get([0,m]);
 				if (conf > max) {
 					max = conf;
 					maxI = i;
@@ -966,12 +1233,12 @@ function checkAccuracyMultiClass() {
 			}
 					
 			
-			predAr.push(maxI + 1);
+			predAr.push([maxI + 1]);
 			
 			
 			
 		}
-		var predMat = math.matrix(predAr);
+		var predMat = math.transpose(math.matrix(predAr));
 		var acc = math.subtract(predMat,Y);
 		var numCorrect = 0;
 		acc.forEach(function(el) {
@@ -980,11 +1247,28 @@ function checkAccuracyMultiClass() {
 			}
 		});
 		console.log('Num correct: ' + numCorrect);
-		var tot = acc.size()[0];
+		var tot = acc.size()[1];
 		var perc = (numCorrect / tot * 100).toFixed(2);
 		learnProgressForeground('rightBannerDiv','<br>Overall num Correct: ' + numCorrect + '/' + tot + ' (' + perc + '%)' );
 		
 	return acc;
+}
+
+
+function applyNNThetaFromLearn(MinTheta) {
+			//var MinTheta = res[6];
+			var Th = MinTheta.clone();
+			
+			Th = math.squeeze(Th);
+			var minThStr = arrayToString(matrixToArray(Th),' ');
+			
+			mlNN.reInitThetas(minThStr);
+			
+			mlNN.forward(); // initial forward propagate based on initial Thetas
+			nnUpdated();
+			
+			return minThStr;
+	
 }
 
 /**
@@ -1013,6 +1297,7 @@ function learnBackground() {
 	
 	switch (mlParams.module) {
 	    case 'reg': 
+		case 'neu':
 		    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
 	      break;
 		 
@@ -1059,8 +1344,21 @@ function learnForeground() {
 	
 	switch (mlParams.module) {
 	    case 'reg': 
-		   res = learn(mlParams,mlData.X,mlData.Y,mlData.scaleFactors,learnProgressForeground);
+		   res = learn(mlParams,mlData.X,mlData.Y,learnProgressForeground); //mlData.scaleFactors,learnProgressForeground);
 		   mlResults.push(res);
+		   
+		   if (elVal('copyThetaFlag')) {
+		   var finalTh = mlResults[0][6];
+			   var fl = math.flatten(finalTh);
+			   var flAr = matrixToArray(fl);
+			   var str = arrayToString(flAr);
+			   mlParams.initTheta = str;
+			   initThetaUpdated();
+			  // el('initTheta').value = str;
+		   }
+		   
+		   
+		   
 	      break;
 		 
 		case 'log':
@@ -1068,12 +1366,12 @@ function learnForeground() {
 		       
 		       for (var i = 0;i < mlParams.numLogClasses;++i) {
 			      mlParams.currClassNum = i;
-		          res = learn(mlParams,mlData.X, mlData.Y, mlData.scaleFactors,learnProgressForeground);
+		          res = learn(mlParams,mlData.X, mlData.Y,learnProgressForeground);
 		    	  mlResults.push(res);
 		       }
 			}
 			else {
-			    res = learn(mlParams,mlData.X, mlData.Y, mlData.scaleFactors,learnProgressForeground);
+			    res = learn(mlParams,mlData.X, mlData.Y, learnProgressForeground);
 		        mlResults.push(res);
 			}
 
@@ -1081,16 +1379,66 @@ function learnForeground() {
 
         case 'neu':
             //res = learn(mlParams,mlData.X,mlData.Y,mlData.scaleFactors,learnProgressForeground);
-            drawNN(false);
-            mlResults.push(res);
-            break;
+			
+			res = learn(mlParams,mlData.X,mlData.Y,learnProgressForeground); //mlData.scaleFactors,learnProgressForeground);
+		    mlResults.push(res);
+			
+			var minThStr = applyNNThetaFromLearn(res[6]);
+			
+			/*
+			var MinTheta = res[6];
+			MinTheta = math.squeeze(MinTheta);
+			var minThStr = arrayToString(matrixToArray(MinTheta),' ');
+			
+			mlNN.reInitThetas(minThStr);
+			
+			
+			mlNN.forward(); // initial forward propagate based on initial Thetas
+			nnUpdated();
+			*/
+			
+			if (elVal('copyThetaFlag')) {
+		       mlParams.initTheta = minThStr;
+			   initThetaUpdated();
+		   }
+		   
+		   var accNeu = mlNN.checkAccuracy();
+			
+			/*
+			for (var i = 0;i < mlParams.maxIterations;++i) {
+			 mlNN.gradientCheck();
+			}
+			nnUpdated();
+			*/
+
+			/*
+			drawNN(false);
+			*/
+			
+			/*
+	       var finalTh = mlNN.layers[0].Theta;
+		   var fl = math.flatten(finalTh);
+		   var flAr = matrixToArray(fl);
+		   var str = arrayToString(flAr);
+		   
+		   finalTh = mlNN.layers[1].Theta;
+		   fl = math.flatten(finalTh);
+		   flAr = matrixToArray(fl);
+		   str += ' ' + arrayToString(flAr);	   
+		   
+		   el('initTheta').value = str;
+		   */
+			
+			
+			break;
+			
 		default:
 			break;
 			
 	}
 	   
 	 
-	if (mlParams.numLogClasses > 2) { // multi class, use one vs all
+	if ((mlParams.module == 'log') && (mlParams.numLogClasses > 2)) { // multi class, use one vs all
 	
 	
 		var YOrig = mlResults[0][10];  // Orig Y with all classes
@@ -1162,7 +1510,7 @@ function learnForeground() {
     else {
 
         if (mlParams.module == 'neu') {
-            el('outputBlog').innerHTML += '<br>Neural done';
+            el('outputBlog').innerHTML += '<br>Neural done. Accuracy: ' + accNeu[0] + ' / ' + accNeu[1];
             return;
         }
 	
@@ -1182,10 +1530,10 @@ function learnForeground() {
 		var scaleFactors = res[9];
 		
 		if (mlParams.module == 'log') {
-		   el('outputBlog').innerHTML += '<br>Predictions: ' + predict(minThetaUnscaled,XUnscaled);
-		   var acc = accuracy(math.matrix(minThetaUnscaled),XUnscaled,Y);
+		   el('outputBlog').innerHTML += '<br>Predictions: ' + predict(math.transpose(minThetaUnscaled),XUnscaled);
+		   var acc = accuracy(math.transpose(minThetaUnscaled),XUnscaled,Y);
 		   el('outputBlog').innerHTML += '<br>Accuracy: ' + acc;
-		   el('outputBlog').innerHTML += '<br>Confidence: ' + h(math.matrix(minThetaUnscaled),XUnscaled,true);
+		   el('outputBlog').innerHTML += '<br>Confidence: ' + h(math.transpose(minThetaUnscaled),XUnscaled,true);
 		   var perc = (acc[1] / acc[2] * 100);
 		   el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 		}
@@ -1219,6 +1567,8 @@ function drawNN(useExisting) {
     ctx.stroke();
     */
 
+	
+	/* test neural network without using traininginput visual element
     var nnXt = math.matrix([[1,0,0],[1,0,1],[1,1,0],[1,1,1]]);
     var nnTht = math.matrix([[-20,30,30],[30,-20,-20]]);
     var nnTh = math.transpose(nnTht);
@@ -1241,13 +1591,17 @@ function drawNN(useExisting) {
     nn.layers[1].Theta = nnTh2;
 
     nn.forward();
-/*
+	*/
+	
+
+	
+	/*
     var tstXT = math.matrix([[1,3,4,5,6],[1,4,5,6,7],[1,115,116,117,118]]);
     var tstX = math.transpose(tstXT);
     var nn = new NeuralNetwork([4,2,1],tstX,nnY,randomTheta);
     nn.forward();
 */
-    var vController = new VNetworkController(nn);
+    var vController = new VNetworkController(mlNN);
 
     vGraph = new VNetwork('Neural Network',c.width,c.height,vController);
     vGraph.display(ctx,mlParams.displayTrainingNum);
@@ -1435,7 +1789,7 @@ function constructRegTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
   
   var x1Ar = mRow(XUnscaled,1,true);
 
-  var yAr = mCol(Y,0,true);
+  var yAr = mRow(Y,0,true);
 
    var scatData = [];
    x1Ar.forEach(function(x,i) {
@@ -1463,7 +1817,7 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
   
   var x2Ar = mRow(XUnscaled,2,true);
   
-  var yAr = mCol(Y,0,true);
+  var yAr = mRow(Y,0,true);
   
   var scatData = [];
   
@@ -1483,7 +1837,7 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
   }
   else if (ThetaUnscaled) {
      // if theta provided - check predictions and colour correct predictions green
-     var acc = accuracy(math.matrix(ThetaUnscaled),XUnscaled,Y);
+     var acc = accuracy(math.transpose(ThetaUnscaled),XUnscaled,Y);
 	 accMatrix = acc[0];
 	 
   }
@@ -1534,7 +1888,7 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
 	 }
 	 
 	 if ((ThetaUnscaled) || ((multiClass) && (showAccForMultiClass))) {
-	    if (math.subset(accMatrix,math.index(i)) == 0) {//accurate predictions
+	    if (math.subset(accMatrix,math.index(0,i)) == 0) {//accurate predictions
 		
 		    pointBackgroundColors.push(col);
 		}
@@ -1601,10 +1955,10 @@ function visualiseLog(XUnscaled,Y,ThetaOrig,scaleFactors) {
 		  
 		  //i represents x1
 		  var Tmp = math.multiply(math.transpose(XUnscaled),ThetaOrig);
-		  var sum = math.subset(ThetaOrig,math.index(0)); //ThetaOrig[0];
-		  sum+= math.subset(ThetaOrig,math.index(1))  * i; //x1
+		  var sum = math.subset(ThetaOrig,math.index(0,0)); //ThetaOrig[0];
+		  sum+= math.subset(ThetaOrig,math.index(1,0))  * i; //x1
 		  var thx2 = sum * -1;
-		  var x2 = thx2 / math.subset(ThetaOrig,math.index(2));
+		  var x2 = thx2 / math.subset(ThetaOrig,math.index(2,0));
 
 		  var plotPoint = {x:i,y:x2};
 	      modelData.push(plotPoint);
@@ -1646,7 +2000,7 @@ var rows = XUnscaled.size();
 var x1Ar = mRow(XUnscaled,1,true);
 
 
-var yAr = mCol(Y,0,true);
+var yAr = mRow(Y,0,true);
 
 
 var scatData = [];
@@ -1683,7 +2037,7 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
 	// Only visualising x1 against y for model (including any additional x1 poly terms)
     for (var ii = 0;ii < 2;++ii) {  //ThetaOrig.size()[0];++ii) {
 	  
-		  yVal+= (math.subset(ThetaModel,math.index(ii)) * Math.pow(i,ii));
+		  yVal+= (math.subset(ThetaModel,math.index(ii,0)) * Math.pow(i,ii));
 		
     }
     if (mlParams.degrees > 1) {
@@ -1692,7 +2046,7 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
 	  var lastPolyX1 = res[2];
 	  var ind = 2;
 	  for (ii = firstPolyX1;ii < lastPolyX1 + 1;++ii) {
-		  yVal+= (math.subset(ThetaModel,math.index(ii)) * Math.pow(i,ind));
+		  yVal+= (math.subset(ThetaModel,math.index(ii,0)) * Math.pow(i,ind));
 		  ++ind;
 	  }
     
@@ -1715,7 +2069,7 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
 	//Only visualise x1 and its polys against y
 	for (var ii = 0;ii < 2;++ii) {  
 	  
-		  yValIdeal+= (math.subset(ThetaIdeal,math.index(ii)) * Math.pow(i,ii));
+		  yValIdeal+= (math.subset(ThetaIdeal,math.index(ii,0)) * Math.pow(i,ii));
 		
     }
     if (mlParams.degrees > 1) {
@@ -1724,7 +2078,7 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
 	  var lastPolyX1 = res[2];
 	  var ind = 2;
 	  for (ii = firstPolyX1;ii < lastPolyX1 + 1;++ii) {
-		  yValIdeal+= (math.subset(ThetaIdeal,math.index(ii)) * Math.pow(i,ind));
+		  yValIdeal+= (math.subset(ThetaIdeal,math.index(ii,0)) * Math.pow(i,ind));
 		  ++ind;
 	  }
     
@@ -1748,7 +2102,7 @@ for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
    
 }
 
-Theta.subset(math.index(0)); 
+Theta.subset(math.index(0,0)); 
 
 if (visChart) {
 
@@ -2063,6 +2417,7 @@ function VNetworkController(nn) {
             if (lNum == this.layers() - 1) {
                 col = '#000000';
             }
+			
             else {
                 col = uNum == 0 ? '#B0B0B0' : '#000000';
             }
@@ -2074,21 +2429,43 @@ function VNetworkController(nn) {
 
         var nodeWeight = this.nn.layers[lNum].getAForSingleM(m, uNum);
         if (nodeWeight) {
-            nodeWeight = nodeWeight.toFixed(3);
-            if (nodeWeight > 0.5) {
-                vNode.colour = "#00FF00";
-            }
-            else if (nodeWeight < 0.5) {
-                vNode.colour = "#FF0000";
-            }
-            if (lNum == this.layers() - 1) {
-
-            }
-            else {
-                if (uNum == 0) {
-                    vNode.colour = '#B0B0B0';
-                }
-            }
+			if (nodeWeight == '-') {
+				
+			}
+			else {
+				nodeWeight = nodeWeight.toFixed(3);
+				if (lNum == 0) {
+					
+					
+				}
+				else if (lNum == this.layers() - 1) {
+					var nodeY = this.nn.layers[lNum].getYForSingleM(m, uNum);
+					if ( ((nodeY == 1) && (nodeWeight > 0.5))
+						|| ((nodeY == 0) && (nodeWeight < 0.5))) {
+							
+						vNode.colour = "#00FF00";
+						}
+						else {
+						vNode.colour = "#FF0000";	
+						}
+				}
+				else {
+					if (nodeWeight >= 0.6) {
+						vNode.colour = "#FF8C00";
+					}
+					else if (nodeWeight >= 0.4) {
+						vNode.colour = "#AAAA00";
+					}
+					else if (nodeWeight < 0.4) {
+						vNode.colour = "#B0B0B0";
+					}
+					
+					if (uNum == 0) {
+							vNode.colour = '#B0B0B0';
+					}
+					
+				}
+			}
         }
         vNode.weight = nodeWeight;
 

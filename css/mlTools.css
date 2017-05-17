@@ -50,7 +50,7 @@ font-size:medium;
 
 .blackBut {
 	color: black;
-	background-color: initial;
+	/*background-color: transparent;*/
 }
 .colourBut  {
 	color: white;
@@ -60,6 +60,14 @@ font-size:medium;
 .visBut {
     float:left;
     height: 20px;
+}
+
+.smallInput {
+	width: 50px;
+} 
+
+.mediumInput {
+	width: 100px;
 }
 
 #neural {
@@ -74,11 +82,14 @@ font-size:medium;
 }
 
 #inputOutputDiv {
-  background-color: yellow;
+ /* background-color: yellow;*/
+   width: 1080px;
 }
 
 #inputDiv {
-  background-color: lightgrey;
+  /*background-color: lightgrey;*/
+  display:inline-block;
+  width: 350px;
 
 }
 
@@ -104,12 +115,31 @@ font-size:medium;
    background-color: pink;
 }
 
-#outputBlog {
+#outputDiv {
   display:inline-block;
   vertical-align: top;
-  width: 550px;
-  height: 180px;
+  /*width: 550px;*/
+  height: 200px;
+  width: 620px;
+  background-color:lightgrey;
+  /*overflow: auto;*/
+}
+#outputBlog {
+  display:block;
+  vertical-align: top;
+  /*width: 550px;*/
+  width: 100%;
+  height: 120px;
   overflow: auto;
+}
+
+#outputIndiv {
+	margin-top:5px;
+	 display:block;
+	/* width: 500px;*/
+	width: 100%;
+	 height: 50px;
+	 overflow:auto;
 }
 
 #trainingInput {
@@ -119,6 +149,7 @@ font-size:medium;
 
 #visualDiv {
 
+  /*background-color: pink;*/
   width: 1000px;
   height: 200px;
 
@@ -129,7 +160,7 @@ font-size:medium;
 
 }
 
-#nnDiv {
+#architectureDiv {
     display:none;
 
 }
