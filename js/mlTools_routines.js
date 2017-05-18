@@ -815,7 +815,7 @@ function learn(mlParams,X,Y,progCallback) {
 			
 			console.log('iter: ' + iterNum);
 			
-			if (i % 50 == 0) {
+			if (i % 2 == 0) {
 				if (progCallback) {
 					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)),true);
 					
