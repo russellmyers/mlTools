@@ -103,7 +103,7 @@ font-size:medium;
 
 #diagnosticDiv {
    background-color:beige;
-   height: 203px;
+   height: 101px;
    width: 220px;
    float: right;
    overflow:auto;		
@@ -119,7 +119,7 @@ font-size:medium;
   display:inline-block;
   vertical-align: top;
   /*width: 550px;*/
-  height: 200px;
+  height: 101px;
   width: 620px;
   background-color:lightgrey;
   /*overflow: auto;*/
@@ -129,7 +129,7 @@ font-size:medium;
   vertical-align: top;
   /*width: 550px;*/
   width: 100%;
-  height: 120px;
+  height: 20px;
   overflow: auto;
 }
 
@@ -138,12 +138,12 @@ font-size:medium;
 	 display:block;
 	/* width: 500px;*/
 	width: 100%;
-	 height: 50px;
+	 height: 80px;
 	 overflow:auto;
 }
 
 #trainingInput {
-  height: 200px;
+  height: 101px;
  
 }
 
@@ -151,7 +151,7 @@ font-size:medium;
 
   /*background-color: pink;*/
   width: 1000px;
-  height: 200px;
+  height: 340px;
 
 }
 

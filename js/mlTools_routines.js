@@ -667,6 +667,68 @@ function thetaUnscale(Theta,scaleFactors) {
 
 }
 
+
+function getDashboardInfo(mlParams,nn,iterNum,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg) {
+	
+	var d = 4; //dec places
+	
+	var dashInfo = '';
+	
+	dashInfo += 'Iter: ' + iterNum + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + '<br>';
+	
+	
+	if ((mlParams.module === 'log') && (mlParams.numLogClasses > 2)) {
+		dashInfo += 'Training class: ' + (mlParams.currClassNum + 1);
+		
+	}
+	
+	
+	if ((mlParams.module == 'log') || (mlParams.module == 'neu')) {
+		var num = 0;var dem = 1;
+		
+		if (mlParams.module == 'log') {
+			var acc = accuracy(math.transpose(minTheta),X,Y);
+			num = acc[1];
+			dem = acc[2];
+		}
+		else {
+			var accNeu = nn.checkAccuracy();
+			num = accNeu[0];
+			dem = accNeu[1];
+		}
+		var perc = num / dem * 100;
+		
+		dashInfo+= ' Accuracy: ' + num + ' / ' + dem + ' (' + perc.toFixed(2) + '%)';
+		
+	}
+	
+	
+	if (mlParams.module === 'neu') {
+		
+	}
+	else {
+			dashInfo += '<br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d);
+			
+			for (var i = 1;i < n+1;++i) {
+			     dashInfo += ' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i;
+			}
+			
+	}
+	
+	if (errMsg) {
+		
+		dashInfo += errMsg;
+	}
+	
+	return dashInfo;
+	
+	
+	
+	
+        
+	
+}
+
 /**
  *
  * @param mlParams
@@ -714,13 +776,15 @@ function learn(mlParams,X,Y,progCallback) {
    
    
    if (progCallback) {
-       progCallback('outputBlog','<br>----------------------------------------------------------------------------------------');  
+       //progCallback('outputBlog','<br>----------------------------------------------------------------------------------------');  
 	   if (mlParams.diagnosticsFlag) {
           progCallback('diagnosticDiv',	'<br>-----------');   
 	   }
-       if (mlParams.numLogClasses > 2) {
+	   /*
+       if  ((mlParams.module === 'log') && (mlParams.numLogClasses > 2)) {
 		progCallback('outputBlog','<br>Training class: ' + (mlParams.currClassNum + 1));
-	   }	   
+	   }
+       */	   
 	}
 	
  
@@ -729,15 +793,19 @@ function learn(mlParams,X,Y,progCallback) {
        ThetaIdeal = solveAnalytically(math.transpose(XUnscaled),Y);
 	   var d = 4;
 	   if (progCallback) {
-	        progCallback('outputBlog','<br>Ideal h(Theta) = ' +  math.subset(ThetaIdeal,math.index(0,0)).toFixed(d)); 
+		   if (mlParams.diagnosticsFlag) {
+	           progCallback('diagnosticDiv','<br>Ideal h(Theta) = ' +  math.subset(ThetaIdeal,math.index(0,0)).toFixed(d)); 
 	    
-            for (var i = 1;i < n+1;++i) {
-			  progCallback('outputBlog',' + ' +  math.subset(ThetaIdeal,math.index(i,0)).toFixed(d) + 'x' + i); 
-	        }
+               for (var i = 1;i < n+1;++i) {
+			      progCallback('diagnosticDiv',' + ' +  math.subset(ThetaIdeal,math.index(i,0)).toFixed(d) + 'x' + i); 
+	           }
+		   }
 		}
 	  IdealCost =  costFunction(math.transpose(ThetaIdeal),XUnscaled,Y,0,mlParams.module)[0];    //zero lambda
 	  if (progCallback) {
-	       progCallback('outputBlog','<br> Ideal Cost: ' + math.sum(IdealCost));
+		   if (mlParams.diagnosticsFlag) { 
+	          progCallback('diagnosticDiv','<br> Ideal Cost: ' + math.sum(IdealCost));
+		   }
 	      
 		}   
    }
@@ -789,8 +857,28 @@ function learn(mlParams,X,Y,progCallback) {
 	}
 	
 	minTheta = Theta.clone();
+	
+
+	var minThetaUnscaled;
+	if (mlParams.module == 'neu') {
+		//TODO Need to implement unscaling for neural network
+		minThetaUnscaled = minTheta.clone();
+	}
+	
+	else {
+	
+		if (mlParams.scalingFlag) {
+			minThetaUnscaled = thetaUnscale(minTheta,scaleFactors);
+		}
+		else {
+			minThetaUnscaled = minTheta.clone();
+		}
+	}
+	
 		
     var degrees = mlParams.degrees;//parseInt(elVal('degreesInput'));
+		
+	var errMsg = null;	
 		
 	for (var i = 0;i < maxIters;++i) {
  
@@ -817,29 +905,16 @@ function learn(mlParams,X,Y,progCallback) {
 			
 			if (i % 2 == 0) {
 				if (progCallback) {
-					progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)),true);
 					
-					
-					if (mlParams.numLogClasses > 2) {
-						progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
-					}
-					else {
-						progCallback('rightBannerDiv','<br>');
-					}
-					
-					if (mlParams.module == 'log') {
-					   var acc = accuracy(math.transpose(minTheta),X,Y);
-                       var perc  = (acc[1] / acc[2] * 100);
-					   progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)');
-					}
+					var dashInfo = getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+					progCallback('rightBannerDiv',dashInfo,true);
 					
 				}
 			}
-		//	if (i % 50 == 0) {
-				costAr.push(math.sum(Cost) + math.sum(RegCost));
-			 
-				iters.push(iterNum);
-		//	}
+		
+			costAr.push(math.sum(Cost) + math.sum(RegCost));
+			iters.push(iterNum);
+		
 		
 		    if (i % 50 == 0) {
 				if (progCallback) {
@@ -865,16 +940,7 @@ function learn(mlParams,X,Y,progCallback) {
 						itersRed = iters;
 					}
 					
-
-					var minThetaUnscaled;
-					if (mlParams.scalingFlag) {
-					    minThetaUnscaled = thetaUnscale(minTheta,scaleFactors);
-					}
-					else {
-						minThetaUnscaled = minTheta.clone();
-					}
-   		
-
+	
 		            if (i == 0) {
 						//progCallback('chart',null,true);
 					}
@@ -885,19 +951,23 @@ function learn(mlParams,X,Y,progCallback) {
 			
 			}
 		
+		    /*
 			if  (mlParams.diagnosticsFlag) {//(elVal('diagnosticsFlag')) {
 			   if (progCallback) {
 				  
 			      progCallback('diagnosticDiv','<br><br> Iter: ' + i + ' Cost: ' +  (math.sum(Cost) + math.sum(RegCost)) );
 				}
 			}	
+			*/
 			
 			
 			
 			if ((math.sum(Cost) + math.sum(RegCost)) > prevCost) {
 				if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
+			       errMsg = '<br>Non Convergence. Try smaller alpha. ' + i + ' iterations';
 				   if (progCallback) {
-				      progCallback('outputBlog','<br>Non Convergence. Try smaller alpha. ' + i + ' iterations');
+					   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+				      //progCallback('outputBlog','<br>Non Convergence. Try smaller alpha. ' + i + ' iterations');
 					}
 				   break;
 				}
@@ -906,8 +976,13 @@ function learn(mlParams,X,Y,progCallback) {
 			
 			if ((prevCost - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCost - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
 				console.log('Converged after: ' + i);
+				errMsg = '<br>Converged after: ' + i + ' iterations';
 				if (progCallback) {
-				    progCallback('outputBlog','<br>Converged after: ' + i + ' iterations');
+					
+				    //progCallback('outputBlog','<br>Converged after: ' + i + ' iterations');
+									   
+					progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+	
 				}
 				break;
 			}	
@@ -925,60 +1000,64 @@ function learn(mlParams,X,Y,progCallback) {
 			   Theta = res[0];
 			}
 			
+			/*
 			if  (mlParams.diagnosticsFlag) {
 			    if (progCallback) {
 				  progCallback('diagnosticDiv','<br>Grad: ' + res[1]);
 				  progCallback('diagnosticDiv','<br>Theta: ' + Theta);
 				}
 			}
+			*/
 
 			if ( (math.sum(Cost) + math.sum(RegCost)) < minCostSum) {
 				minCost = Cost;
 				minReg = RegCost;
 				minCostSum = math.sum(Cost) + math.sum(RegCost);
 				minTheta = Theta;
+				if (mlParams.module == 'neu') {
+		           //TODO Need to implement unscaling for neural network
+		           minThetaUnscaled = minTheta.clone();
+	            }
+	            else {
+	             	if (mlParams.scalingFlag) {
+			            minThetaUnscaled  = thetaUnscale(minTheta,scaleFactors);
+	            	}
+	            	else {
+		             	minThetaUnscaled = minTheta.clone();
+					}
+				}
+				
+			
 			}
+			
+				
+	}					
 		
-	}
+	
+		
 	
 	console.log('Cost: ' +  Cost + '\nTot cost: ' + (math.sum(Cost) + math.sum(RegCost)))	;
 	
 	if (progCallback) {
-		progCallback('rightBannerDiv','Iter: ' + i + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)),true);
 		
+		var dashInfo = getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+		progCallback('rightBannerDiv',dashInfo,true);
+ 					
+	}
+	
+	
+	//var minThetaUnscaled;
+	
 
-		if (mlParams.numLogClasses > 2) {
-		   progCallback('rightBannerDiv','<br>Training class: ' + (mlParams.currClassNum + 1));
-		}
-	    else {
-		   progCallback('rightBannerDiv','<br>');
-	    }
-		
-		if (mlParams.module == 'log') {
-		   var acc = accuracy(math.transpose(minTheta),X,Y);
-           var perc  = (acc[1] / acc[2] * 100);
-	       progCallback('rightBannerDiv',' Accuracy: ' + acc[1] + '/' + acc[2] +  ' (' + perc.toFixed(4) + '%)');
-		}
-
-      
-					
-	}
-	
-	
-	var minThetaUnscaled;
-    if (mlParams.scalingFlag) {
-          minThetaUnscaled  = thetaUnscale(minTheta,scaleFactors);
-	}
-	else {
-		minThetaUnscaled = minTheta.clone();
-		
-	}
-	
 
 	if (progCallback) {
 		
+		/*
 		minTheta = math.reshape(minTheta,[1,minTheta.size()[0]]);
 		minThetaUnscaled = math.reshape(minThetaUnscaled,[1,minThetaUnscaled.size()[0]]);
+		*/
+		
+		/*
 		var g = minThetaUnscaled.get([0,0]);
 		var h = math.subset(minThetaUnscaled,math.index(0,0));
 		
@@ -987,29 +1066,37 @@ function learn(mlParams,X,Y,progCallback) {
 		var bb = parseFloat(aa);
 				
 		var cc = h.toFixed(2);
+		*/
 		
 		var d = 4;
+		
 		
 
 		
 		if (mlParams.module == 'neu') {
-			progCallback('outputBlog','<br>Alpha: ' +  mlParams.alpha) ;
-			progCallback('outputBlog',' Model Cost: ' + minCostSum);
-		}
-		else {
-		   progCallback('outputBlog','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d));
-			for (var i = 1;i < n+1;++i) {
-			   progCallback('outputBlog',' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
-			}
+			if (mlParams.diagnosticsFlag) {
 				
-			progCallback('outputBlog','<br>Model Cost: ' + minCostSum);
-		
-			progCallback('outputBlog','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0,0)).toFixed(d));
-			for (var i = 1;i < n+1;++i) {
-			   progCallback('outputBlog',' + ' + minTheta.subset(math.index(i,0)).toFixed(d) + 'x' + i);
+			   progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
+			   progCallback('diagnosticDiv',' Model Cost: ' + minCostSum);
 			}
-			progCallback('outputBlog',')');
-			progCallback('outputBlog','<br>Alpha: ' +  mlParams.alpha) ;
+		}
+		
+		else {
+			if (mlParams.diagnosticsFlag) {
+			   progCallback('diagnosticDiv','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d));
+				for (var i = 1;i < n+1;++i) {
+				   progCallback('diagnosticDiv',' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); //;minThetaUnscaled[i] + 'x' + i);
+				}
+					
+				progCallback('diagnosticDiv','<br>Model Cost: ' + minCostSum);
+			
+				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0,0)).toFixed(d));
+				for (var i = 1;i < n+1;++i) {
+				   progCallback('diagnosticDiv',' + ' + minTheta.subset(math.index(i,0)).toFixed(d) + 'x' + i);
+				}
+				progCallback('diagnosticDiv',')');
+				progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
+			}
 
 		}
 		
@@ -1457,6 +1544,15 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		
 	};
 	
+	this.reInitX = function(X) {
+		//supply scaled X
+		this.X = X;
+		this.layers[0].X = X;
+		this.layers[0].A = math.matrix(matrixToArray(this.X,0)); //remove first row of 1s
+		
+		
+	};
+	
 	this.init = function() {
 		
 		var ThMats = [];
@@ -1528,7 +1624,7 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 				this.Theta = this.InitThMat;
 			}
 			else {
-                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-5,5)); ///-1,1));
+                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-1,1)); ///-1,1));
 			}
 			/*
             else {			

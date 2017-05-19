@@ -84,7 +84,7 @@
 
 <div id = "inputOutputDiv">
     <div id = "inputDiv">
-    <textarea id = "trainingInput" cols=40 rows=10 ></textarea>
+    <textarea id = "trainingInput"  onpaste="inputPasted()" cols=40 rows=10 ></textarea>
 	</div>
     <div id = "outputDiv">
      	<div id = "outputBlog">Results</div>
@@ -96,15 +96,15 @@
 <div id = "visualDiv">
     <div id = "chartsDiv" class="visClass">
 	    <div id = "chart2Div">
-        <canvas id="visualiseChart"  width="400" height="200"></canvas>
+        <canvas id="visualiseChart"  width="450" height="340"></canvas>
         </div>
         <div id = "chartDiv">
-        <canvas id="costChart" width="400" height="200"></canvas>
+        <canvas id="costChart" width="450" height="340"></canvas>
         </div>
   
     </div>
     <div id = "architectureDiv" class = "visClass">
-        <canvas id = "nnCanvas" width="1200px" height="200px">
+        <canvas id = "nnCanvas" width="1200" height="340">
 
         </canvas>
     </div>

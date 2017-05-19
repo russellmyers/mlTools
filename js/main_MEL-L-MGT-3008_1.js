@@ -2425,7 +2425,7 @@ function VNetworkController(nn) {
                     vEdge.colour = "#0000FF";
                     break;
                 case 2:
-                    vEdge.colour = "#6C7B8B"; //"#00FFFF";
+                    vEdge.colour = "#00FFFF";
                     break;
 				case 3:
 				    vEdge.colour = "#C67171";
@@ -2458,15 +2458,7 @@ function VNetworkController(nn) {
                 col = uNum == 0 ? '#B0B0B0' : '#000000';
             }
 
-			var uNumLab;
-			if (lNum == this.layers() - 1) {
-				uNumLab = uNum + 1;
-			}
-			else {
-				uNumLab = uNum;
-			}
-			
-            vNode = new VNode('' + lNum + '-' + uNumLab, null, null, 0, col);
+            vNode = new VNode('' + lNum + '-' + uNum, null, null, 0, col);
             this.VNodesCached[key] = vNode;
             //return vNode;
         }
@@ -2673,14 +2665,11 @@ function VEdge(l,v1,v2,w,col) {
         */
 		
 		var uNum = parseInt(this.v2.label.split('-')[1]);
-		var xScale = (uNum  % 4) / 5;
-		if (xScale == 0) {
-			xScale = 4 / 5;
-		}
+		var xScale = (1 + uNum) / 10;
 		
         var txt = this.label + '' + this.weight;
         var txtWidth = ctx.measureText(txt).width;
-        var txtPosX = start[0] + ((end[0] - start[0]) * xScale) // - (txtWidth / 2);
+        var txtPosX = start[0] + ((end[0] - start[0]) * xScale) - (txtWidth / 2);
         var txtPosY = start[1] + ((end[1] - start[1]) * xScale) + vertTxtOffset;
 		
 		ctx.save();
@@ -2689,7 +2678,7 @@ function VEdge(l,v1,v2,w,col) {
 		var ang = Math.atan2(end[1] - start[1], end[0] - start[0]);
 		ctx.rotate(ang);
 		ctx.translate(-txtPosX,-txtPosY);
-		ctx.fillStyle = this.colour;
+		
         ctx.fillText(txt,txtPosX,txtPosY);
 		
 
