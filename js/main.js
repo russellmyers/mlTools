@@ -121,9 +121,10 @@ if (typeof	(Worker) !== "undefined") {
 					       el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 
 					}
-					
+
 					visualiseCostChart(costAr,iters);
 					
+
 					if (mlParams.module == 'neu') {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
 					}
@@ -2239,8 +2240,34 @@ function updateCostChart(newCost,newIters) {
 //var smallerCost = costAr.slice(len - lastHowMany);
 //var smallerIter = iters.slice(len - lastHowMany);
 
-costChart.data.labels = newIters;
-costChart.data.datasets[0].data = newCost;
+
+	 costChart.data.labels = newIters;
+	 costChart.data.datasets[0].data = newCost;
+
+
+/*
+	if (newIters.length > 50) {
+		if (costChart.data.labels.length % 2 == 0) {
+			costChart.data.labels.push(newIters[newIters.length - 1]);
+			costChart.data.datasets[0].data.push(newCost[newCost.length - 1]);
+		}
+		else {
+
+
+		//	costChart.data.labels.splice(0,1);
+		//	costChart.data.datasets[0].data.splice(0,1);
+
+
+		}
+	}
+    else {
+        costChart.data.labels = newIters;
+        costChart.data.datasets[0].data = newCost;
+
+    }
+*/
+
+
 costChart.update();
 
 

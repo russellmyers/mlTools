@@ -921,21 +921,31 @@ function learn(mlParams,X,Y,progCallback) {
 					
 					var costArRed,itersRed;
 					
-					if (costAr.length > 500) {
-						   costArRed = costAr.filter(function(el,i) {
-							   if ((i == 0) || ((i + 1) % 50 == 0)) {
+					if (costAr.length > 50) {
+						//costArRed = costAr.slice(costAr.length - 500,costAr.length);
+						//itersRed = iters.slice(iters.length - 50,iters.length);
+                        
+                        //costArRed = costAr.slice(costAr.length-50,costAr.length);
+                        //itersRed = iters.slice(iters.length-50,iters.length);
+						
+						   costArRed = costAr.filter(function(el,ii) {
+							   if ((ii == 0) || ((ii + 1) % Math.floor(costAr.length / 50) == 0)) { // 50 == 0)) {  // Math.floor(costAr.length / 500) == 0)) {
 								  return true;
 							   }
 							   return false;
 						   });
-						   itersRed = iters.filter(function(el,i) {
-							   if ((i == 0) || ((i + 1) % 50 == 0)) {
+						   itersRed = iters.filter(function(el,ii) {
+							   if ((ii == 0) || ((ii + 1) % Math.floor(costAr.length / 50) == 0)) {
 								  return true;
 							   }
 							   return false;
 						   });
+						   
+
 					}
 					else  {
+                        //costArRed = costAr.slice(costAr.length-50,costAr.length);
+                        //itersRed = iters.slice(iters.length-50,iters.length);
 						costArRed = costAr;
 						itersRed = iters;
 					}
@@ -992,7 +1002,8 @@ function learn(mlParams,X,Y,progCallback) {
 			prevCost = math.sum(Cost) + math.sum(RegCost);
 
 			if (mlParams.module == 'neu') {
-				nn.gradientCheck();
+                nn.backProp();
+				//nn.gradientCheck();
 				Theta = nn.unrollThetas();
 			}
 			else {
@@ -1282,7 +1293,7 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		 
 	 };
 	 
-	 
+
 	
 	 
 	 this.getCost = function(costType,m,decPlaces) {
@@ -1435,6 +1446,37 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		 return math.matrix(unrolled);
 		 
 	 };
+
+    this.calcDeltas = function() {
+        for (var i = this.numLayers - 1;i > 0;--i) {
+            this.layers[i].calcDeltas();
+
+        }
+
+
+
+    };
+
+    this.calcDerivs = function() {
+        for (var i = 0;i < this.numLayers -1;++i) {
+            this.layers[i].calcDerivs();
+        }
+    };
+
+	this.backProp = function() {
+
+        this.calcDeltas();
+        this.calcDerivs();
+
+        for (var lay = 0;lay < this.numLayers - 1;++lay) {
+            this.layers[lay].adjustTheta(this.alpha);
+
+        }
+
+        this.forward();
+
+
+	};
 	 
 	 
 	 this.gradientCheck = function() {
@@ -1464,13 +1506,14 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		 }
 		 
 		 
-		 
+		 /*
 		 for (lay = 0;lay < this.numLayers - 1;++lay) {
-			 this.layers[lay].adjustTheta(this.alpha);
+			 this.layers[lay].adjustThetaApprox(this.alpha);
 			 
 		 }
 			 
 		 this.forward();
+		 */
 
         // console.log('new cost: ' + this.getCost('T'));		 
 		 
@@ -1585,6 +1628,10 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 			}
 			
 		}
+
+        for (var i = 0;i < this.numLayers - 1;++i) {
+            this.layers[i].nextLayer = this.layers[i+1];
+        }
 		
 	};
 	
@@ -1601,7 +1648,12 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 	 this.X = null; //input
 	 this.Z = []; //intermediate
 	 this.A = null; //output
+     this.D = null // delta, used for gradient
+
 	 this.prevLayer = prevLayer;
+
+     this.nextLayer = null;
+
 	 
 	 this.InitThMat = InitThMat;
 	 
@@ -1624,7 +1676,7 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 				this.Theta = this.InitThMat;
 			}
 			else {
-                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-1,1)); ///-1,1));
+                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-2,2)); ///-1,1));
 			}
 			/*
             else {			
@@ -1646,9 +1698,48 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 			 
 		 
 	 };
-	 
-	 
-	
+
+     this.calcDerivs = function() {
+
+      var ones = math.ones(1,this.A.size()[1]);
+      this.AWithBias = math.concat(ones,this.A,0);
+
+      this.Derivs = math.multiply(this.AWithBias,math.transpose(this.nextLayer.D));
+
+      this.Derivs = math.multiply(this.Derivs,1 / this.A.size()[1]); //divide by m
+
+
+
+
+     };
+
+
+     this.calcDeltas = function()  {
+       if (this.isOutputLayer()) {
+           this.D = math.subtract(this.A,this.Y);
+       }
+       else {
+           this.D = math.multiply(this.Theta,this.nextLayer.D);
+           var ones = math.ones(1,this.A.size()[1]);
+           this.AWithBias = math.concat(ones,this.A,0);
+           this.AComplement = math.subtract(math.ones(math.size(this.AWithBias)),this.AWithBias);
+           this.prime = math.dotMultiply(this.AWithBias,this.AComplement);
+           this.D = math.dotMultiply(this.D,this.prime);
+
+           this.D = math.matrix(matrixToArray(this.D,0)); //remove first row of 1s
+
+       }
+
+
+
+     };
+
+
+     this.isOutputLayer = function() {
+         return this.nextLayerN == -1;
+
+     };
+
 	 
 	 
 	 this.initApproxGrads = function() {
@@ -1661,10 +1752,16 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		 
 		 
 	 };
+
+
+     this.adjustTheta = function(alpha) {
+         this.DerivsAdj =  math.multiply(this.Derivs,alpha);
+
+         this.Theta = math.subtract(this.Theta,this.DerivsAdj);
+
+     };
 	 
-	
-	 
-	 this.adjustTheta = function(alpha) {
+	 this.adjustThetaApprox = function(alpha) {
 		 this.ApproxGrads = math.multiply(this.ApproxGrads,alpha);
 		 
 		 this.Theta = math.subtract(this.Theta,this.ApproxGrads);
