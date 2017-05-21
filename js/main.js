@@ -824,7 +824,7 @@ function applyInput() {
    if (mlParams.module == 'neu') {
 	      var randomTheta = true;
 		  
-	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] - 1,yUnits],mlData.X,mlData.Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits],mlData.X,mlData.Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 		  
 		  if (mlParams.initTheta == '') {
 			  var InTh = mlNN.unrollThetas();

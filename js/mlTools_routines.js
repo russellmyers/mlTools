@@ -695,10 +695,21 @@ function getDashboardInfo(mlParams,nn,iterNum,minTheta,minThetaUnscaled,X,Y,n,Co
 			var accNeu = nn.checkAccuracy();
 			num = accNeu[0];
 			dem = accNeu[1];
+            var prec = accNeu[2];
+            var recall = accNeu[3];
+            var f1Score = accNeu[4];
 		}
 		var perc = num / dem * 100;
-		
-		dashInfo+= ' Accuracy: ' + num + ' / ' + dem + ' (' + perc.toFixed(2) + '%)';
+
+        var precRecallStr = '';
+        if (prec == null) {
+        }
+        else {
+            precRecallStr = ' Prec: ' + prec.toFixed(2) + ' Recall: ' + recall.toFixed(2) + ' F1: ' + f1Score.toFixed(2);
+        }
+        dashInfo += ' Accuracy: ' + num + ' / ' + dem + ' (' + perc.toFixed(2) + '%)' + precRecallStr;
+
+
 		
 	}
 	
@@ -834,7 +845,7 @@ function learn(mlParams,X,Y,progCallback) {
 	var nn;
    
     if (mlParams.module == 'neu') {
-         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] - 1,Y.size()[0]],X,Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] + 1,Y.size()[0]],X,Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 	     Theta = nn.unrollThetas();
  	}
     else {	
@@ -1204,6 +1215,56 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		
 		
 		var P = this.predict();
+
+        var PosNeg = [];
+
+        var prec = null;
+        var recall = null;
+        var f1Score = null;
+
+        if (Y.size()[0] == 1) { //binary
+            P.forEach(function(el,i) {
+
+               if ((el == 0)  && (Y.get(i) == 0)) {
+                   PosNeg.push([0,0,1,0]); // true neg
+               }
+               else if ((el == 0)  && (Y.get(i) == 1)) {
+                   PosNeg.push([0,0,0,1]); // false neg
+               }
+               else if ((el == 1)  && (Y.get(i) == 0)) {
+                    PosNeg.push ([0,1,0,0]); // false pos
+                }
+                else  {
+                    PosNeg.push([1,0,0,0]); // true pos
+                }
+
+            });
+
+            var PosNegSum = math.multiply(math.ones(Y.size()[1]),PosNeg);
+
+            if (PosNegSum.get([0]) + PosNegSum.get([1]) == 0) {
+                prec = 0;
+            }
+            else {
+                prec = PosNegSum.get([0]) / (PosNegSum.get([0]) + PosNegSum.get([1]));
+            }
+
+            if (PosNegSum.get([0]) + PosNegSum.get([3]) == 0) {
+                recall = 0;
+            }
+            else {
+                recall = PosNegSum.get([0]) / (PosNegSum.get([0]) + PosNegSum.get([3]));
+            }
+
+            if (prec + recall == 0) {
+                f1Score = 0;
+            }
+            else {
+                f1Score = 2 * prec * recall / (prec + recall);
+
+            }
+
+        }
 		
 		
 		var D = math.subtract(P,Y);
@@ -1221,7 +1282,7 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 			return el == 0 ? 1 : 0;
 	    });
 		
-		return [math.sum(Prod),Y.size()[1]];
+		return [math.sum(Prod),Y.size()[1],prec,recall,f1Score];
 		
 		
 		
