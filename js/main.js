@@ -127,7 +127,14 @@ if (typeof	(Worker) !== "undefined") {
 
 					if (mlParams.module == 'neu') {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
+						
 					}
+					
+					if (elVal('copyThetaFlag')) {
+                          mlParams.initTheta = minThStr;
+			               initThetaUpdated();
+		            }
+					
 					
 		
 					visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
@@ -444,7 +451,7 @@ function testButClicked() {
    var randomTheta = true;
    
    
-   var nn = new NeuralNetwork([2,2,1],nnX,nnY,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+   var nn = new NeuralNetwork([2,2,1],nnX,nnY,nnX,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
    nn.layers[0].Theta = nnTh;
    nn.layers[1].Theta = nnTh2;
    
@@ -824,7 +831,7 @@ function applyInput() {
    if (mlParams.module == 'neu') {
 	      var randomTheta = true;
 		  
-	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits],mlData.X,mlData.Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits],mlData.X,mlData.Y,mlData.X,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 		  
 		  if (mlParams.initTheta == '') {
 			  var InTh = mlNN.unrollThetas();
@@ -1014,9 +1021,11 @@ function numLogClassesUpdated() {
 
  function nnUpdated() {
 	 drawNN();
-	 el('outputIndiv').innerHTML = 'Individual: ' + (mlParams.displayTrainingNum + 1) + ' Inputs: ' + mlNN.getInputsForSingleM(mlParams.displayTrainingNum) + ' Cost contrib per output layer: ' + mlNN.getCost('CM',mlParams.displayTrainingNum,4);
-	 el('outputIndiv').innerHTML += ' Tot output layers: ' + mlNN.getCost('CM',mlParams.displayTrainingNum);
-	 el('outputIndiv').innerHTML += '<br>Tot overall cost all training: ' + mlNN.getCost('C') + ' Tot Reg Cost: ' + mlNN.getCost('R') + ' Tot cost both: ' + mlNN.getCost('T');
+	 el('outputIndiv').innerHTML = 'Training sample: ' + (mlParams.displayTrainingNum + 1) + ' Inputs: ' + mlNN.getInputsForSingleM(mlParams.displayTrainingNum,4) + '<br>Training sample cost contrib / output unit: ' + mlNN.getCost('CM',mlParams.displayTrainingNum,4);
+	 if (mlParams.diagnosticsFlag) {
+ 	    el('diagnosticDiv').innerHTML += ' Tot output layers: ' + mlNN.getCost('CM',mlParams.displayTrainingNum);
+	    el('diagnosticDiv').innerHTML += '<br>Tot overall cost all training: ' + mlNN.getCost('C') + ' Tot Reg Cost: ' + mlNN.getCost('R') + ' Tot cost both: ' + mlNN.getCost('T');
+	 }
 
  }
  
@@ -2499,6 +2508,10 @@ function VNetworkController(nn) {
             vNode.yVal = nodeY;
 
         }
+		
+		if (lNum == 0) {
+		   vNode.xValUnscaled = this.nn.XUnscaled.get([uNum,m]);
+		}
 
         return vNode;
 
@@ -2691,6 +2704,7 @@ function VNode(l,c,r,w,col) {
     this.weight = (w == null) ? 0 : w;
 
     this.yVal = -1;
+	this.xValUnscaled = -1;
 
     this.display = function(ctx) {
         var svdStrokeStyle = ctx.strokeStyle;
@@ -2711,7 +2725,14 @@ function VNode(l,c,r,w,col) {
         }
 
         else {
-            ctx.fillText(this.yVal, this.centre[0] - this.radius, this.centre[1] + this.radius + 1);
+            ctx.fillText(this.yVal, this.centre[0] - this.radius, this.centre[1] + this.radius + 6);
+        }
+		
+		if (this.xValUnscaled == -1) {
+        }
+
+        else {
+            ctx.fillText(this.xValUnscaled, this.centre[0] - this.radius, this.centre[1] + this.radius + 6);
         }
 
     };

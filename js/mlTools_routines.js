@@ -844,7 +844,7 @@ function learn(mlParams,X,Y,progCallback) {
 	var nn;
    
     if (mlParams.module == 'neu') {
-         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] + 1,Y.size()[0]],X,Y,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] + 1,Y.size()[0]],X,Y,XUnscaled,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 	     Theta = nn.unrollThetas();
  	}
     else {	
@@ -1106,7 +1106,7 @@ function learn(mlParams,X,Y,progCallback) {
 
 }
 
-function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
+function NeuralNetwork(architecture,X,Y,XUnscaled,alpha,lambda,initTheta) {
 	this.architecture = architecture;
 	this.numLayers = architecture.length;
 	this.numInputFeatures = architecture[0];
@@ -1114,6 +1114,7 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 	this.numHiddenLayers = this.numLayers - 2;
 	this.X = X;
 	this.Y = Y;
+	this.XUnscaled = XUnscaled;
 	
 	this.randomTheta = true;
 	
@@ -1324,9 +1325,18 @@ function NeuralNetwork(architecture,X,Y,alpha,lambda,initTheta) {
 		
 	};
 	
-	 this.getInputsForSingleM = function(m) {
+	 this.getInputsForSingleM = function(m,d) {
+		 var singleMArray = [];
 		 if (this.layers[0].A) {
-			 return mCol(this.layers[0].A,m,true);
+			 singleMArray = mCol(this.layers[0].A,m,true);
+			 if (d == null) {
+				return singleMArray; 
+			 }
+			 else {
+				 return singleMArray.map(function(el) {
+					 return el.toFixed(d);
+				 });
+			 }
 			 
 		 }
 		 else {
