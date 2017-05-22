@@ -128,10 +128,10 @@ if (typeof	(Worker) !== "undefined") {
 					if (mlParams.module == 'neu') {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
 					}
-					else {
+					
 		
-					   visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
-					}
+					visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					
 					
 					
 				}
@@ -167,9 +167,9 @@ if (typeof	(Worker) !== "undefined") {
 					if (mlParams.module == 'neu') {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
 					}
-					else {
-					  visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
-					}
+					
+					visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					
 				}
 				
 				else if (event.data.action == 'chartInit') {
@@ -1189,6 +1189,7 @@ function clearRes()  {
   
   el('outputBlog').innerHTML = '';
   el('diagnosticDiv').innerHTML = '';
+  el('rightBannerDiv').innerHTML = '<h2>Machine Learning Tools</h2>';
   
   
   
@@ -1372,7 +1373,6 @@ function learnForeground() {
 			   var str = arrayToString(flAr);
 			   mlParams.initTheta = str;
 			   initThetaUpdated();
-			  // el('initTheta').value = str;
 		   }
 		   
 		   
@@ -1396,24 +1396,11 @@ function learnForeground() {
           break;
 
         case 'neu':
-            //res = learn(mlParams,mlData.X,mlData.Y,mlData.scaleFactors,learnProgressForeground);
-			
+  			
 			res = learn(mlParams,mlData.X,mlData.Y,learnProgressForeground); //mlData.scaleFactors,learnProgressForeground);
 		    mlResults.push(res);
 			
 			var minThStr = applyNNThetaFromLearn(res[6],res[4]);
-			
-			/*
-			var MinTheta = res[6];
-			MinTheta = math.squeeze(MinTheta);
-			var minThStr = arrayToString(matrixToArray(MinTheta),' ');
-			
-			mlNN.reInitThetas(minThStr);
-			
-			
-			mlNN.forward(); // initial forward propagate based on initial Thetas
-			nnUpdated();
-			*/
 			
 			if (elVal('copyThetaFlag')) {
 		       mlParams.initTheta = minThStr;
@@ -1421,32 +1408,6 @@ function learnForeground() {
 		   }
 		   
 		   var accNeu = mlNN.checkAccuracy();
-			
-			/*
-			for (var i = 0;i < mlParams.maxIterations;++i) {
-			 mlNN.gradientCheck();
-			}
-			nnUpdated();
-			*/
-
-			/*
-			drawNN(false);
-			*/
-			
-			/*
-	       var finalTh = mlNN.layers[0].Theta;
-		   var fl = math.flatten(finalTh);
-		   var flAr = matrixToArray(fl);
-		   var str = arrayToString(flAr);
-		   
-		   finalTh = mlNN.layers[1].Theta;
-		   fl = math.flatten(finalTh);
-		   flAr = matrixToArray(fl);
-		   str += ' ' + arrayToString(flAr);	   
-		   
-		   el('initTheta').value = str;
-		   */
-			
 			
 			break;
 			
@@ -1467,62 +1428,7 @@ function learnForeground() {
 		visualise(null,YOrig,null, XUnscaled,minThetaUnscaled,null,scaleFactors);
 		
 	
-	/*
-		var confAr = [];
-		
-	    for (var i = 0;i < mlParams.numLogClasses;++i) {
-			
-				res = mlResults[i];
-		
-				var costAr = res[0];
-				var iters = res[1];
-				var ThetaIdeal = res[2];
-				var IdealCost = res[3];
-				var X = res[4];
-				var Y = res[5];
-				var minTheta = res[6];
-				var XUnscaled = res[7];
-				var minThetaUnscaled = res[8];
-				var scaleFactors = res[9];
-				var YOrig = res[10];
-				
-				var conf = h(math.transpose(XUnscaled),math.matrix(minThetaUnscaled),true);
-				confAr.push(conf);
-			
-		}
-		
-		var predAr = [];
-		
-		var Y = mlResults[0][10]; // get Y original from first result (will be same for all)
-		
-		for (var m = 0;m < Y.size()[0];++m) {
-			var max = 0;
-			var maxI = -1;
-			for (var i = 0;i < mlParams.numLogClasses;++i) {
-				var conf = confAr[i].get([m,0]);
-				if (conf > max) {
-					max = conf;
-					maxI = i;
-				}
-				
-			}
-					
-			
-			predAr.push(maxI + 1);
-			
-			
-			
-		}
-		var predMat = math.matrix(predAr);
-		var acc = math.subtract(predMat,Y);
-		var numCorrect = 0;
-		acc.forEach(function(el) {
-			if (el == 0) {
-		        ++numCorrect;
-			}
-		});
-		console.log('Num correct: ' + numCorrect);
-    */	
+	
 	
 	}
     else {
@@ -1531,7 +1437,7 @@ function learnForeground() {
 			if (mlParams.diagnosticsFlag) {
                el('diagnosticDiv').innerHTML += '<br>Neural done. Accuracy: ' + accNeu[0] + ' / ' + accNeu[1];
 			}
-            return;
+            
         }
 	
 	
@@ -1826,6 +1732,30 @@ function constructRegTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
 
 }
 
+
+/**
+* Converts  all multi class Y vectors, eg [0 1 0 0] to class number, eg 2 for neural networks
+*/
+function convMultiClassMatrixToNum(Y) {
+	
+	var yAr = [];
+	
+	for (var c = 0;c < Y.size()[1];++c) {
+
+     	var yVec = mCol(Y,c,true);
+		
+		for (var i = 0;i < yVec.length;++i) {
+			  if (yVec[i] == 1) {
+				yAr.push(i+1);
+				break;
+			  }				
+		}
+	}
+	
+	return yAr;
+	
+}
+
 /**
  * 
  * @param XUnscaled
@@ -1834,12 +1764,19 @@ function constructRegTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled) {
  * @param showAccForMultiClass
  * @returns {{points: Array, colours: Array, styles: Array}}
  */
-function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMultiClass) {
+function constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMultiClass) {
   var x1Ar = mRow(XUnscaled,1,true);
   
   var x2Ar = mRow(XUnscaled,2,true);
   
-  var yAr = mRow(Y,0,true);
+  var yAr;
+  
+  if ((mlParams.module === 'neu') && (Y.size()[0] > 1)) {
+	   yAr = convMultiClassMatrixToNum(Y);
+  }
+  else {
+       yAr = mRow(Y,0,true);
+  }
   
   var scatData = [];
   
@@ -1853,16 +1790,29 @@ function constructLogTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMult
      multiClass = true;
   }
   
+ 
+ 
   if ((multiClass) && (showAccForMultiClass)) {
 	  //check accuracy against all classes
-	  accMatrix = checkAccuracyMultiClass();
+	  if (mlParams.module === 'neu') {
+		  accMatrix =  mlNN.checkAccuracy()[5];
+	  }
+	  else {
+	    accMatrix = checkAccuracyMultiClass();
+	  }
   }
   else if (ThetaUnscaled) {
-     // if theta provided - check predictions and colour correct predictions green
-     var acc = accuracy(math.transpose(ThetaUnscaled),XUnscaled,Y);
-	 accMatrix = acc[0];
+	 // if theta provided - check predictions and colour correct predictions green
+	 if (mlParams.module === 'neu') {
+		 accMatrix =  mlNN.checkAccuracy()[5];
+	 }
+	 else {
+	   var acc = accuracy(math.transpose(ThetaUnscaled),XUnscaled,Y);
+	   accMatrix = acc[5];
+	 }
 	 
   }
+  
   
   
   x1Ar.forEach(function(x,i) {
@@ -1941,8 +1891,8 @@ function visualiseTrainingOnly(XUnscaled,Y) {
   
   
   var res;
-  if (mlParams.module == 'log') {
-      res = constructLogTrainingPlotPoints(XUnscaled,Y,null,false);
+  if ((mlParams.module == 'log') || (mlParams.module === 'neu')) {
+      res = constructClassificationTrainingPlotPoints(XUnscaled,Y,null,false);
   }
   else {
       res = constructRegTrainingPlotPoints(XUnscaled,Y);
@@ -1961,38 +1911,41 @@ function visualiseTrainingOnly(XUnscaled,Y) {
  * @param ThetaOrig
  * @param scaleFactors
  */
-function visualiseLog(XUnscaled,Y,ThetaOrig,scaleFactors) { 
+function visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors) { 
 	var ctx = document.getElementById("visualiseChart");
 	
-	var res = constructLogTrainingPlotPoints(XUnscaled,Y,ThetaOrig,true);
+	var res = constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaOrig,true);
 	createVisGraph(res.points,null,null,res.colours,res.styles);
 	
 	var incX = scaleFactors ? (scaleFactors[1][1] / 30) : 2000 / 10;
     var endX = scaleFactors ?  scaleFactors[1][2] + scaleFactors[1][1] +  incX  : 2000;
 	
-	var modelData = [];
-
-    for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
-          //construct boundary, ie line/curve where Xt Theta = 0
-		  
-		  //i represents x1
-		  var Tmp = math.multiply(math.transpose(XUnscaled),ThetaOrig);
-		  var sum = math.subset(ThetaOrig,math.index(0,0)); //ThetaOrig[0];
-		  sum+= math.subset(ThetaOrig,math.index(1,0))  * i; //x1
-		  var thx2 = sum * -1;
-		  var x2 = thx2 / math.subset(ThetaOrig,math.index(2,0));
-
-		  var plotPoint = {x:i,y:x2};
-	      modelData.push(plotPoint);
-
-	}
 	
-	if (XUnscaled.size()[0] > 3) {
-	
-	}
-	else {
-	
-	  updateVisGraph(null,modelData);
+	if (mlParams.module === 'log') {
+		var modelData = [];
+
+		for (var i = scaleFactors[1][2] - incX;i <=	 endX;i = i + incX) {
+			  //construct boundary, ie line/curve where Xt Theta = 0
+			  
+			  //i represents x1
+			  var Tmp = math.multiply(math.transpose(XUnscaled),ThetaOrig);
+			  var sum = math.subset(ThetaOrig,math.index(0,0)); //ThetaOrig[0];
+			  sum+= math.subset(ThetaOrig,math.index(1,0))  * i; //x1
+			  var thx2 = sum * -1;
+			  var x2 = thx2 / math.subset(ThetaOrig,math.index(2,0));
+
+			  var plotPoint = {x:i,y:x2};
+			  modelData.push(plotPoint);
+
+		}
+		
+		if (XUnscaled.size()[0] > 3) {
+		
+		}
+		else {
+		
+		  updateVisGraph(null,modelData);
+		}
 	}
 
 
@@ -2012,8 +1965,8 @@ function visualise(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors) {
 
 var ctx = document.getElementById("visualiseChart");
 
-if (mlParams.module == 'log') {
-   visualiseLog(XUnscaled,Y,ThetaOrig,scaleFactors);	
+if ((mlParams.module == 'log') || (mlParams.module === 'neu')) {
+   visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors);	
    return;
 }
 
