@@ -11,6 +11,11 @@ body {
 
 }
 
+h2 {
+	margin-top: 2px;
+	margin-bottom: 2px;
+}
+
 #bannerDiv {
    background-color: black;
    margin:0;
@@ -32,7 +37,7 @@ font-size:medium;
     
 }
 
-#rightBannerDiv {
+#dashDiv {
   font-size:medium;
   background-color: blue;
   display:inline-block;
@@ -40,7 +45,31 @@ font-size:medium;
   width: 40%;
   height: 88%;
   margin: 0;
+  padding: 0;	
+	
+}
+
+#rightBannerDiv {
+  font-size:medium;
+  background-color: blue;
+  display:block;
+  vertical-align:top;
+  width: 100%;
+  height: 80%;
+  margin: 0;
   padding: 0;
+
+}
+
+#cvBannerDiv {
+  font-size:medium;
+  background-color: blue;
+  display:block;
+  vertical-align:top;
+  width: 100%;
+  height: 18%;
+  margin: 0;
+  padding-bottom: 2px;
 
 }
 .moduleBut {
@@ -89,8 +118,15 @@ font-size:medium;
 #inputDiv {
   /*background-color: lightgrey;*/
   display:inline-block;
-  width: 350px;
+  width: 760px;
 
+}
+
+.dataSet {
+	display: inline-block;
+	height: 101px;
+	width: 185px;
+	
 }
 
 #stats {
@@ -120,7 +156,7 @@ font-size:medium;
   vertical-align: top;
   /*width: 550px;*/
   height: 101px;
-  width: 620px;
+  width: 200px;
   background-color:lightgrey;
   /*overflow: auto;*/
 }
@@ -129,7 +165,7 @@ font-size:medium;
   vertical-align: top;
   /*width: 550px;*/
   width: 100%;
-  height: 20px;
+  height: 90px;
   overflow: auto;
 }
 
@@ -138,12 +174,12 @@ font-size:medium;
 	 display:block;
 	/* width: 500px;*/
 	width: 100%;
-	 height: 80px;
+	 height: 10px;
 	 overflow:auto;
 }
 
 #trainingInput {
-  height: 101px;
+  /*height: 101px;*/
  
 }
 

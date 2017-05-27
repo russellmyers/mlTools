@@ -1,6 +1,14 @@
 var w;
 
+/**
+* mlParams:
+*  module
+*  
+*
+*/
 var mlParams;
+
+
 
 /**
  * mlResults: [ Array
@@ -34,6 +42,34 @@ init();
 startWorker();
 
 
+function MLParams() {
+	
+   this.module =  null;               // call moduleUpdated() when changed
+   this.numLogClasses = null;         // call numLogClassesUpdated() when changed
+   this.displayTrainingNum = null;    // call nnUpdated() when changed
+   this.visualDisplay = null;         // call visualDisplayUpdated() when changed
+   this.initTheta =  null;            //  call initThetaUpdated() when changed
+
+   this.input = null;                 // call trainingInputUpdated() when changed
+   this.trainingInputDirty = false;
+
+   this.degrees = null;            		 // retrieve when needed
+   this.addOnesFlag = null;				// retrieve when needed
+   this.scalingFlag = null;				// retrieve when needed
+   this.diagnosticsFlag = null;			// retrieve when needed
+   this.solveAnalytically = null;		// retrieve when needed
+   this.alpha = null;					// retrieve when needed
+   this.lambda = null;					// retrieve when needed
+   this.maxIterations = null;			// retrieve when needed
+   this.convThreshold = null;			// retrieve when needed
+   this.updateInitialThetaFlag = null;	// retrieve when needed
+   this.useBoldDriver = null;			// retrieve when needed
+   
+   this.currClassNum = null;            //used for logistic regression multi-class
+   
+	
+}
+
 /**
  * 
  */
@@ -44,7 +80,7 @@ function init() {
 	costChart = null;
 	visChart = null;
 	
-    mlParams = {};
+    mlParams = new MLParams();
 	mlResults = [];
 	mlData = {};
 	mlNN = null;
@@ -67,8 +103,9 @@ function init() {
 
 
 	
-	document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-
+	//document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+	this.input = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+   trainingInputUpdated();
     
 	
 }
@@ -127,6 +164,9 @@ if (typeof	(Worker) !== "undefined") {
 
 					if (mlParams.module == 'neu') {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
+						mlNN.scaleFactors = scaleFactors;
+
+						
 						
 					}
 					
@@ -208,7 +248,9 @@ else {
 function getParams() {
     
 	//mlParams.featureType = featureType; //uses mvc
-	mlParams.input = elVal('trainingInput');
+	
+	//mlParams.input = elVal('trainingInput');
+	
 	mlParams.degrees = parseInt(elVal('degreesInput'));
 	mlParams.addOnesFlag = true;     //elVal('addOnesFlag');
 	mlParams.scalingFlag = elVal('scalingFlag');
@@ -226,10 +268,10 @@ function getParams() {
 	
 	mlParams.updateInitialThetaFlag = elVal('copyThetaFlag');
 	
+	mlParams.useBoldDriver = elVal('boldDriverFlag');
+	
+	
 	mlParams.currClassNum = -1; //used for logisitic regression multi-class
-	
-	
-	
 	
  
  }
@@ -451,7 +493,7 @@ function testButClicked() {
    var randomTheta = true;
    
    
-   var nn = new NeuralNetwork([2,2,1],nnX,nnY,nnX,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+   var nn = new NeuralNetwork([2,2,1],nnX,nnY,nnX,null,null,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
    nn.layers[0].Theta = nnTh;
    nn.layers[1].Theta = nnTh2;
    
@@ -522,7 +564,9 @@ function neuralButClicked() {
         mlParams.visualDisplay = 'architectureDiv';
         visualDisplayUpdated();
 
-        document.getElementById('trainingInput').value = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
+        //document.getElementById('trainingInput').value = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
+		this.input = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
+		trainingInputUpdated();
 
         applyInput();
 
@@ -540,7 +584,9 @@ function logButClicked() {
    visualDisplayUpdated();
  
 
- document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
+   //document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
+   this.input = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1';
+   trainingInputUpdated();
  // document.getElementById('trainingInput').value = '1 1 1\n2 2 2\n3 3 3'	;
 
 
@@ -574,8 +620,10 @@ function regButClicked() {
    visualDisplayUpdated();
  
    
-   document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-  
+   //document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+   this.input = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+   trainingInputUpdated(); 
+ 
   applyInput();
     
  
@@ -586,8 +634,20 @@ function regButClicked() {
    
  }
  
+ 
+ function inputChanged() {
+	 this.input = elVal('trainingInput');
+	 trainingInputUpdated(true);
+	 
+	 //clearButtonPressed();
+	 
+ }
+ 
  function inputPasted() {
-	 clearButtonPressed();
+	 this.input = elVal('trainingInput');
+	 trainingInputUpdated(true);
+	 
+	 //clearButtonPressed();
 	 //applyInput();
 	 
  }
@@ -610,11 +670,13 @@ function stepTraining(inc) {
     */
 }
 
+
 /**
  * Now redundant
   * @param event
- */
-function featureTypeClicked(event) {
+
+  
+  /*function featureTypeClicked(event) {
     if (event.target.id === 'featurePoly') {
 	    mlParams.featureType = 'poly';
 		
@@ -627,6 +689,8 @@ function featureTypeClicked(event) {
 	featureTypeUpdated();
  
  }
+ */
+ 
 
 /**
  * 
@@ -643,25 +707,43 @@ function featureTypeClicked(event) {
  * 
  * @param event
  */
-function parseDataInput(data) {
+function parseDataInput(data,noY,labelled) {
 	//mlParams.input = elVal('trainingInput');
-
+ 
+ //noY flag if set means there are no Y values (ie prediction only)
+ //labelled flag if each X data point is labelled
+	
+	if (data === '') {
+		return [null,null];
+	}
 
 	var ar=  data.split('\n'); //document.getElementById('trainingInput').value.split('\n');
-	//alert(ar);
+	
 	yAr = [];
-	//yOrigAr = [];
+
+	xLabelAr =  labelled ? [] : null;
 
 	ar = ar.map(function(line) {
 		line = line.replace(/\[.*?\] */g,''); //remove any input in square brackets
 		line = line.replace(/ +/g,' '); //remove extra spaces
 		var elAr = line.split(' ');
+		
+		if (labelled) {
+			var lab = elAr.shift();
+			xLabelAr.push(lab);
+		}
+		
 		elAr = elAr.map(function(el) {
 			return parseFloat(el);
 		});
 
-		yVal = elAr.pop();
-		yOrigVal = yVal;
+		if (noY) {
+			
+		}
+		else {
+			yVal = elAr.pop();
+			yOrigVal = yVal;
+		}
 
 		//var first = elAr[0];
 
@@ -684,15 +766,26 @@ function parseDataInput(data) {
 
 		}
 
-		yAr.push([yVal]);
+		if (noY) {
+			
+		}
+		else {
+		   yAr.push([yVal]);
+		}
 
 		return elAr;
 	});
 
 
 	var Xt = math.matrix(ar);
+
+	
 	var X = math.transpose(Xt);
 
+	if (noY) {
+		return [X,null,xLabelAr];
+		
+	}
 	
 	var Y;
 	if (mlParams.module == 'neu') {
@@ -731,7 +824,7 @@ function parseDataInput(data) {
 	var test =  math.multiply(testThetaT,testX);
 	*/
 
-	return [X,Y];
+	return [X,Y,xLabelAr];
 
 }
  
@@ -776,24 +869,66 @@ function learnProgressForeground(targetEl,message,clearFlag) {
 
 //Action routines
 
+function applyPredictInput() {
+	
+   var noY = true;
+   var labelled = true;
+   
+   res = parseDataInput(elVal('predictInput'),noY,labelled);
+   mlData.Xpredict = res[0];
+   
+   var updateType = 'predict';
+   mlDataUpdated(updateType);
+	
+}
+
+function applyCVInput() {
+	
+   var noY = false;
+   var labelled = false;
+   
+   res = parseDataInput(elVal('cvInput'),noY,labelled);
+   mlData.Xcv = res[0];
+   mlData.Ycv = res[1];
+   
+   
+   var updateType = 'cv';
+   mlDataUpdated('cv');
+	
+}
+
 /**
  * 
  */
 function applyInput() {
 
-   clearRes();
+   //clearRes();
    getParams();
 
+   /*
 	mlData = {};
 	mlNN = null;
 	
 	mlResults = [];
+	*/
 
-   var res = parseDataInput(elVal('trainingInput'));
+   //var res = parseDataInput(elVal('trainingInput'));
+   var res = parseDataInput(this.input); 
    mlData.X = res[0];
    mlData.Y = res[1];
-   mlDataUpdated();
-
+   
+   res = parseDataInput(elVal('cvInput'));
+   mlData.Xcv = res[0];
+   mlData.Ycv = res[1];
+   
+   res = parseDataInput(elVal('testInput'));
+   mlData.Xtest = res[0];
+   mlData.Ytest = res[1];
+   
+  
+   
+   
+  
    var yUnits = 1;
    
    if (mlParams.module == 'log') {
@@ -825,13 +960,17 @@ function applyInput() {
    mlParams.numLogClasses = yUnits;
    numLogClassesUpdated();
   // el('numLogClasses').value = yUnits;
+  
+  
+   mlDataUpdated();
+
    
    
    
    if (mlParams.module == 'neu') {
 	      var randomTheta = true;
 		  
-	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits],mlData.X,mlData.Y,mlData.X,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits],mlData.X,mlData.Y,mlData.X,null,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 		  
 		  if (mlParams.initTheta == '') {
 			  var InTh = mlNN.unrollThetas();
@@ -862,7 +1001,7 @@ function applyInput() {
    visualiseTrainingOnly(XUnscaled,Y);
    */
   
-    visualiseTrainingOnly(mlData.X,mlData.Y);
+    //visualiseTrainingOnly(mlData.X,mlData.Y);
 
 }
 
@@ -870,6 +1009,8 @@ function applyInput() {
 /**
  * Now redundant
  */
+ 
+ /*
 function featureTypeUpdated() {
  
     //mlParams.featureType = featureType;
@@ -903,7 +1044,23 @@ function featureTypeUpdated() {
 	
 	}
  }
+ */
+ 
+ 
+function trainingInputUpdated(suppressUIUpdate) {
+	
+		  
+	  clearButtonPressed();
+	  
+	    if (suppressUIUpdate) {
+	  }
+	  else {
+	     el('trainingInput').value = this.input;
+	  }
+      mlParams.trainingInputDirty = true;
 
+}
+	
 /**
  * 
  */
@@ -1020,12 +1177,18 @@ function numLogClassesUpdated() {
  }
 
  function nnUpdated() {
-	 drawNN();
-	 el('outputIndiv').innerHTML = 'Training sample: ' + (mlParams.displayTrainingNum + 1) + ' Inputs: ' + mlNN.getInputsForSingleM(mlParams.displayTrainingNum,4) + '<br>Training sample cost contrib / output unit: ' + mlNN.getCost('CM',mlParams.displayTrainingNum,4);
-	 if (mlParams.diagnosticsFlag) {
- 	    el('diagnosticDiv').innerHTML += ' Tot output layers: ' + mlNN.getCost('CM',mlParams.displayTrainingNum);
-	    el('diagnosticDiv').innerHTML += '<br>Tot overall cost all training: ' + mlNN.getCost('C') + ' Tot Reg Cost: ' + mlNN.getCost('R') + ' Tot cost both: ' + mlNN.getCost('T');
-	 }
+	 
+	 
+	 	 
+		 drawNN();
+		 if (mlParams.diagnosticsFlag) {
+			 if (mlNN) {
+				el('diagnosticDiv').innerHTML = 'Training sample: ' + (mlParams.displayTrainingNum + 1) + ' Inputs: ' + mlNN.getInputsForSingleM(mlParams.displayTrainingNum,4) + '<br>Training sample cost contrib / output unit: ' + mlNN.getCost('CM',mlParams.displayTrainingNum,4);
+				el('diagnosticDiv').innerHTML += ' Tot output layers: ' + mlNN.getCost('CM',mlParams.displayTrainingNum);
+				el('diagnosticDiv').innerHTML += '<br>Tot overall cost all training: ' + mlNN.getCost('C') + ' Tot Reg Cost: ' + mlNN.getCost('R') + ' Tot cost both: ' + mlNN.getCost('T');
+			 }
+		 }
+	 
 
  }
  
@@ -1065,10 +1228,15 @@ function numLogClassesUpdated() {
  /**
  * Formats data for display
  */
- function formatData() {
+ function formatData(X,Y) {
+	 
+	 if ((X == null) || (Y == null)) {
+		 return '';
+	 }
+	 
 	 var str = '';
-	 var Xt = math.transpose(mlData.X);
-	 var Y = mlData.Y;
+	 var Xt = math.transpose(X);
+	 //var Y = mlData.Y;
 	 
 	 var numFeatures =  getNumFeatures()[0]; //(Xt.size()[1] - 1) /  mlParams.degrees;
 	
@@ -1131,20 +1299,71 @@ function numLogClassesUpdated() {
 		 
 	 }
 	 
-	 el('trainingInput').value = str;
+	 return str;
+	 //el('trainingInput').value = str;
 		 
 	 
 	 
  }
  
  
- function mlDataUpdated() {
+ function mlDataUpdated(updateType) {
 	 //Updates textarea showing X and Y
 	 // also triggers scaling etc
 	 
-	 getParams();
+	if (updateType) {
+       switch (updateType) {
+		   
+		   case 'predict':
+		   case 'cv':
+		    
+		      break;
+			  
+	   	   default:
+		      
+	          break;
+	   }
+
+
+	}
+	else {
+		    clearRes();
+	         clearCharts();
+		
+	}
+	
+ 
+	
+	getParams();
 	 
-	 formatData();
+	 var formattedStr = formatData(mlData.X,mlData.Y);
+	 el('trainingInput').value = formattedStr;
+	 
+	 formattedStr = formatData(mlData.Xcv,mlData.Ycv);
+	 el('cvInput').value = formattedStr;
+	 
+	 formattedStr = formatData(mlData.Xtest,mlData.Ytest);
+	 el('testInput').value = formattedStr;
+	 
+	 
+	 var XtrainSize = mlData.X ? mlData.X.size()[1]  : 0;
+	 var XcvSize = mlData.Xcv ? mlData.Xcv.size()[1]  : 0;
+	 var XtestSize = mlData.Xtest ? mlData.Xtest.size()[1]  : 0;
+	 var totSize = XtrainSize + XcvSize + XtestSize;
+	 var XtrainPerc,XcvPerc,XtestPerc;
+	 if (totSize == 0) {
+		 XtrainPerc = 0;
+		 XcvPerc = 0;
+		 XtestPerc = 0;
+	 }
+	 else {
+		 XtrainPerc = XtrainSize / totSize * 100;
+		 XcvPerc = XcvSize / totSize * 100;
+		 XtestPerc = XtestSize / totSize * 100;
+		 
+	 }
+	 
+	 el('outputBlog').innerHTML = 'Training set size: ' + XtrainSize + '(' + XtrainPerc + '%)' + '<br>Cross Val set size: ' + XcvSize  +  '(' + XcvPerc + '%)' +'<br>Test set size: ' + XtestSize + '(' + XtestPerc + '%)';	 
 	 
 
 	 /*
@@ -1160,6 +1379,8 @@ function numLogClassesUpdated() {
 	 mlData.scaleFactors = scaleFactors;
 	   */
    
+    visualiseTrainingOnly(mlData.X,mlData.Y);
+   
 	 
  }
 
@@ -1168,18 +1389,43 @@ function numLogClassesUpdated() {
  * 
  */
 function clearCharts() {
+	
+	
    if (visChart) {
+	 visChart.clear(); 
      visChart.destroy();
 	 
    }
    
    if (costChart) {
+	 costChart.clear();
      costChart.destroy();
    }
    
+   
    visChart = null;
    costChart = null;
-
+   
+   if (vGraph) {
+	    var c=document.getElementById("nnCanvas");
+        var ctx=c.getContext("2d");
+		vGraph.clearRect(ctx);
+   }
+   
+   var ch2 = el('visualiseChart');
+   var par  = ch2.parentNode;
+   par.removeChild(ch2);
+   par.innerHTML = '<canvas id="visualiseChart"  width="450" height="340"></canvas>';
+   
+   
+   var ch = el('costChart');
+   par  = ch.parentNode;
+   par.removeChild(ch);
+   par.innerHTML = '<canvas id="costChart" width="450" height="340"></canvas>';
+   
+   
+   
+   
  
  }
  
@@ -1187,7 +1433,11 @@ function clearCharts() {
 	 
 	 el('initTheta').value = '';
 	 
-	  clearRes();
+	 //clearData();
+	 
+	 clearCharts();
+	 
+	 clearRes();
  }
 
 /**
@@ -1199,16 +1449,26 @@ function clearRes()  {
   el('outputBlog').innerHTML = '';
   el('diagnosticDiv').innerHTML = '';
   el('rightBannerDiv').innerHTML = '<h2>Machine Learning Tools</h2>';
+  el('cvBannerDiv').innerHTML = '';
   
-  
-  
-  clearCharts();
-  
+  mlResults = [];
   
   
   
 }
 
+
+function clearData() {
+	mlData = {};
+	mlNN = null;
+	
+	mlResults = [];
+	
+	mlDataUpdated();
+	if (mlParams.module === 'neu') {
+		nnUpdated();
+	}
+}
 /**
  * 
  * @returns {*}
@@ -1296,6 +1556,180 @@ function applyNNThetaFromLearn(MinTheta,ScaledX) {
 			nnUpdated();
 			
 			return minThStr;
+	
+}
+
+
+function crossValidate() {
+	 applyCVInput();
+	 
+	  var predAr = [];
+	  
+	  if (mlParams.module === 'neu') {
+		  
+  
+	  
+		  var Th = mlNN.unrollThetas();
+		  var ThAr = matrixToArray(Th);
+		  var ThStr = arrayToString(ThAr);
+		  
+		  var res = featureScale(mlData.Xcv,mlNN.scaleFactors);
+		  var XcvScaled = res[0];
+		  
+				 
+		  var mlNNCV = new NeuralNetwork([mlData.Xcv.size()[0] - 1,mlData.Xcv.size()[0] +1,mlData.Ycv.size()[0]],XcvScaled,mlData.Ycv,mlData.Xcv,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
+		  mlNNCV.forward();
+		  
+		  var A = mlNNCV.layers[mlNNCV.layers.length - 1].A;
+		  if (diagnosticsFlag) {
+			  el('diagnosticDiv').innerHTML += A;
+		  }
+		  
+		  var predStr = '';
+		 
+		  for (i = 0;i < A.size()[1];++i) {
+			  predStr = '';
+			  for (var r = 0;r < A.size()[0];++r) {
+				  predStr += A.get([r,i]).toFixed(3);
+				  if (r < A.size()[0] - 1) {
+					 predStr += ' ';
+				  }			  
+			  }
+			  predAr.push(predStr);
+			  
+		  }
+		  
+		  var res = mlNNCV.checkAccuracy();
+		  var perc = res[0] / res[1] * 100;
+		  
+		  el('cvBannerDiv').innerHTML = 'CV Cost: ' + mlNNCV.getCost('C') + ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc + '%';	
+	
+	  }
+	  
+	  else {
+		  
+		res = mlParams.module == 'reg' ? mlResults[0] : mlResults[mlResults.length -1];
+		
+		var costAr = res[0];
+		var iters = res[1];
+		var ThetaIdeal = res[2];
+		var IdealCost = res[3];
+		var X = res[4];
+		var Y = res[5];
+		var minTheta = res[6];
+		var XUnscaled = res[7];
+		var minThetaUnscaled = res[8];
+		var scaleFactors = res[9];
+		
+		var P;
+		if (mlParams.module === 'log') {
+		   P =  predict(math.transpose(minThetaUnscaled),mlData.Xcv); 
+		}
+		else {
+		  P = h(math.transpose(minThetaUnscaled),mlData.Xcv);	
+		}
+		
+		predAr = mRow(P,0,true);
+		predAr = predAr.map(function(el) {
+			return el.toFixed(3);
+		});
+		
+		
+	  }
+	  
+	  var xAr = elVal('cvInput').split('\n');
+	  xAr = xAr.map(function(el,i) {
+		  return el + ' [' + predAr[i] + ']';
+	  });
+	  el('cvInput').value = xAr.join('\n');
+		  
+		  
+	  
+	
+}
+
+function prediction() {
+	
+	  applyPredictInput();
+	  
+	   var predAr = [];
+	  
+	  if (mlParams.module === 'neu') {
+		  
+  
+	  
+		  var Th = mlNN.unrollThetas();
+		  var ThAr = matrixToArray(Th);
+		  var ThStr = arrayToString(ThAr);
+		  
+		  var res = featureScale(mlData.Xpredict,mlNN.scaleFactors);
+		  var XpredictScaled = res[0];
+				 
+		  var mlNNPredict = new NeuralNetwork([mlData.Xpredict.size()[0] - 1,mlData.Xpredict.size()[0] +1,mlNN.Y.size()[0]],XpredictScaled,null,mlData.Xpredict,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
+		  mlNNPredict.forward();
+		  
+		  var A = mlNNPredict.layers[mlNNPredict.layers.length - 1].A;
+		  if (diagnosticsFlag) {
+			  el('diagnosticDiv').innerHTML += A;
+		  }
+		  
+		  var predStr = '';
+		 
+		  for (i = 0;i < A.size()[1];++i) {
+			  predStr = '';
+			  for (var r = 0;r < A.size()[0];++r) {
+				  predStr += A.get([r,i]).toFixed(3);
+				  if (r < A.size()[0] - 1) {
+					 predStr += ' ';
+				  }			  
+			  }
+			  predAr.push(predStr);
+			  
+		  }
+	
+	  }
+	  
+	  else {
+		  
+		res = mlParams.module == 'reg' ? mlResults[0] : mlResults[mlResults.length -1];
+		
+		var costAr = res[0];
+		var iters = res[1];
+		var ThetaIdeal = res[2];
+		var IdealCost = res[3];
+		var X = res[4];
+		var Y = res[5];
+		var minTheta = res[6];
+		var XUnscaled = res[7];
+		var minThetaUnscaled = res[8];
+		var scaleFactors = res[9];
+		
+		var P;
+		if (mlParams.module === 'log') {
+		   P =  predict(math.transpose(minThetaUnscaled),mlData.Xpredict); 
+		}
+		else {
+		  P = h(math.transpose(minThetaUnscaled),mlData.Xpredict);	
+		}
+		
+		predAr = mRow(P,0,true);
+		predAr = predAr.map(function(el) {
+			return el.toFixed(3);
+		});
+		
+		
+	  }
+	  
+	  var xAr = elVal('predictInput').split('\n');
+	  xAr = xAr.map(function(el,i) {
+		  return el + ' [' + predAr[i] + ']';
+	  });
+	  el('predictInput').value = xAr.join('\n');
+		  
+		  
+	  
+	  
+	  
 	
 }
 
@@ -1408,6 +1842,8 @@ function learnForeground() {
   			
 			res = learn(mlParams,mlData.X,mlData.Y,learnProgressForeground); //mlData.scaleFactors,learnProgressForeground);
 		    mlResults.push(res);
+			
+			mlNN.scaleFactors = res[9];
 			
 			var minThStr = applyNNThetaFromLearn(res[6],res[4]);
 			
@@ -2320,6 +2756,12 @@ function VGraph(l,w,h) {
     this.label = (l == null) ? 'Graph' : l;
     this.w = (w == null) ? 100 : w;
     this.h = (h == null) ? 100 : h;
+	
+	this.message = '';
+	
+	this.clearRect = function(ctx) {
+		ctx.clearRect(0,0,this.w,this.h);
+	}
 
     this.display = function(ctx) {
 
@@ -2332,12 +2774,17 @@ function VGraph(l,w,h) {
         var xPos = (this.w / 3) - (txtLen / 2);
         var yPos = 10;
 		
-		ctx.translate(xPos,yPos);
+		var messLen = ctx.measureText(this.message).width;
+		var xMessPos = this.w * 2 / 3 - (messLen / 2);
+		
+		//ctx.translate(xPos,yPos);
 		/*
 		ctx.rotate(Math.PI/2);
 		ctx.translate(-xPos,-yPos);
 		*/
-        ctx.fillText(this.label,0,0);
+        ctx.fillText(this.label,xPos,yPos);
+		ctx.fillText(this.message,xMessPos,yPos);
+		
 		ctx.restore();
 
 
@@ -2531,8 +2978,16 @@ function VNetwork(label,w,h,datasource) {
 
     this.display = function(ctx,m) {
 
+      this.message = 'Traning sample: ' + (m + 1);	
 
       this.parentDisplay(ctx);
+	  
+	  if (this.datasource.nn) {
+		  
+	  }
+	  else {
+		  return;
+	  }
 
       var layerYMargin = 30;
       var layerXMargin = 20;

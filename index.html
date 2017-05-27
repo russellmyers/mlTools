@@ -34,8 +34,12 @@
   <input type="radio" name="featureType" id="featurePoly" onclick="featureTypeClicked(event)" value="poly">Polynomial-->
 
   <label for = "degreesInput" id="degreesInputLab">Poly Degrees</label>
-  <input id = "degreesInput" class="smallInput" type="text" value = "1"> 
-  <label for = "numLogClasses" id = "numLogClassesLab">Number of classes</label>
+  <input id = "degreesInput" class="smallInput" type="text" value = "1">
+   <label for = "boldDriverFlag" id = "boldDriverFlagLab">Auto Learning Rate</label>
+  
+   <input id = "boldDriverFlag" type="checkbox" checked >
+ 
+  <label for = "numLogClasses" id = "numLogClassesLab"># classes</label>
   <input id = "numLogClasses" class="smallInput" onchange = "numLogClassesClicked()" value = "0" type="text">
   <br><br>
   <label for = "initTheta">Initial Theta</label>
@@ -55,6 +59,8 @@
  
  <button onclick="learnForeground()">Learn</button>
  <button onclick="learnBackground()">Learn Background</button>
+ <button onclick="crossValidate()">Cross Validate</button>
+ <button onclick="prediction()">Predict</button>
  <button onclick="clearButtonPressed()">Clear</button>
  <button onclick="applyInput()">Apply Input</button>
  
@@ -62,9 +68,14 @@
 
 
 </div>
-<div id = "rightBannerDiv">
-<h2>Machine Learning Tools</h2>
+<div id = "dashDiv">
+	<div id = "rightBannerDiv">
+	<h2>Machine Learning Tools</h2>
 
+	</div>
+	<div id = "cvBannerDiv">
+	cv Stuff
+	</div>
 </div>
 
 <div>
@@ -84,7 +95,12 @@
 
 <div id = "inputOutputDiv">
     <div id = "inputDiv">
-    <textarea id = "trainingInput"  onpaste="inputPasted()" cols=40 rows=10 ></textarea>
+    <textarea id = "trainingInput"  class="dataSet" oninput="inputChanged()" onpaste="inputPasted()"  ></textarea>
+	<textarea id = "cvInput"  class="dataSet"   ></textarea>
+	<textarea id = "testInput"  class="dataSet"   ></textarea>
+	<textarea id = "predictInput"  class="dataSet" 		  ></textarea>
+
+
 	</div>
     <div id = "outputDiv">
      	<div id = "outputBlog">Results</div>

@@ -489,11 +489,11 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
  }
 
 /**
- * scale factors indexes: 0-mean, 1-range, 2-lowest
+ * scale factors indexes: 0-mean, 1-range, 2-lowest. If scaleFactors passed then uses these to scale, otherwise calcs scalefactors as well as scaling
  * @param mat
  * @returns {*}
  */
- function featureScale(mat) {
+ function featureScale(mat,inScaleFactors) {
 	 
    var scaledMat = math.clone(mat);
    var rows = mat.size()[0];
@@ -508,11 +508,26 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 	   var range = max - min;
 	   var mean = math.mean(row);
 	   
-	   row = math.subtract(row,mean);
-	   row = range > 0 ? math.divide(row,range) : row;
+	   if (inScaleFactors) {
+		   var inMean = inScaleFactors[r][0];
+		   var inRange = inScaleFactors[r][1];
+		   var inLowest = inScaleFactors[r][2];
+		   row = math.subtract(row,inMean);
+		   row = inRange > 0 ? math.divide(row,inRange) : row;
+		   
+	   }
+	   else {
+		row = math.subtract(row,mean);
+		row = range > 0 ? math.divide(row,range) : row;
+	   }
 	   
 	   var ind = math.index(r, math.range(0,cols));
-	   scaledMat = math.subset(scaledMat,ind,row);
+	   if (cols == 1) {
+		   scaledMat = math.subset(scaledMat,ind,row.get([0])); //expects scalar
+	   }
+	   else {
+	      scaledMat = math.subset(scaledMat,ind,row);
+	   }
 	   scaleFactors.push([mean,range,min]);
    }
    
@@ -552,6 +567,7 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
  * @param mlParams
  * @returns {*}
  */
+ /*
  function getXandY(mlParams,data) {
 	 
 	  
@@ -627,6 +643,7 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
    return [X,Y, XUnscaled,scaleFactors,YOrig];   
  
  }
+ */
  
  function solveAnalytically(X,Y) {
  
@@ -672,13 +689,13 @@ function thetaUnscale(Theta,scaleFactors) {
 }
 
 
-function getDashboardInfo(mlParams,nn,iterNum,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg) {
+function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg) {
 	
 	var d = 4; //dec places
 	
 	var dashInfo = '';
 	
-	dashInfo += 'Iter: ' + iterNum + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + '<br>';
+	dashInfo += 'Iter: ' +  iterNum +  ' Alpha: ' + alpha.toFixed(3) + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + '<br>';
 	
 	
 	if ((mlParams.module === 'log') && (mlParams.numLogClasses > 2)) {
@@ -844,7 +861,7 @@ function learn(mlParams,X,Y,progCallback) {
 	var nn;
    
     if (mlParams.module == 'neu') {
-         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] + 1,Y.size()[0]],X,Y,XUnscaled,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] + 1,Y.size()[0]],X,Y,XUnscaled,scaleFactors,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 	     Theta = nn.unrollThetas();
  	}
     else {	
@@ -916,7 +933,7 @@ function learn(mlParams,X,Y,progCallback) {
 			if (i % 2 == 0) {
 				if (progCallback) {
 					
-					var dashInfo = getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+					var dashInfo = getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
 					progCallback('rightBannerDiv',dashInfo,true);
 					
 				}
@@ -972,31 +989,59 @@ function learn(mlParams,X,Y,progCallback) {
 			}
 		
 		
+			var blownThisIter = false;
 			
-			if ((math.sum(Cost) + math.sum(RegCost)) > prevCost) {
-				if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
-			       errMsg = '<br>Non Convergence. Try smaller alpha. ' + i + ' iterations';
+			if ((math.sum(Cost) + math.sum(RegCost)) > (prevCost + mlParams.convThreshold)) {
+				//if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
+				   blownThisIter = true;
+			       errMsg = '<br>Non Convergence. Iter: ' + i  + ' Alpha: ' + alpha.toFixed(3) + ' =>  trying smaller alpha';
 				   if (progCallback) {
-					   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+					   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg),true);
 					}
-				   break;
-				}
+				   if (mlParams.useBoldDriver) {
+					   	Theta = prevTheta;
+				        minTheta = prevMinTheta;
+				        minThetaUnscaled = prevMinThetaUnscaled;
+				        Cost = prevCost;
+				        RegCost = prevRegCost;
+					    alpha = alpha * 0.5;
+						if (mlParams.module === 'neu') {
+							nn.alpha = alpha;
+						}
+						//continue;
+				      
+                      
+				   }
+                   else {				   
+				      break;
+				   }
+				//}
 			}
 			
 			
-			if ((prevCost - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCost - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
-				console.log('Converged after: ' + i);
-				errMsg = '<br>Converged after: ' + i + ' iterations';
-				if (progCallback) {
-					progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
-	
+			if (blownThisIter) {
+			}
+			else {
+				if ((prevCost - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCost - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
+					console.log('Converged after: ' + i);
+					errMsg = '<br>Converged after: ' + i + ' iterations';
+					if (progCallback) {
+						progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+		
+					}
+					break;
 				}
-				break;
-			}	
+			}				
 			
 			prevMinus1Cost = prevCost;
 			
 			prevCost = math.sum(Cost) + math.sum(RegCost);
+			
+			prevRegCost = RegCost;
+			
+			prevTheta = Theta.clone();
+			prevMinTheta = minTheta.clone();
+			prevMinThetaUnscaled = minThetaUnscaled.clone();
 
 			if (mlParams.module == 'neu') {
                 nn.backProp();
@@ -1018,6 +1063,12 @@ function learn(mlParams,X,Y,progCallback) {
 			
 
 			if ( (math.sum(Cost) + math.sum(RegCost)) < minCostSum) {
+				if (mlParams.useBoldDriver) {
+			    	alpha = alpha * 1.01;
+					if (mlParams.module === 'neu') {
+							nn.alpha = alpha;
+					}
+				}
 				minCost = Cost;
 				minReg = RegCost;
 				minCostSum = math.sum(Cost) + math.sum(RegCost);
@@ -1037,6 +1088,19 @@ function learn(mlParams,X,Y,progCallback) {
 				
 			
 			}
+			else  {
+				/*
+				Theta = prevTheta;
+				minTheta = prevMinTheta;
+				minThetaUnscaled = prevMinThetaUnscaled;
+				Cost = prevCost;
+				RegCost = prevRegCost;
+				if (mlParams.useBoldDriver) {
+					alpha = alpha * 0.5;
+				}
+				*/
+				
+			}
 			
 				
 	}					
@@ -1048,7 +1112,7 @@ function learn(mlParams,X,Y,progCallback) {
 	
 	if (progCallback) {
 		
-		var dashInfo = getDashboardInfo(mlParams,nn,i,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+		var dashInfo = getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
 		progCallback('rightBannerDiv',dashInfo,true);
  					
 	}
@@ -1106,7 +1170,7 @@ function learn(mlParams,X,Y,progCallback) {
 
 }
 
-function NeuralNetwork(architecture,X,Y,XUnscaled,alpha,lambda,initTheta) {
+function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,initTheta) {
 	this.architecture = architecture;
 	this.numLayers = architecture.length;
 	this.numInputFeatures = architecture[0];
@@ -1115,6 +1179,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,alpha,lambda,initTheta) {
 	this.X = X;
 	this.Y = Y;
 	this.XUnscaled = XUnscaled;
+	
+	this.scaleFactors = scaleFactors;
 	
 	this.randomTheta = true;
 	
@@ -1617,9 +1683,11 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,alpha,lambda,initTheta) {
 			
 		}
 		
-		var res = this.calcCost();
-		this.Cost = res[0];
-		this.RegCost = res[1];
+		if (this.Y) { //N.B. will be no Y for predictions only
+				var res = this.calcCost();
+				this.Cost = res[0];
+				this.RegCost = res[1];
+		}
 		
 		//this.layers[this.layers.length - 1].X = math.clone(this.layers[this.layers.length - 2].A);
 
