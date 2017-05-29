@@ -126,6 +126,8 @@ font-size:medium;
 	display: inline-block;
 	height: 101px;
 	width: 185px;
+    white-space:nowrap;
+    overflow:auto;
 	
 }
 

@@ -642,12 +642,29 @@ function regButClicked() {
 	 //clearButtonPressed();
 	 
  }
+
+function splitInput() {
+    var inp = elVal('trainingInput');
+    var inpAr = inp.split('\n');
+    var tot = inpAr.length;
+    var trainPortion = math.floor(tot * .6);
+    var cvPortion  = tot - trainPortion;
+    var trainAr = inpAr.slice(0,trainPortion);
+    var cvAr = inpAr.slice(trainPortion);
+
+    this.input = trainAr.join('\n');
+    trainingInputUpdated();
+
+    el('cvInput').value = cvAr.join('\n');
+    
+}
  
  function inputPasted() {
-	 this.input = elVal('trainingInput');
-	 trainingInputUpdated(true);
-	 
-	 //clearButtonPressed();
+     this.input = elVal('trainingInput');
+     trainingInputUpdated(true);
+
+
+     //clearButtonPressed();
 	 //applyInput();
 	 
  }
@@ -725,7 +742,9 @@ function parseDataInput(data,noY,labelled) {
 
 	ar = ar.map(function(line) {
 		line = line.replace(/\[.*?\] */g,''); //remove any input in square brackets
+        line = line.replace(/=>/,'');
 		line = line.replace(/ +/g,' '); //remove extra spaces
+        line = line.trim(); // remove leading/trailing spaces
 		var elAr = line.split(' ');
 		
 		if (labelled) {
@@ -1083,6 +1102,14 @@ function numLogClassesUpdated() {
  function moduleUpdated() {
 	 
 	clearButtonPressed();
+
+    el('cvInput').value = '';
+    applyCVInput();
+    el('testInput').value = '';
+    //applyTestInput();
+    el('predictInput').value = '';
+    applyPredictInput();
+
  
     switch (mlParams.module) {
 	
@@ -1230,7 +1257,7 @@ function numLogClassesUpdated() {
  */
  function formatData(X,Y) {
 	 
-	 if ((X == null) || (Y == null)) {
+	 if (X == null)  {
 		 return '';
 	 }
 	 
@@ -1269,28 +1296,38 @@ function numLogClassesUpdated() {
 			
 		 });
 		 //row.push(Y.get([i]));
-		 
-		 if (mlParams.module == 'neu') {
-			 
-			 var yColumn = mCol(Y,i,true);
-			 if (yColumn.length == 1) {
-				 row.push(yColumn); //just binary value
-			 }
-			 else {
-				 //multi output layers
-				 var yVal = -1;
-				 for (var k = 0;k < yColumn.length;++k) {
-					 if (yColumn[k] == 1) {
-						 yVal = k+1;
-						 break;
-					 }
-				 }
-				 row.push(yVal);
-			 }
-		 }
-		 else {
-		    row.push(mCol(Y,i,true));
-		 }
+         var ySeparator = '=>';
+
+         if (Y) {
+
+             row.push(ySeparator);
+
+             if (mlParams.module == 'neu') {
+
+                 var yColumn = mCol(Y, i, true);
+                 if (yColumn.length == 1) {
+                     row.push(yColumn); //just binary value
+                 }
+                 else {
+                     //multi output layers
+                     var yVal = -1;
+                     for (var k = 0; k < yColumn.length; ++k) {
+                         if (yColumn[k] == 1) {
+                             yVal = k + 1;
+                             break;
+                         }
+                     }
+                     row.push(yVal);
+                 }
+             }
+             else {
+                 row.push(mCol(Y, i, true));
+             }
+         }
+         else {
+             row.push(ySeparator);
+         }
+
 		 str+= arrayToString(row);
 	     if (i < Xt.size()[0]  - 1)  {
 			  str+= '\n';
@@ -1344,9 +1381,12 @@ function numLogClassesUpdated() {
 	 
 	 formattedStr = formatData(mlData.Xtest,mlData.Ytest);
 	 el('testInput').value = formattedStr;
-	 
-	 
-	 var XtrainSize = mlData.X ? mlData.X.size()[1]  : 0;
+
+     formattedStr = formatData(mlData.Xpredict,null);
+     el('predictInput').value = formattedStr;
+
+
+     var XtrainSize = mlData.X ? mlData.X.size()[1]  : 0;
 	 var XcvSize = mlData.Xcv ? mlData.Xcv.size()[1]  : 0;
 	 var XtestSize = mlData.Xtest ? mlData.Xtest.size()[1]  : 0;
 	 var totSize = XtrainSize + XcvSize + XtestSize;
@@ -1378,8 +1418,20 @@ function numLogClassesUpdated() {
 	 
 	 mlData.scaleFactors = scaleFactors;
 	   */
-   
-    visualiseTrainingOnly(mlData.X,mlData.Y);
+
+     if (updateType) {
+         switch (updateType) {
+
+             case 'predict':
+             case 'cv':
+
+                 break;
+             default:
+
+                 visualiseTrainingOnly(mlData.X, mlData.Y);
+
+         }
+     }
    
 	 
  }
@@ -1602,7 +1654,7 @@ function crossValidate() {
 		  var res = mlNNCV.checkAccuracy();
 		  var perc = res[0] / res[1] * 100;
 		  
-		  el('cvBannerDiv').innerHTML = 'CV Cost: ' + mlNNCV.getCost('C') + ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc + '%';	
+		  el('cvBannerDiv').innerHTML = 'CV Cost: ' + mlNNCV.getCost('T') + '(exReg: ' + mlNNCV.getCost('C').toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
 	
 	  }
 	  

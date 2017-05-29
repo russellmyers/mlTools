@@ -695,7 +695,7 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 	
 	var dashInfo = '';
 	
-	dashInfo += 'Iter: ' +  iterNum +  ' Alpha: ' + alpha.toFixed(3) + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + '<br>';
+	dashInfo += 'Iter: ' +  iterNum +  ' Alpha: ' + alpha.toFixed(3) + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + ' (exReg: ' + math.sum(Cost).toFixed(3)  + ')' + '<br>';
 	
 	
 	if ((mlParams.module === 'log') && (mlParams.numLogClasses > 2)) {
@@ -1737,7 +1737,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
 		for (var i = 0;i < this.numLayers;++i) {
 			var next = i == this.numLayers -1 ? -1 : this.architecture[i+1];
-			var lay = new NNLayer(i+1,this.architecture[i],next,this.layers[i-1],ThMats[i]);
+			var lay = new NNLayer(i+1,this.architecture[i],next,this.layers[i-1],ThMats[i],this.lambda);
 			this.layers.push(lay);
 			if (i == 0) {
 				lay.X = this.X;
@@ -1761,7 +1761,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	
 }
  
- function NNLayer(layerNum,n,nextLayerN,prevLayer,InitThMat) {
+ function NNLayer(layerNum,n,nextLayerN,prevLayer,InitThMat,lambda) {
 	 this.layerNum = layerNum;
 	 this.n = n;
 	 this.nextLayerN = nextLayerN;
@@ -1777,6 +1777,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
 	 
 	 this.InitThMat = InitThMat;
+     this.lambda = lambda;
 	 
 	 this.ApproxGrads = null;
 	 
@@ -1797,7 +1798,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				this.Theta = this.InitThMat;
 			}
 			else {
-                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-2,2)); ///-1,1));
+                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-0.5,0.5)); //was 2  ///-1,1));
 			}
 			/*
             else {			
@@ -1820,6 +1821,23 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		 
 	 };
 
+     this.calcRegDerivs = function() {
+         var RegDeriv = math.map(this.Theta,function(el,ind) {
+             if (ind[0] == 0) { //1st row
+                 return 0;
+             }
+             else {
+                 return el;
+             }
+
+         });
+
+         RegDeriv = math.multiply(RegDeriv,this.lambda / this.A.size()[1]);
+
+         return RegDeriv;
+
+     };
+
      this.calcDerivs = function() {
 
       var ones = math.ones(1,this.A.size()[1]);
@@ -1828,6 +1846,10 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
       this.Derivs = math.multiply(this.AWithBias,math.transpose(this.nextLayer.D));
 
       this.Derivs = math.multiply(this.Derivs,1 / this.A.size()[1]); //divide by m
+
+      var RegDerivPart = this.calcRegDerivs();
+
+      this.Derivs = math.add(this.Derivs,RegDerivPart);
 
 
 
