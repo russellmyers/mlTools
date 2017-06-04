@@ -13,12 +13,12 @@
 
 <div id = "leftBannerDiv">
  <label for = "alphaInput">Learning Rate (&alpha;)</label>
- <input id = "alphaInput" class="smallInput" type="text" value = "0.1">
+ <input id = "alphaInput" class="mediumInput" type="text" value = "0.1">
  <label for = "lambdaInput">Regularisation (&lambda;)</label>
- <input id = "lambdaInput"  class="smallInput" type="text" value = "0">
+ <input id = "lambdaInput"  class="mediumInput" type="text" value = "0">
  
  <label for = "maxIterationsInput">Max Iterations</label>
- <input id = "maxIterationsInput" class="mediumInput" type="text" value = "10">
+ <input id = "maxIterationsInput" class="largeInput" type="text" value = "10">
    <input id = "scalingFlag" type="checkbox" checked>feature Scaling
 
  
@@ -27,28 +27,34 @@
 
   <!--input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature-->
  
-  <label for = "convThreshold">Convergence Threshold</label>
-  <input id = "convThreshold" class="mediumInput" type="text" value = "0.0000000001">
+  <label for = "convThreshold">Converge Threshold</label>
+  <input id = "convThreshold" class="largeInput" type="text" value = "0.0000000001">
   
   <!--input type="radio" name="featureType" id = "featureMulti" onclick="featureTypeClicked(event)" value="multi">Multi Feature
   <input type="radio" name="featureType" id="featurePoly" onclick="featureTypeClicked(event)" value="poly">Polynomial-->
 
   <label for = "degreesInput" id="degreesInputLab">Poly Degrees</label>
   <input id = "degreesInput" class="smallInput" type="text" value = "1">
-   <label for = "boldDriverFlag" id = "boldDriverFlagLab">Auto Learning Rate</label>
+   <label for = "boldDriverFlag" id = "boldDriverFlagLab">Bold</label>
   
-   <input id = "boldDriverFlag" type="checkbox" checked >
+   <input id = "boldDriverFlag" type="checkbox"  >
+   <label for = "downDriverFlag" id = "downDriverFlagLab">Down</label>
+  
+   <input id = "downDriverFlag" type="checkbox" checked >   
  
   <label for = "numLogClasses" id = "numLogClassesLab"># classes</label>
   <input id = "numLogClasses" class="smallInput" onchange = "numLogClassesClicked()" value = "0" type="text">
+  <label for = "nnArch" id = "nnArchLab">Arch</label>
+  <input id = "nnArch" class="mediumInput"  type="text">
+
   <br><br>
   <label for = "initTheta">Initial Theta</label>
-  <input id = "initTheta" class="mediumInput" type="text" value = "">
+  <input id = "initTheta" class="largeInput" type="text" value = "">
    <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
   <input id = "copyThetaFlag" type="checkbox" checked >Update initial Theta after run
   <input id = "analyticFlag" type="checkbox" checked>
   <label for "analyticFlag" id = "analyticFlagLab">Also solve analytically</label>
-
+	
   
  
 
@@ -64,6 +70,7 @@
  <button onclick="splitInput()">Split</button>
  <button onclick="clearButtonPressed()">Clear</button>
  <button onclick="applyInput()">Apply Input</button>
+ <button id = "pauseBut" onclick="pausePressed()">Pause</button>	
  
 
 
@@ -71,7 +78,7 @@
 </div>
 <div id = "dashDiv">
 	<div id = "rightBannerDiv">
-	<h2>Machine Learning Tools</h2>
+	<h2>Machine Learning Toolbox</h2>
 
 	</div>
 	<div id = "cvBannerDiv">

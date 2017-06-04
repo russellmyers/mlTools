@@ -92,10 +92,14 @@ font-size:medium;
 }
 
 .smallInput {
-	width: 50px;
+	width: 30px;
 } 
 
 .mediumInput {
+	width: 50px;
+}
+
+.largeInput {
 	width: 100px;
 }
 
@@ -126,7 +130,7 @@ font-size:medium;
 	display: inline-block;
 	height: 101px;
 	width: 185px;
-    white-space:nowrap;
+    white-space:pre;
     overflow:auto;
 	
 }

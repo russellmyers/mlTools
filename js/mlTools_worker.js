@@ -34,6 +34,8 @@
 				msg.minThetaUnscaled = JSON.stringify(mess[8]);
 				msg.scaleFactors = mess[9];//JSON.stringify(res[9]);
 				msg.YOrig = JSON.stringify(mess[10]);
+				msg.costArSparse = mess[11];
+				msg.itersSparse = mess[12];
 				postMessage(msg);
 			}
 			else {
@@ -59,6 +61,13 @@
 
  self.onmessage = function (inMsg) {
     switch (inMsg.data.action) {
+		
+		case 'Pause':
+		
+			 pauseFlag = true;
+			 
+		     break;
+			 
         case 'Go':
 		    console.log('params in worker: ' + inMsg.data.params.input);
             //var res = learn_background(inp,0.01,10,'0 0',1,true,true,false,0.00000001,msg.data.params);
@@ -66,9 +75,12 @@
 			inMsg.data.mlData.X.__proto__ = math.matrix.prototype;
 			inMsg.data.mlData.Y.__proto__ = math.matrix.prototype;
 			*/
+			pauseFlag = false;
 			var X = math.matrix(inMsg.data.mlData.X._data);
-            var Y = math.matrix(inMsg.data.mlData.Y._data)
-			var res = learn(inMsg.data.params,X, Y, progUpdateBackground);
+            var Y = math.matrix(inMsg.data.mlData.Y._data);
+			var continueData = inMsg.data.continueData;
+			var res = learn(inMsg.data.params,X, Y, progUpdateBackground,continueData);
+			/*
 			var tst = res[2];
 			var msg = {};
 			msg.action = 'fin';
@@ -90,7 +102,8 @@
             postMessage({'action':'progUp','elToUpdate':'outputBlog','mess':'<br>finished'});		
 	        if ((inMsg.data.params.module == 'log') && (inMsg.data.params.numLogClasses > 2) && (inMsg.data.params.currClassNum == inMsg.data.params.numLogClasses - 1)) {
                 postMessage({'action':'multiClassFin'});
-			}				
+			}	
+            */			
             break;
         default:
             throw 'no aTopic on incoming message to ChromeWorker';

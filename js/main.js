@@ -23,6 +23,8 @@ var mlParams;
  *   8 - minThetaUnscaled
  *   9 - scaleFactors
  *   10- YOrig // Y is altered in once vs all logistic regression for individual runs
+ *   11 - costArSparse // only added every 50 iters
+ *   12 - itersSparse // only added every 50 iters
  *   ]
  */
 var mlResults;
@@ -34,6 +36,7 @@ var vGraph;
 
 var mlData;
 var mlNN;
+
 
 
 
@@ -64,8 +67,13 @@ function MLParams() {
    this.convThreshold = null;			// retrieve when needed
    this.updateInitialThetaFlag = null;	// retrieve when needed
    this.useBoldDriver = null;			// retrieve when needed
+   this.useDownDriver = null;           // retrieve when needed
    
    this.currClassNum = null;            //used for logistic regression multi-class
+   
+   this.pausePressed = false;           //used to interrupt background learn
+   this.isRunning = false;
+   
    
 	
 }
@@ -89,6 +97,9 @@ function init() {
     mlParams.featureType = "multi";
 	featureTypeUpdated();
 	*/
+	
+	mlParams.isRunning = false;
+	isRunningUpdated();
 	
 	mlParams.module = "reg";
 	moduleUpdated();
@@ -142,9 +153,14 @@ if (typeof	(Worker) !== "undefined") {
 					var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
 					var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
 					var YOrig = stringifyToMatrix(event.data.YOrig);
+					var costArSparse = event.data.costArSparse;
+					var itersSparse = event.data.itersSparse;
 					
 		
-					mlResults.push([costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig]);
+					mlResults.push([costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig,costArSparse,itersSparse]);
+					
+					mlParams.isRunning = false;
+					isRunningUpdated();
 					
 					if (mlParams.module == 'log') {
 					       var acc = accuracy(math.transpose(minThetaUnscaled),XUnscaled,Y);
@@ -160,6 +176,7 @@ if (typeof	(Worker) !== "undefined") {
 					}
 
 					visualiseCostChart(costAr,iters);
+					//visualiseCostChart(costArSparse,itersSparse);
 					
 
 					if (mlParams.module == 'neu') {
@@ -209,8 +226,12 @@ if (typeof	(Worker) !== "undefined") {
 					var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
 					var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
 					var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
+					var costArSparse = event.data.costArSparse;
+					var itersSparse = event.data.itersSparse;
 					
 					updateCostChart(event.data.costAr,event.data.iters);
+					//updateCostChart(event.data.costArSparse,event.data.itersSparse);
+					
 					if (mlParams.module == 'neu') {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
 					}
@@ -224,7 +245,7 @@ if (typeof	(Worker) !== "undefined") {
 				}
 
 				else {
-				   document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Tools</h2>' + event.data;
+				   document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Toolbox</h2>' + event.data;
 				}   
 			};
 	}
@@ -236,7 +257,7 @@ if (typeof	(Worker) !== "undefined") {
 }
 else {
 
-        document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Tools</h2>' + "Sorry! No Web Worker support.";
+        document.getElementById("rightBannerDiv").innerHTML = '<h2>Machine Learning Toolbox</h2>' + "Sorry! No Web Worker support.";
     }
 
 }
@@ -270,9 +291,14 @@ function getParams() {
 	
 	mlParams.useBoldDriver = elVal('boldDriverFlag');
 	
+	mlParams.useDownDriver = elVal('downDriverFlag');
+	
+	mlParams.architecture = elVal('nnArch') === '' ? [] : elVal('nnArch').split(' ').map(function(el) { return parseInt(el)	});;
+	
 	
 	mlParams.currClassNum = -1; //used for logisitic regression multi-class
 	
+	mlParams.pausePressed = false;
  
  }
 
@@ -364,6 +390,19 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
+   
+   var tMat = math.matrix([[1,1,1],[2,2,2],[3,3,3],[4,4,4]]);
+   
+   var remMat = mRemoveFirstRow(tMat);
+   
+   
+   var tMatSub = math.subset(tMat,math.index(math.range(1,4),math.range(0,3)));
+   
+   var tFlat = math.flatten(tMat);
+   
+   
+   
+   //learnLoop(1,10);
    
    var mat32 = math.matrix([[1,2],[2,3],[4,5]]);
    var mat25 = math.matrix([[4,5,6,7,8],[6,7,8,9,10]]);
@@ -634,6 +673,22 @@ function regButClicked() {
    
  }
  
+ function pausePressed() {
+	 if (mlParams.isRunning) {
+		 w.postMessage({'action':'Pause'});
+		 
+	 }
+	 else {
+		 var res = mlResults[mlResults.length - 1];
+		 learnBackground([res[1],res[0],res[12],res[11]]);
+		 
+		 
+		 
+	 }
+	 
+	 
+ }
+ 
  
  function inputChanged() {
 	 this.input = elVal('trainingInput');
@@ -741,6 +796,7 @@ function parseDataInput(data,noY,labelled) {
 	xLabelAr =  labelled ? [] : null;
 
 	ar = ar.map(function(line) {
+		line = line.replace(/,/g,' '); //cater for csv files
 		line = line.replace(/\[.*?\] */g,''); //remove any input in square brackets
         line = line.replace(/=>/,'');
 		line = line.replace(/ +/g,' '); //remove extra spaces
@@ -862,7 +918,7 @@ function learnProgressForeground(targetEl,message,clearFlag) {
    }
    if (clearFlag) {
        if (targetEl == 'rightBannerDiv') {
-	       el(targetEl).innerHTML= '<h2>Machine Learning Tools</h2>' + message;
+	       el(targetEl).innerHTML= '<h2>Machine Learning Toolbox</h2>' + message;
 	   }
 	   else {
           el(targetEl).innerHTML= message;
@@ -989,7 +1045,9 @@ function applyInput() {
    if (mlParams.module == 'neu') {
 	      var randomTheta = true;
 		  
-	      mlNN = new NeuralNetwork([mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits],mlData.X,mlData.Y,mlData.X,null,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+		  var arch = (mlParams.architecture.length  == 0) ? [mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits] : mlParams.architecture;
+		  
+	      mlNN = new NeuralNetwork(arch,mlData.X,mlData.Y,mlData.X,null,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 		  
 		  if (mlParams.initTheta == '') {
 			  var InTh = mlNN.unrollThetas();
@@ -1095,6 +1153,12 @@ function numLogClassesUpdated() {
 	 el('initTheta').value = mlParams.initTheta;
 	 
  }
+ 
+ function isRunningUpdated() {
+	 el('pauseBut').innerHTML = mlParams.isRunning ? "Pause" : "Continue";
+	 
+	 
+ }
 
 /**
  * 
@@ -1128,6 +1192,10 @@ function numLogClassesUpdated() {
 		   el('numLogClasses').hidden = false;
            el('numLogClassesLab').hidden = false;
 		   
+		   el('nnArch').hidden = true;
+           el('nnArchLab').hidden = true;
+
+		   
 		   el('analyticFlag').hidden = true;
            el('analyticFlagLab').hidden = true;
 
@@ -1147,6 +1215,10 @@ function numLogClassesUpdated() {
 
             el('numLogClasses').hidden = false;
             el('numLogClassesLab').hidden = false;
+			
+		    el('nnArch').hidden = false;
+            el('nnArchLab').hidden = false;
+
 			
 		    el('analyticFlag').hidden = true;
             el('analyticFlagLab').hidden = true;
@@ -1172,6 +1244,10 @@ function numLogClassesUpdated() {
            el('numLogClasses').hidden = true;
            el('numLogClassesLab').hidden = true;
 		   
+		   el('nnArch').hidden = true;
+           el('nnArchLab').hidden = true;
+
+		   
 		   el('analyticFlag').hidden = false;
            el('analyticFlagLab').hidden = false;
 
@@ -1190,8 +1266,11 @@ function numLogClassesUpdated() {
            el('neural').classList.add('blackBut');
 
 
-            el('numLogClasses').hidden = true;
+           el('numLogClasses').hidden = true;
            el('numLogClassesLab').hidden = true;
+		   el('nnArch').hidden = true;
+           el('nnArchLab').hidden = true;
+
 			   
 		
 	   
@@ -1500,7 +1579,7 @@ function clearRes()  {
   
   el('outputBlog').innerHTML = '';
   el('diagnosticDiv').innerHTML = '';
-  el('rightBannerDiv').innerHTML = '<h2>Machine Learning Tools</h2>';
+  el('rightBannerDiv').innerHTML = '<h2>Machine Learning Toolbox</h2>';
   el('cvBannerDiv').innerHTML = '';
   
   mlResults = [];
@@ -1546,6 +1625,8 @@ function checkAccuracyMultiClass() {
 				var minThetaUnscaled = res[8];
 				var scaleFactors = res[9];
 				var YOrig = res[10];
+				var costArSparse = res[11];
+				var itersSparse = res[12];
 				
 				var conf = h(math.transpose(minThetaUnscaled),XUnscaled,true);
 				confAr.push(conf);
@@ -1628,8 +1709,10 @@ function crossValidate() {
 		  var res = featureScale(mlData.Xcv,mlNN.scaleFactors);
 		  var XcvScaled = res[0];
 		  
-				 
-		  var mlNNCV = new NeuralNetwork([mlData.Xcv.size()[0] - 1,mlData.Xcv.size()[0] +1,mlData.Ycv.size()[0]],XcvScaled,mlData.Ycv,mlData.Xcv,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
+ 		  var arch = (mlParams.architecture.length  == 0) ? [mlData.Xcv.size()[0] - 1,mlData.Xcv.size()[0] +1,mlData.Ycv.size()[0]] : mlParams.architecture;
+		  
+		  
+		  var mlNNCV = new NeuralNetwork(arch,XcvScaled,mlData.Ycv,mlData.Xcv,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
 		  mlNNCV.forward();
 		  
 		  var A = mlNNCV.layers[mlNNCV.layers.length - 1].A;
@@ -1716,8 +1799,11 @@ function prediction() {
 		  
 		  var res = featureScale(mlData.Xpredict,mlNN.scaleFactors);
 		  var XpredictScaled = res[0];
-				 
-		  var mlNNPredict = new NeuralNetwork([mlData.Xpredict.size()[0] - 1,mlData.Xpredict.size()[0] +1,mlNN.Y.size()[0]],XpredictScaled,null,mlData.Xpredict,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
+			
+
+		  var arch = (mlParams.architecture.length  == 0) ? [mlData.Xpredict.size()[0] - 1,mlData.Xpredict.size()[0] +1,Y.size()[0]] : mlParams.architecture;
+			
+		  var mlNNPredict = new NeuralNetwork(arch,XpredictScaled,null,mlData.Xpredict,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
 		  mlNNPredict.forward();
 		  
 		  var A = mlNNPredict.layers[mlNNPredict.layers.length - 1].A;
@@ -1786,9 +1872,10 @@ function prediction() {
 }
 
 /**
- * 
+ * continueData - if supplied, will continue with iters, costar and Theta from previous run
  */
-function learnBackground() {
+function learnBackground(continueData) {
+	
 
     if (!w) {
 	  alert('Background processing not available');
@@ -1809,10 +1896,13 @@ function learnBackground() {
 	//Todo
 	//Also pass X, Y and scalefactors to background worker, may need to stringify
 	
+	mlParams.isRunning = true;
+	isRunningUpdated();
+	
 	switch (mlParams.module) {
 	    case 'reg': 
 		case 'neu':
-		    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
+		    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData,'continueData':continueData});
 	      break;
 		 
 		case 'log':
@@ -1820,11 +1910,11 @@ function learnBackground() {
 		       
 		       for (var i = 0;i < mlParams.numLogClasses;++i) {
 			      mlParams.currClassNum = i;
-		          w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
+		          w.postMessage({'action':'Go','params':mlParams,'mlData':mlData,'continueData':continueData});
 	           }
 			}
 			else {
-			    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData});
+			    w.postMessage({'action':'Go','params':mlParams,'mlData':mlData,'continueData':continueData});
 			}
 
           break;	
@@ -1952,6 +2042,9 @@ function learnForeground() {
 		
 		var scaleFactors = res[9];
 		
+		var costArSparse = res[11];
+		var itersSparse = res[12];
+		
 		if (mlParams.module == 'log') {
 			if (mlParams.diagnosticsFlag) {	
 			   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(math.transpose(minThetaUnscaled),XUnscaled);
@@ -1964,6 +2057,7 @@ function learnForeground() {
 		}
 		
 		visualiseCostChart(costAr,iters);
+		//visualiseCostChart(costArSparse,itersSparse);
 		
 		visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
 		

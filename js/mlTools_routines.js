@@ -26,6 +26,20 @@ function arrayToString(ar,sep) {
 }
 
 
+var pauseFlag = false;
+
+/**
+* Removes first row of matrix, returns new matrix
+*/
+
+function mRemoveFirstRow(mat) {
+	
+	var newMat = math.subset(mat,math.index(math.range(1,mat.size()[0]),math.range(0,mat.size()[1])));
+	return newMat;
+	
+	
+}
+
 
 /**
  *
@@ -38,6 +52,13 @@ function matrixToArray(mat,rNum,cNum) {
 
 	rNum = rNum == null ? -1 : rNum;
 	cNum = cNum == null ? -1 : cNum;
+	
+	
+	if ((rNum == -1) && (cNum == -1)) {
+		return mat.toArray();
+		
+	}
+	
  
   var ar = [];
   
@@ -228,7 +249,7 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
        return  els; //els.reshape([rows]); 
 	 }
   
-  }
+  }	
   
 } 
 
@@ -761,18 +782,495 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 	
 }
 
+function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig) {
+	
+	//get current loop data	
+	PrevMinus1Cost = cData.PrevMinus1Cost;
+	PrevMinus1RegCost = cData.PrevMinus1RegCost; 
+	prevMinus1CostSum = cData.prevMinus1CostSum;
+	
+	Cost = cData.Cost;
+	RegCost = cData.RegCost;
+
+	PrevCost = cData.PrevCost;
+	PrevRegCost = cData.PrevRegCost;
+	prevCostSum = cData.prevCostSum;
+	
+	prevTheta = cData.prevTheta;
+	prevThetaUnscaled = cData.prevThetaUnscaled;
+	
+	nn = cData.nn;
+	
+	Theta = cData.Theta;
+	
+	XUnscaled = cData.XUnscaled;
+	ThetaUnscaled = cData.ThetaUnscaled;
+	scaleFactors = cData.scaleFactors;
+	
+	n = cData.n;
+	
+	iters = cData.iters;
+	costAr = cData.costAr;
+	
+	itersSparse = cData.itersSparse;
+	costArSparse = cData.costArSparse;
+	
+	ThetaIdeal = cData.ThetaIdeal;
+	IdealCost = cData.IdealCost;
+	
+	alpha = cData.alpha;
+	
+// end get current loop data
+
+
+    console.log('Cost: ' +  Cost + '\nTot cost: ' + (math.sum(Cost) + math.sum(RegCost)));
+	
+	var errMsg = '';
+	
+	if (progCallback) {
+		
+		var dashInfo = getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+		progCallback('rightBannerDiv',dashInfo,true);
+ 					
+	}
+	
+	
+	//var minThetaUnscaled;
+	
+
+
+	if (progCallback) {
+		
+		/*
+		minTheta = math.reshape(minTheta,[1,minTheta.size()[0]]);
+		minThetaUnscaled = math.reshape(minThetaUnscaled,[1,minThetaUnscaled.size()[0]]);
+		*/
+		
+			
+		var d = 4;
+		
+		
+
+		
+		if (mlParams.module == 'neu') {
+			if (mlParams.diagnosticsFlag) {
+				
+			   progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
+			   progCallback('diagnosticDiv',' Model Cost: ' + minCostSum);
+			}
+		}
+		
+		else {
+			if (mlParams.diagnosticsFlag) {
+			   progCallback('diagnosticDiv','<br><br>Model h(Theta) = ' + math.subset(ThetaUnscaled,math.index(0,0)).toFixed(d));
+				for (var i = 1;i < n+1;++i) {
+				   progCallback('diagnosticDiv',' + ' + math.subset(ThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); 
+				}
+					
+				progCallback('diagnosticDiv','<br>Model Cost: ' + minCostSum);
+			
+				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + Theta.subset(math.index(0,0)).toFixed(d));
+				for (var i = 1;i < n+1;++i) {
+				   progCallback('diagnosticDiv',' + ' + Theta.subset(math.index(i,0)).toFixed(d) + 'x' + i);
+				}
+				progCallback('diagnosticDiv',')');
+				progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
+			}
+
+		}
+		
+	}	
+	
+ 	
+	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,YOrig,costArSparse,itersSparse];
+    
+	
+}
+
+
+function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig) {
+	++curr;
+	
+/*
+	if (pauseFlag) {
+		
+		break;
+		
+	}
+*/	
+	var errMsg = '';
+	
+	
+//get current loop data	
+	PrevMinus1Cost = cData.PrevMinus1Cost;
+	PrevMinus1RegCost = cData.PrevMinus1RegCost; 
+	prevMinus1CostSum = cData.prevMinus1CostSum;
+	
+	Cost = cData.Cost;
+	RegCost = cData.RegCost;
+
+	PrevCost = cData.PrevCost;
+	PrevRegCost = cData.PrevRegCost;
+	prevCostSum = cData.prevCostSum;
+	
+	prevTheta = cData.prevTheta;
+	prevThetaUnscaled = cData.prevThetaUnscaled;
+	
+	nn = cData.nn;
+	
+	Theta = cData.Theta;
+	
+	XUnscaled = cData.XUnscaled;
+	ThetaUnscaled = cData.ThetaUnscaled;
+	scaleFactors = cData.scaleFactors;
+	
+	n = cData.n;
+	
+	iters = cData.iters;
+	costAr = cData.costAr;
+	
+	itersSparse = cData.itersSparse;
+	costArSparse = cData.costArSparse;
+	
+	ThetaIdeal = cData.ThetaIdeal;
+	IdealCost = cData.IdealCost;
+	
+	alpha = cData.alpha;
+	
+// end get current loop data
+	
+	
+	PrevMinus1Cost = math.clone(PrevCost);
+	PrevMinus1RegCost = math.clone(PrevRegCost); 
+	prevMinus1CostSum = prevCostSum;
+	
+
+	if (Cost) {
+		PrevCost = math.clone(Cost);
+		PrevRegCost = math.clone(RegCost);
+		prevCostSum = math.sum(Cost) + math.sum(RegCost);
+	}
+	
+	
+	
+	
+	if (mlParams.module == 'neu') {
+		nn.forward();
+		Cost = nn.getCost('CM');
+		RegCost = nn.getCost('RM');
+		
+	}
+	else {
+		var res =  costFunction(math.transpose(Theta),X,Y,mlParams.lambda,mlParams.module);
+		Cost = res[0];
+		RegCost = res[1];
+		
+	}
+
+	
+	
+	console.log('iter: ' + curr);
+	
+	if (curr % 2 == 0) {
+		if (progCallback) {
+			
+			var dashInfo = getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+			progCallback('rightBannerDiv',dashInfo,true);
+			
+		}
+	}
+
+	costAr.push(math.sum(Cost) + math.sum(RegCost));
+	iters.push(curr);
+
+
+	if (curr % 50 == 0) {
+		if (progCallback) {
+			
+			var costArRed,itersRed;
+			
+			costArSparse.push(math.sum(Cost) + math.sum(RegCost));
+	        itersSparse.push(curr);
+			
+			if (costAr.length > 50) {
+				//costArRed = costAr.slice(costAr.length - 500,costAr.length);
+				//itersRed = iters.slice(iters.length - 50,iters.length);
+				
+				//costArRed = costAr.slice(costAr.length-50,costAr.length);
+				//itersRed = iters.slice(iters.length-50,iters.length);
+				
+				
+				// Thinned out costar: 
+				   costArRed = costAr.filter(function(el,ii) {
+					   if ((ii == 0) || ((ii + 1) % Math.floor(costAr.length / 50) == 0)) { // 50 == 0)) {  // Math.floor(costAr.length / 500) == 0)) {
+						  return true;
+					   }
+					   return false;
+				   });
+				   itersRed = iters.filter(function(el,ii) {
+					   if ((ii == 0) || ((ii + 1) % Math.floor(costAr.length / 50) == 0)) {
+						  return true;
+					   }
+					   return false;
+				   });
+				   
+				   
+				   
+				   
+				   
+
+			}
+			else  {
+				//costArRed = costAr.slice(costAr.length-50,costAr.length);
+				//itersRed = iters.slice(iters.length-50,iters.length);
+				costArRed = costAr;
+				itersRed = iters;
+			}
+			
+
+			if (curr == 0) {
+				//progCallback('chart',null,true);
+			}
+			else {
+			  progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,null,costArSparse,itersSparse]);
+			}
+		}
+	
+	}
+
+
+	var blownThisIter = false;
+	
+	//Temporarily disable non-convergence test
+	
+	if ((math.sum(Cost) + math.sum(RegCost)) > (prevCostSum + mlParams.convThreshold)) {
+		//if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1CostSum) { //check if going up twice in a row, just in case small rounding error
+		   blownThisIter = true;
+		   errMsg = '<br>Non Convergence. Iter: ' + curr  + ' Alpha: ' + alpha.toFixed(3) + ' =>  trying smaller alpha';
+		   if (progCallback) {
+			   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg),true);
+			}
+			
+			if (mlParams.useBoldDriver) {
+			
+				Theta = prevTheta;
+				// minTheta = prevMinTheta;
+				ThetaUnscaled = prevThetaUnscaled;
+				Cost = math.clone(PrevCost);
+				RegCost = math.clone(PrevRegCost);
+				PrevCost = math.clone(PrevMinus1Cost);
+				PrevRegCost = math.clone(PrevMinus1RegCost);
+			}
+		   if (mlParams.useBoldDriver) {
+			  
+				alpha = alpha * 0.5;
+				if (mlParams.module === 'neu') {
+					nn.alpha = alpha;
+				}
+				//continue;
+			  
+			  
+		   }
+		   else {	
+			  
+			  
+			  //break; let go up if using constant alpha rate
+		   }
+		   
+		   if (mlParams.useDownDriver) {
+			    alpha = alpha * 0.9;
+			   	if (mlParams.module === 'neu') {
+					nn.alpha = alpha;
+				}			   
+		   }
+		   
+		//}
+	}
+	
+	
+	var convergedThisIter = false;
+	
+	if (blownThisIter) {
+	}
+	else {
+		if ((prevCostSum - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCostSum - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
+			console.log('Converged after: ' + curr);
+			errMsg = '<br>Converged after: ' + curr + ' iterations';
+			if (progCallback) {
+				progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+
+			}
+			if (potentialConvAtIter == -1) {
+				potentialConvAtIter = curr;
+			}
+			else {
+				if ((curr - potentialConvAtIter) > 20) { // allow 20 iterations leeway before declaring convergence
+				    convergedThisIter = true;
+					//break;
+				}
+			}
+			//break;
+		}
+		
+		else {
+			potentialConvAtIter = -1;
+				
+		}
+		
+		if (mlParams.useBoldDriver) {
+			alpha = alpha * 1.01;
+			if (mlParams.module === 'neu') {
+				nn.alpha = alpha;
+			}
+		}
+	}				
+	
+	//prevMinus1CostSum = prevCostSum;
+	
+	//prevCostSum = math.sum(Cost) + math.sum(RegCost);
+	
+	//prevRegCost = RegCost;
+	
+	prevTheta = Theta.clone();
+//		prevMinTheta = minTheta.clone();
+	prevThetaUnscaled = ThetaUnscaled.clone();
+
+	var logisticFlag = (mlParams.module == 'log');
+	
+	if (mlParams.module == 'neu') {
+		nn.backProp();
+		//nn.gradientCheck(); uncomment if checking gradient manually
+		Theta = nn.unrollThetas();
+	}
+	else {
+	   var res = gdUpdate(math.transpose(Theta),X,Y,alpha,mlParams.lambda,logisticFlag);
+	   Theta = res[0];
+	}
+	
+	
+	if  (mlParams.diagnosticsFlag) {
+		if (progCallback) {
+		  //progCallback('diagnosticDiv','<br>Grad: ' + res[1]);  //uncomment if showing gradient per m
+		  //progCallback('diagnosticDiv','<br>Theta: ' + Theta); //uncomment if showing theta per m
+		}
+	}
+	
+	
+	
+	if (mlParams.module == 'neu') {
+		   //TODO Need to implement unscaling for neural network
+		   ThetaUnscaled = Theta.clone();
+	}
+	else {
+			if (mlParams.scalingFlag) {
+				ThetaUnscaled  = thetaUnscale(Theta,scaleFactors);
+			}
+			else {
+				ThetaUnscaled = Theta.clone();
+			}
+	}
+			
+			
+	 
+	//set up next loop data	
+	cData.PrevMinus1Cost = PrevMinus1Cost;
+	cData.PrevMinus1RegCost = PrevMinus1RegCost; 
+	cData.prevMinus1CostSum = prevMinus1CostSum;
+	
+	cData.Cost = Cost;
+	cData.RegCost = RegCost;
+
+	cData.PrevCost = PrevCost;
+	cData.PrevRegCost = PrevRegCost;
+	cData.prevCostSum = prevCostSum;
+	
+	cData.prevTheta = prevTheta;
+	cData.prevThetaUnscaled = prevThetaUnscaled;
+	
+	cData.nn = nn;
+	
+	cData.Theta = Theta;
+	
+	cData.XUnscaled = XUnscaled;
+	cData.ThetaUnscaled = ThetaUnscaled;
+	cData.scaleFactors = scaleFactors;
+	
+	cData.n = n;
+	
+	cData.iters = iters;
+	cData.costAr = costAr;
+	
+    cData.itersSparse = itersSparse;
+	cData.costArSparse = costArSparse;
+	
+	cData.ThetaIdeal = ThetaIdeal;
+	cData.IdealCost = IdealCost;
+	
+	cData.alpha = alpha;
+	
+// end set up next loop data
+
+	
+	
+	if ((curr >= maxIters) || pauseFlag || convergedThisIter) {
+		console.log('learnloopdone');
+		var res = learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
+		if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+			var tst = res[2];
+			var msg = {};
+			msg.action = 'fin';
+			msg.elToUpdate = 'outputBlog';
+			msg.mess = '<br>finished';
+			msg.costAr = res[0];//JSON.stringify(res[0]);
+			msg.iters = res[1];//JSON.stringify(res[1]);
+			msg.ThetaIdeal = JSON.stringify(res[2]);
+			msg.IdealCost = JSON.stringify(res[3]);
+			msg.X = JSON.stringify(res[4]);
+			msg.Y = JSON.stringify(res[5]);
+			msg.minTheta = JSON.stringify(res[6]);
+			msg.XUnscaled = JSON.stringify(res[7]);
+			msg.minThetaUnscaled = JSON.stringify(res[8]);
+			msg.scaleFactors = res[9];//JSON.stringify(res[9]);
+			msg.YOrig = JSON.stringify(res[10]);
+			msg.costArSparse = res[11];
+			msg.itersSparse = res[12];
+			//postMessage({'action':'fin','elToUpdate':'blog','mess':'<br>finished','minT':JSON.stringify(res[4])});	
+			postMessage(msg);
+			postMessage({'action':'progUp','elToUpdate':'outputBlog','mess':'<br>finished'});		
+			if ((mlParams.module == 'log') && (mlParams.numLogClasses > 2) && (mlParams.currClassNum == mlParams.numLogClasses - 1)) {
+				postMessage({'action':'multiClassFin'});
+			}
+		}			
+		
+	}	
+	else {
+		setTimeout(function() {
+			learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
+		},0);
+	}
+		
+	
+}
+
+
 /**
  *
  * @param mlParams
  * @param progCallback
  * @returns {*}
  */
-function learn(mlParams,X,Y,progCallback) {
+function learn(mlParams,X,Y,progCallback,continueData) {
   
    var minCost = null;
    var minReg = null;
    var minCostSum = 99999999999999999999;
-   var minTheta = [];
+ //  var minTheta = [];
+ 
+   var PrevCost;
+   var PrevRegCost;
+   
+   var PrevMinus1Cost;
+   var PrevMinus1RegCost;
    
    var degrees = mlParams.degrees; //parseInt(elVal('degreesInput'));
 
@@ -843,25 +1341,42 @@ function learn(mlParams,X,Y,progCallback) {
    }
    
    
+   
    var iters = [];
-   var iterNum = 0;
+   var costAr = [];
+   
+   var itersSparse = [];
+   var costArSparse = [];
+   
+   if (continueData) {
+	   iters = continueData[0];
+	   costAr = continueData[1];
+	   itersSparse = continueData[2];
+	   costArSparse = continueData[3];
+   }
+
+   var iterNum = iters.length;
    
    var alpha = mlParams.alpha; 
    var lambda = mlParams.lambda;
    
    var maxIters = mlParams.maxIterations; 
 
-    var prevCost = 9999999999999999999;
-	var prevMinus1Cost = 9999999999999999999;
-	var costAr = [];
+    var prevCostSum = 9999999999999999999;
+	var prevMinus1CostSum = 9999999999999999999;
 	
 	var Theta;
+	
+	var prevTheta, prevThetaUnscaled;
 	
 	
 	var nn;
    
     if (mlParams.module == 'neu') {
-         nn = new NeuralNetwork([X.size()[0] - 1,X.size()[0] + 1,Y.size()[0]],X,Y,XUnscaled,scaleFactors,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+		
+		 var arch = (mlParams.architecture.length  == 0) ? [X.size()[0] - 1,X.size()[0] +1,Y.size()[0]] : mlParams.architecture;
+
+         nn = new NeuralNetwork(arch,X,Y,XUnscaled,scaleFactors,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
 	     Theta = nn.unrollThetas();
  	}
     else {	
@@ -883,34 +1398,101 @@ function learn(mlParams,X,Y,progCallback) {
 		Theta = math.matrix(startTheta);
 	}
 	
-	minTheta = Theta.clone();
+//	minTheta = Theta.clone();
 	
 
-	var minThetaUnscaled;
+	var ThetaUnscaled;
 	if (mlParams.module == 'neu') {
 		//TODO Need to implement unscaling for neural network
-		minThetaUnscaled = minTheta.clone();
+		ThetaUnscaled =Theta.clone();
 	}
 	
 	else {
 	
 		if (mlParams.scalingFlag) {
-			minThetaUnscaled = thetaUnscale(minTheta,scaleFactors);
+			ThetaUnscaled = thetaUnscale(Theta,scaleFactors);
 		}
 		else {
-			minThetaUnscaled = minTheta.clone();
+			ThetaUnscaled = Theta.clone();
 		}
 	}
 	
 		
     var degrees = mlParams.degrees;//parseInt(elVal('degreesInput'));
-		
+			
 	var errMsg = null;	
-		
+	
+	var Cost,RegCost;
+	
+	var potentialConvAtIter = -1;
+	
+	
+	var cData = {}; //current loop iteration data
+	
+	//set up loop curr data	
+	cData.PrevMinus1Cost = PrevMinus1Cost;
+	cData.PrevMinus1RegCost = PrevMinus1RegCost; 
+	cData.prevMinus1CostSum = prevMinus1CostSum;
+	
+	cData.Cost = Cost;
+	cData.RegCost = RegCost;
+
+	cData.PrevCost = PrevCost;
+	cData.PrevRegCost = PrevRegCost;
+	cData.prevCostSum = prevCostSum;
+	
+	cData.prevTheta = prevTheta;
+	cData.prevThetaUnscaled = prevThetaUnscaled;
+	
+	cData.nn = nn;
+	
+	cData.Theta = Theta;
+	
+	cData.XUnscaled = XUnscaled;
+	cData.ThetaUnscaled = ThetaUnscaled;
+	cData.scaleFactors = scaleFactors;
+	
+	cData.n = n;
+	
+	cData.iters = iters;
+	cData.costAr = costAr;
+	
+	cData.itersSparse = itersSparse;
+	cData.costArSparse = costArSparse;
+	
+	cData.ThetaIdeal = ThetaIdeal;
+	cData.IdealCost = IdealCost;
+	
+	cData.alpha = mlParams.alpha;
+	
+// end set up loop curr data
+	
+	learnLoop(iterNum,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
+	
+	/*	
 	for (var i = 0;i < maxIters;++i) {
+		
+	
+			if (pauseFlag) {
+				
+				break;
+				
+			}
  
-            var Cost;
-			var RegCost;
+            
+			PrevMinus1Cost = math.clone(PrevCost);
+			PrevMinus1RegCost = math.clone(PrevRegCost); 
+			prevMinus1CostSum = prevCostSum;
+			
+	
+			if (Cost) {
+				PrevCost = math.clone(Cost);
+			    PrevRegCost = math.clone(RegCost);
+		    	prevCostSum = math.sum(Cost) + math.sum(RegCost);
+			}
+			
+			
+			
 			
             if (mlParams.module == 'neu') {
 				nn.forward();
@@ -933,7 +1515,7 @@ function learn(mlParams,X,Y,progCallback) {
 			if (i % 2 == 0) {
 				if (progCallback) {
 					
-					var dashInfo = getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+					var dashInfo = getDashboardInfo(mlParams,nn,i,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
 					progCallback('rightBannerDiv',dashInfo,true);
 					
 				}
@@ -982,7 +1564,7 @@ function learn(mlParams,X,Y,progCallback) {
 						//progCallback('chart',null,true);
 					}
 					else {
-			          progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors]);
+			          progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors]);
 					}
 				}
 			
@@ -991,19 +1573,28 @@ function learn(mlParams,X,Y,progCallback) {
 		
 			var blownThisIter = false;
 			
-			if ((math.sum(Cost) + math.sum(RegCost)) > (prevCost + mlParams.convThreshold)) {
-				//if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1Cost) { //check if going up twice in a row, just in case small rounding error
+			//Temporarily disable non-convergence test
+			
+			if ((math.sum(Cost) + math.sum(RegCost)) > (prevCostSum + mlParams.convThreshold)) {
+				//if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1CostSum) { //check if going up twice in a row, just in case small rounding error
 				   blownThisIter = true;
 			       errMsg = '<br>Non Convergence. Iter: ' + i  + ' Alpha: ' + alpha.toFixed(3) + ' =>  trying smaller alpha';
 				   if (progCallback) {
-					   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg),true);
+					   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg),true);
+					}
+					
+					if (mlParams.useBoldDrive	r) {
+					
+						Theta = prevTheta;
+						// minTheta = prevMinTheta;
+						ThetaUnscaled = prevThetaUnscaled;
+						Cost = math.clone(PrevCost);
+						RegCost = math.clone(PrevRegCost);
+						PrevCost = math.clone(PrevMinus1Cost);
+						PrevRegCost = math.clone(PrevMinus1RegCost);
 					}
 				   if (mlParams.useBoldDriver) {
-					   	Theta = prevTheta;
-				        minTheta = prevMinTheta;
-				        minThetaUnscaled = prevMinThetaUnscaled;
-				        Cost = prevCost;
-				        RegCost = prevRegCost;
+					  
 					    alpha = alpha * 0.5;
 						if (mlParams.module === 'neu') {
 							nn.alpha = alpha;
@@ -1012,36 +1603,59 @@ function learn(mlParams,X,Y,progCallback) {
 				      
                       
 				   }
-                   else {				   
-				      break;
+                   else {	
+                      
+					  
+				      //break; let go up if using constant alpha rate
 				   }
 				//}
 			}
 			
 			
+			
 			if (blownThisIter) {
 			}
 			else {
-				if ((prevCost - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCost - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
+				if ((prevCostSum - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCostSum - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
 					console.log('Converged after: ' + i);
 					errMsg = '<br>Converged after: ' + i + ' iterations';
 					if (progCallback) {
-						progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+						progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
 		
 					}
-					break;
+					if (potentialConvAtIter == -1) {
+						potentialConvAtIter = i;
+					}
+					else {
+						if ((i - potentialConvAtIter) > 20) { // allow 20 iterations leeway before declaring convergence
+							break;
+						}
+					}
+					//break;
+				}
+				
+				else {
+					potentialConvAtIter = -1;
+						
+				}
+				
+				if (mlParams.useBoldDriver) {
+			      	alpha = alpha * 1.01;
+				    if (mlParams.module === 'neu') {
+				    	nn.alpha = alpha;
+				    }
 				}
 			}				
 			
-			prevMinus1Cost = prevCost;
+			//prevMinus1CostSum = prevCostSum;
 			
-			prevCost = math.sum(Cost) + math.sum(RegCost);
+			//prevCostSum = math.sum(Cost) + math.sum(RegCost);
 			
-			prevRegCost = RegCost;
+			//prevRegCost = RegCost;
 			
 			prevTheta = Theta.clone();
-			prevMinTheta = minTheta.clone();
-			prevMinThetaUnscaled = minThetaUnscaled.clone();
+	//		prevMinTheta = minTheta.clone();
+			prevThetaUnscaled = ThetaUnscaled.clone();
 
 			if (mlParams.module == 'neu') {
                 nn.backProp();
@@ -1061,58 +1675,38 @@ function learn(mlParams,X,Y,progCallback) {
 				}
 			}
 			
-
-			if ( (math.sum(Cost) + math.sum(RegCost)) < minCostSum) {
-				if (mlParams.useBoldDriver) {
-			    	alpha = alpha * 1.01;
-					if (mlParams.module === 'neu') {
-							nn.alpha = alpha;
-					}
-				}
-				minCost = Cost;
-				minReg = RegCost;
-				minCostSum = math.sum(Cost) + math.sum(RegCost);
-				minTheta = Theta;
-				if (mlParams.module == 'neu') {
+			
+			
+			if (mlParams.module == 'neu') {
 		           //TODO Need to implement unscaling for neural network
-		           minThetaUnscaled = minTheta.clone();
-	            }
-	            else {
+		           ThetaUnscaled = Theta.clone();
+	        }
+	        else {
 	             	if (mlParams.scalingFlag) {
-			            minThetaUnscaled  = thetaUnscale(minTheta,scaleFactors);
+			            ThetaUnscaled  = thetaUnscale(Theta,scaleFactors);
 	            	}
 	            	else {
-		             	minThetaUnscaled = minTheta.clone();
+		             	ThetaUnscaled = Theta.clone();
 					}
-				}
-				
-			
 			}
-			else  {
-				/*
-				Theta = prevTheta;
-				minTheta = prevMinTheta;
-				minThetaUnscaled = prevMinThetaUnscaled;
-				Cost = prevCost;
-				RegCost = prevRegCost;
-				if (mlParams.useBoldDriver) {
-					alpha = alpha * 0.5;
-				}
-				*/
 				
-			}
-			
 				
-	}					
+	}
+
+*/	
 		
 	
+	
+
+	
 		
+	/* end of loop stuff
 	
 	console.log('Cost: ' +  Cost + '\nTot cost: ' + (math.sum(Cost) + math.sum(RegCost)))	;
 	
 	if (progCallback) {
 		
-		var dashInfo = getDashboardInfo(mlParams,nn,i,alpha,minTheta,minThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
+		var dashInfo = getDashboardInfo(mlParams,nn,i,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
 		progCallback('rightBannerDiv',dashInfo,true);
  					
 	}
@@ -1124,10 +1718,6 @@ function learn(mlParams,X,Y,progCallback) {
 
 	if (progCallback) {
 		
-		/*
-		minTheta = math.reshape(minTheta,[1,minTheta.size()[0]]);
-		minThetaUnscaled = math.reshape(minThetaUnscaled,[1,minThetaUnscaled.size()[0]]);
-		*/
 		
 			
 		var d = 4;
@@ -1145,16 +1735,16 @@ function learn(mlParams,X,Y,progCallback) {
 		
 		else {
 			if (mlParams.diagnosticsFlag) {
-			   progCallback('diagnosticDiv','<br><br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d));
+			   progCallback('diagnosticDiv','<br><br>Model h(Theta) = ' + math.subset(ThetaUnscaled,math.index(0,0)).toFixed(d));
 				for (var i = 1;i < n+1;++i) {
-				   progCallback('diagnosticDiv',' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); 
+				   progCallback('diagnosticDiv',' + ' + math.subset(ThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); 
 				}
 					
 				progCallback('diagnosticDiv','<br>Model Cost: ' + minCostSum);
 			
-				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + minTheta.subset(math.index(0,0)).toFixed(d));
+				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + Theta.subset(math.index(0,0)).toFixed(d));
 				for (var i = 1;i < n+1;++i) {
-				   progCallback('diagnosticDiv',' + ' + minTheta.subset(math.index(i,0)).toFixed(d) + 'x' + i);
+				   progCallback('diagnosticDiv',' + ' + Theta.subset(math.index(i,0)).toFixed(d) + 'x' + i);
 				}
 				progCallback('diagnosticDiv',')');
 				progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
@@ -1165,7 +1755,9 @@ function learn(mlParams,X,Y,progCallback) {
 	}	
 	
  	
-	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig];
+	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,YOrig];
+	
+	*/
     
 
 }
@@ -1869,7 +2461,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
            this.prime = math.dotMultiply(this.AWithBias,this.AComplement);
            this.D = math.dotMultiply(this.D,this.prime);
 
-           this.D = math.matrix(matrixToArray(this.D,0)); //remove first row of 1s
+           //this.D = math.matrix(matrixToArray(this.D,0)); //remove first row of 1s
+		   this.D = mRemoveFirstRow(this.D); //vast improvement!
 
        }
 
