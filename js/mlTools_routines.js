@@ -791,10 +791,15 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 	
 	Cost = cData.Cost;
 	RegCost = cData.RegCost;
+	currCostSum = cData.currCostSum;
 
 	PrevCost = cData.PrevCost;
 	PrevRegCost = cData.PrevRegCost;
 	prevCostSum = cData.prevCostSum;
+	
+	potentialConvAtIter = cData.potentialConvAtIter;
+	potentialConvCostSum = cData.potentialConvCostSum;
+	
 	
 	prevTheta = cData.prevTheta;
 	prevThetaUnscaled = cData.prevThetaUnscaled;
@@ -823,7 +828,7 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 // end get current loop data
 
 
-    console.log('Cost: ' +  Cost + '\nTot cost: ' + (math.sum(Cost) + math.sum(RegCost)));
+    console.log('Cost: ' +  Cost + '\nTot cost: ' +  currCostSum); //(math.sum(Cost) + math.sum(RegCost)));
 	
 	var errMsg = '';
 	
@@ -856,7 +861,7 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 			if (mlParams.diagnosticsFlag) {
 				
 			   progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
-			   progCallback('diagnosticDiv',' Model Cost: ' + minCostSum);
+			   progCallback('diagnosticDiv',' Model Cost: ' + currCostSum);
 			}
 		}
 		
@@ -867,7 +872,7 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 				   progCallback('diagnosticDiv',' + ' + math.subset(ThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); 
 				}
 					
-				progCallback('diagnosticDiv','<br>Model Cost: ' + minCostSum);
+				progCallback('diagnosticDiv','<br>Model Cost: ' + currCostSum);
 			
 				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + Theta.subset(math.index(0,0)).toFixed(d));
 				for (var i = 1;i < n+1;++i) {
@@ -908,10 +913,15 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	Cost = cData.Cost;
 	RegCost = cData.RegCost;
+	currCostSum = cData.currCostSum;
 
 	PrevCost = cData.PrevCost;
 	PrevRegCost = cData.PrevRegCost;
 	prevCostSum = cData.prevCostSum;
+	
+	potentialConvAtIter = cData.potentialConvAtIter;
+	potentialConvCostSum = cData.potentialConvCostSum;
+	
 	
 	prevTheta = cData.prevTheta;
 	prevThetaUnscaled = cData.prevThetaUnscaled;
@@ -948,7 +958,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	if (Cost) {
 		PrevCost = math.clone(Cost);
 		PrevRegCost = math.clone(RegCost);
-		prevCostSum = math.sum(Cost) + math.sum(RegCost);
+		prevCostSum =  currCostSum; //math.sum(Cost) + math.sum(RegCost);
 	}
 	
 	
@@ -968,6 +978,8 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	}
 
 	
+	currCostSum = math.sum(Cost) + math.sum(RegCost);
+	
 	
 	console.log('iter: ' + curr);
 	
@@ -980,7 +992,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 		}
 	}
 
-	costAr.push(math.sum(Cost) + math.sum(RegCost));
+	costAr.push(currCostSum);   //(math.sum(Cost) + math.sum(RegCost));
 	iters.push(curr);
 
 
@@ -989,7 +1001,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 			
 			var costArRed,itersRed;
 			
-			costArSparse.push(math.sum(Cost) + math.sum(RegCost));
+			costArSparse.push(currCostSum); //(math.sum(Cost) + math.sum(RegCost));
 	        itersSparse.push(curr);
 			
 			if (costAr.length > 50) {
@@ -1043,7 +1055,9 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	//Temporarily disable non-convergence test
 	
-	if ((math.sum(Cost) + math.sum(RegCost)) > (prevCostSum + mlParams.convThreshold)) {
+	//if ((math.sum(Cost) + math.sum(RegCost)) > (prevCostSum + mlParams.convThreshold)) {
+	if (currCostSum > (prevCostSum + mlParams.convThreshold)) {	
+		
 		//if ((math.sum(Cost) + math.sum(RegCost)) > prevMinus1CostSum) { //check if going up twice in a row, just in case small rounding error
 		   blownThisIter = true;
 		   errMsg = '<br>Non Convergence. Iter: ' + curr  + ' Alpha: ' + alpha.toFixed(3) + ' =>  trying smaller alpha';
@@ -1058,8 +1072,11 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 				ThetaUnscaled = prevThetaUnscaled;
 				Cost = math.clone(PrevCost);
 				RegCost = math.clone(PrevRegCost);
+				currCostSum = prevCostSum;
 				PrevCost = math.clone(PrevMinus1Cost);
 				PrevRegCost = math.clone(PrevMinus1RegCost);
+				prevCostSum = prevMinus1CostSum;
+
 			}
 		   if (mlParams.useBoldDriver) {
 			  
@@ -1093,19 +1110,29 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	if (blownThisIter) {
 	}
 	else {
-		if ((prevCostSum - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCostSum - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
+		//if ((prevCostSum - (math.sum(Cost) + math.sum(RegCost)) >= 0) && (prevCostSum - (math.sum(Cost) + math.sum(RegCost)) <  mlParams.convThreshold)) { 
+		if ( ((prevCostSum - currCostSum) >= 0) && ((prevCostSum - currCostSum) <  mlParams.convThreshold) ) { 
 			console.log('Converged after: ' + curr);
-			errMsg = '<br>Converged after: ' + curr + ' iterations';
-			if (progCallback) {
-				progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
 
-			}
 			if (potentialConvAtIter == -1) {
 				potentialConvAtIter = curr;
+				potentialConvCostSum = prevCostSum;
 			}
 			else {
 				if ((curr - potentialConvAtIter) > 20) { // allow 20 iterations leeway before declaring convergence
-				    convergedThisIter = true;
+				    if (potentialConvCostSum - currCostSum < mlParams.convThreshold) {
+				        convergedThisIter = true;
+						errMsg = '<br>Converged after: ' + curr + ' iterations';
+		             	if (progCallback) {
+				            progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+
+			            }
+					}
+					else {
+						potentialConvAtIter = -1;
+		            	potentialConvCostSum = 9999999999999999;
+					}
+						
 					//break;
 				}
 			}
@@ -1114,6 +1141,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 		
 		else {
 			potentialConvAtIter = -1;
+			potentialConvCostSum = 9999999999999999;
 				
 		}
 		
@@ -1179,10 +1207,15 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	cData.Cost = Cost;
 	cData.RegCost = RegCost;
+	cData.currCostSum = currCostSum;
 
 	cData.PrevCost = PrevCost;
 	cData.PrevRegCost = PrevRegCost;
 	cData.prevCostSum = prevCostSum;
+	
+	cData.potentialConvAtIter = potentialConvAtIter;
+	cData.potentialConvCostSum = potentialConvCostSum;
+	
 	
 	cData.prevTheta = prevTheta;
 	cData.prevThetaUnscaled = prevThetaUnscaled;
@@ -1364,6 +1397,7 @@ function learn(mlParams,X,Y,progCallback,continueData) {
 
     var prevCostSum = 9999999999999999999;
 	var prevMinus1CostSum = 9999999999999999999;
+	var currCostSum = 9999999999999999999;
 	
 	var Theta;
 	
@@ -1436,10 +1470,14 @@ function learn(mlParams,X,Y,progCallback,continueData) {
 	
 	cData.Cost = Cost;
 	cData.RegCost = RegCost;
+	cData.currCostSum = currCostSum;
 
 	cData.PrevCost = PrevCost;
 	cData.PrevRegCost = PrevRegCost;
 	cData.prevCostSum = prevCostSum;
+	
+	cData.potentialConvAtIter = -1;
+	cData.potentialConvCostSum = 99999999999999999;
 	
 	cData.prevTheta = prevTheta;
 	cData.prevThetaUnscaled = prevThetaUnscaled;
