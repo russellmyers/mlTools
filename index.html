@@ -27,7 +27,7 @@
 
   <!--input id = "addOnesFlag" type="checkbox" checked>Auto add ones feature-->
  
-  <label for = "convThreshold">Converge Threshold</label>
+  <label for = "convThreshold">Conv Thresh</label>
   <input id = "convThreshold" class="largeInput" type="text" value = "0.0000000001">
   
   <!--input type="radio" name="featureType" id = "featureMulti" onclick="featureTypeClicked(event)" value="multi">Multi Feature
@@ -35,12 +35,15 @@
 
   <label for = "degreesInput" id="degreesInputLab">Poly Degrees</label>
   <input id = "degreesInput" class="smallInput" type="text" value = "1">
-   <label for = "boldDriverFlag" id = "boldDriverFlagLab">Bold</label>
+   <label for = "boldDriverFlag" id = "boldDriverFlagLab">BD</label>
   
-   <input id = "boldDriverFlag" type="checkbox"  >
+   <input id = "boldDriverFlag" type="radio"  name ="driver" >
    <label for = "downDriverFlag" id = "downDriverFlagLab">Down</label>
-  
-   <input id = "downDriverFlag" type="checkbox" checked >   
+   <input id = "downDriverFlag" type="radio" checked name="driver" >   
+   <label for "lineSearchDriverFlag" id = "lineSearchDriverFlagLab" >LS</label>
+   <input id = "lineSearchDriverFlag" type="radio" name="driver"  > 
+   <label for "conjugateGradientDriverFlag" id = "conjugateGradientDriverFlagLab" >CG</label>
+   <input id = "conjugateGradientDriverFlag" type="radio" name="driver"  >
  
   <label for = "numLogClasses" id = "numLogClassesLab"># classes</label>
   <input id = "numLogClasses" class="smallInput" onchange = "numLogClassesClicked()" value = "0" type="text">

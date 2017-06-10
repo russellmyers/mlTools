@@ -716,7 +716,7 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 	
 	var dashInfo = '';
 	
-	dashInfo += 'Iter: ' +  iterNum +  ' Alpha: ' + alpha.toFixed(3) + ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + ' (exReg: ' + math.sum(Cost).toFixed(3)  + ')' + '<br>';
+	dashInfo += 'Iter: ' +  iterNum +  ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + ' (exReg: ' + math.sum(Cost).toFixed(3)  + ')' + ' Alpha: ' + alpha.toFixed(3) + '<br>';
 	
 	
 	if ((mlParams.module === 'log') && (mlParams.numLogClasses > 2)) {
@@ -824,6 +824,8 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 	IdealCost = cData.IdealCost;
 	
 	alpha = cData.alpha;
+	
+	pk = cData.pk;
 	
 // end get current loop data
 
@@ -947,6 +949,8 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	alpha = cData.alpha;
 	
+	pk = cData.pk;
+	
 // end get current loop data
 	
 	
@@ -982,8 +986,16 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	
 	console.log('iter: ' + curr);
+	var counterUpdate = 2;
+	var graphUpdate = 50;
 	
-	if (curr % 2 == 0) {
+	if (mlParams.useLineSearchDriver || mlParams.useConjugateGradientDriver) {
+		counterUpdate = 1;
+		
+	}
+	
+	
+	if (curr % counterUpdate == 0) {
 		if (progCallback) {
 			
 			var dashInfo = getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
@@ -1167,6 +1179,35 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	if (mlParams.module == 'neu') {
 		nn.backProp();
+		if (mlParams.useLineSearchDriver) {
+			var res = nn.wolfeLineSearch();
+			alpha = res[0];
+			nn.alpha = res[0];
+			nn.updateTheta(res[1].x);
+			
+		}
+		else if (mlParams.useConjugateGradientDriver) {
+			var res = nn.conjugateGradientStep(nn.pk);
+			if (res[0]) {
+			   alpha = res[0];	
+			   nn.alpha = res[0];
+			   nn.updateTheta(res[1].x);
+			   nn.pk = res[2];
+			   pk = res[2];
+			   
+			}
+			else {
+				alpha = 1;
+				nn.alpha = 1; //reset
+				nn.pk = res[2];
+				pk = res[2];
+				
+			}
+			
+		}
+		else {
+		    nn.updateTheta();
+		}
 		//nn.gradientCheck(); uncomment if checking gradient manually
 		Theta = nn.unrollThetas();
 	}
@@ -1240,6 +1281,8 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	cData.IdealCost = IdealCost;
 	
 	cData.alpha = alpha;
+	
+	cData.pk = pk;
 	
 // end set up next loop data
 
@@ -1336,6 +1379,8 @@ function learn(mlParams,X,Y,progCallback,continueData) {
    var n = X.size()[0] -1;
    
    var logisticFlag = (mlParams.module == 'log');
+   
+   var pk = null; //used by conjugate gradient
    
    
    if (progCallback) {
@@ -1503,6 +1548,8 @@ function learn(mlParams,X,Y,progCallback,continueData) {
 	
 	cData.alpha = mlParams.alpha;
 	
+	cData.pk = pk;
+	
 // end set up loop curr data
 	
 	learnLoop(iterNum,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
@@ -1621,7 +1668,7 @@ function learn(mlParams,X,Y,progCallback,continueData) {
 					   progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,i,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg),true);
 					}
 					
-					if (mlParams.useBoldDrive	r) {
+					if (mlParams.useBoldDriver) {
 					
 						Theta = prevTheta;
 						// minTheta = prevMinTheta;
@@ -1812,6 +1859,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	
 	this.scaleFactors = scaleFactors;
 	
+	this.pk = null;
+	
 	this.randomTheta = true;
 	
 	this.initTheta = initTheta;
@@ -1849,16 +1898,31 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		   
 	};
 	
-	this.rollThetas = function() {
+	/**
+	* If ThVec is supplied (which is an unrolled Theta vector) then use this
+	* otherwise roll Theta matrices based on initTheta
+	
+	**/
+	
+	this.rollThetas = function(ThVec) {
+		
+		
 		
 		var svdThis = this;
 		
 		var ThMats = [];
 		
-		var initThAr = this.initTheta.split(' ');
-		initThAr = initThAr.map(function(el) {
-			return parseFloat(el);
-		});
+		var ThArUnrolled;
+		
+        if (ThVec) {
+			ThArUnrolled = matrixToArray(ThVec);
+		}
+		else {
+			ThArUnrolled = this.initTheta.split(' ');
+			ThArUnrolled = ThArUnrolled.map(function(el) {
+				return parseFloat(el);
+			});
+		}
 		
 		this.architecture.forEach(function(unitsThisLayer,i) {
 
@@ -1869,7 +1933,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			
 				var thRows = unitsThisLayer + 1;
 		    	var thCols = svdThis.architecture[i+1];
-				var thAr = initThAr.splice(0,thRows * thCols);
+				var thAr = ThArUnrolled.splice(0,thRows * thCols);
 				var thMat = math.matrix(thAr);
 				var thMat = math.reshape(thMat,[thRows,thCols]);
 				ThMats.push(thMat);
@@ -2195,6 +2259,19 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		 return math.matrix(unrolled);
 		 
 	 };
+	 
+	 this.unrollDerivs = function() {
+		 
+		 var unrolled = [];
+		 for (var i = 0;i < this.layers.length - 1;++i) {
+			 var Der = matrixToArray(this.layers[i].Derivs);
+			 Der = math.flatten(Der);
+			 unrolled = unrolled.concat(Der);
+		 }
+		 return math.matrix(unrolled);
+		 
+	 };
+	 
 
     this.calcDeltas = function() {
         for (var i = this.numLayers - 1;i > 0;--i) {
@@ -2217,15 +2294,225 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
         this.calcDeltas();
         this.calcDerivs();
 
-        for (var lay = 0;lay < this.numLayers - 1;++lay) {
-            this.layers[lay].adjustTheta(this.alpha);
-
-        }
-
-        this.forward();
+  
 
 
 	};
+	
+	
+	/**
+	* If ThVec supplied, update directly based on that, else update based on  std grad descent update
+	*/
+	this.updateTheta = function(ThVec){
+		
+		var ThMats;
+		
+		if (ThVec) {
+			ThMats = this.rollThetas(ThVec);
+		}
+		
+		for (var lay = 0;lay < this.numLayers - 1;++lay) {
+			if (ThMats) {
+				this.layers[lay].updateTheta(this.alpha,ThMats[lay]);
+			}
+			else {
+				this.layers[lay].updateTheta(this.alpha);
+			}
+		
+        }
+
+        this.forward();
+		
+	
+	
+	};
+	
+	
+	this.conjugateGradientStep = function(pk) {
+		    var params = null;
+		
+			var current = {};
+		    var next = {};
+		    current.x = this.unrollThetas();
+		    current.fx = this.getCost('T');
+		    current.fxprime = this.unrollDerivs();
+			
+			if (pk) {
+				
+			}
+			else {
+		       pk = math.multiply(current.fxprime,-1);
+			}
+
+		
+		    var res = this.wolfeLineSearch(this.alpha,pk);
+			var a = res[0];
+			next = res[1];
+
+            // todo: history in wrong spot?
+			if (params) {
+				if (params.history) {
+					params.history.push({x: current.x.slice(),
+										 fx: current.fx,
+										 fxprime: current.fxprime.slice(),
+										 alpha: a});
+				}
+			}
+
+            if (!a) {
+                // faiiled to find point that satifies wolfe conditions.
+                // reset direction for next iteration
+                pk = math.multiply(current.fxprime,-1);   //scale(pk, current.fxprime, -1);
+				return[a,null,pk];
+
+            } else {
+                // update direction using Polakâ€“Ribiere CG method
+                var yk = math.add(next.fxprime,math.multiply(current.fxprime,-1));     //weightedSum(yk, 1, next.fxprime, -1, current.fxprime);
+
+                var delta_k =    math.sum(math.dotMultiply(current.fxprime,current.fxprime));  //dot(current.fxprime, current.fxprime),
+                    beta_k =     Math.max(0,math.sum(math.dotMultiply(yk,next.fxprime)) / delta_k);     //Math.max(0, dot(yk, next.fxprime) / delta_k);
+
+                pk = math.add(math.multiply(pk,beta_k),math.multiply(next.fxprime,-1));     //weightedSum(pk, beta_k, pk, -1, next.fxprime);
+
+				return [a,next,pk];
+				/*
+                temp = current;
+                current = next;
+                next = temp;
+				*/
+            }
+
+			/*
+            if (norm2(current.fxprime) <= 1e-5) {
+                break;
+            }
+			*/
+        
+
+		if (params) {
+			if (params.history) {
+				params.history.push({x: current.x.slice(),
+									 fx: current.fx,
+									 fxprime: current.fxprime.slice(),
+									 alpha: a});
+			}
+		}
+	};
+	
+	
+
+
+		
+		
+
+	
+	
+	this.wolfeLineSearch = function(a,pk) {
+	/// searches along line 'pk' for a point that satifies the wolfe conditions
+    /// See 'Numerical Optimization' by Nocedal and Wright p59-60
+    /// f : objective function
+    /// pk : search direction
+    /// current: object containing current gradient/loss
+    /// next: output: contains next gradient/loss
+    /// returns a: step size taken
+  //   function wolfeLineSearch(f, pk, current, next, a, c1, c2) {
+	  
+	    var current = {};
+		var next = {};
+		current.x = this.unrollThetas();
+		current.fx = this.getCost('T');
+		current.fxprime = this.unrollDerivs();
+		if (pk) {
+			
+		}
+		else {
+		   pk = math.multiply(current.fxprime,-1);
+		}
+		//var a = this.alpha;
+		var c1;
+		var c2;
+		
+		var svdThis = this;
+	  
+		var phi0 = current.fx, phiPrime0 =  math.sum(math.dotMultiply(current.fxprime,pk)), //dot(current.fxprime, pk),
+			phi = phi0, phi_old = phi0,
+			phiPrime = phiPrime0,
+			a0 = 0;
+
+		a = a || 1;
+		c1 = c1 || 1e-6;
+		c2 = c2 || 0.1;
+
+		function zoom(a_lo, a_high, phi_lo) {
+			for (var iteration = 0; iteration < 16; ++iteration) {
+				a = (a_lo + a_high)/2;
+				next.x = math.add(current.x,math.multiply(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
+			    svdThis.updateTheta(next.x);
+			    phi = svdThis.getCost('T');
+			    svdThis.backProp();       //phi = next.fx = f(next.x, next.fxprime);
+			    next.fxprime = svdThis.unrollDerivs();
+				phiPrime = math.sum(math.dotMultiply(next.fxprime,pk)); 
+				svdThis.updateTheta(current.x);  //restore. Don't change in this routine, new value will be returned
+				/*
+				weightedSum(next.x, 1.0, current.x, a, pk);
+				phi = next.fx = f(next.x, next.fxprime);
+				phiPrime = dot(next.fxprime, pk);
+				*/
+
+				if ((phi > (phi0 + c1 * a * phiPrime0)) ||
+					(phi >= phi_lo)) {
+					a_high = a;
+
+				} else  {
+					if (Math.abs(phiPrime) <= -c2 * phiPrime0) {
+						return [a,next];
+					}
+
+					if (phiPrime * (a_high - a_lo) >=0) {
+						a_high = a_lo;
+					}
+
+					a_lo = a;
+					phi_lo = phi;
+				}
+			}
+
+			return [0,next];
+		}
+
+		for (var iteration = 0; iteration < 10; ++iteration) {
+			next.x = math.add(current.x,math.multiply(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
+			svdThis.updateTheta(next.x);
+			phi = svdThis.getCost('T');
+			svdThis.backProp();       //phi = next.fx = f(next.x, next.fxprime);
+			next.fxprime = svdThis.unrollDerivs();
+			phiPrime = math.sum(math.dotMultiply(next.fxprime,pk));  //dot(next.fxprime, pk);
+			svdThis.updateTheta(current.x);  //restore. Don't change in this routine, new value will be returned
+			
+			if ((phi > (phi0 + c1 * a * phiPrime0)) ||
+				(iteration && (phi >= phi_old))) {
+				return zoom(a0, a, phi_old);
+			}
+
+			if (Math.abs(phiPrime) <= -c2 * phiPrime0) {
+				return [a,next];
+			}
+
+			if (phiPrime >= 0 ) {
+				return zoom(a, a0, phi);
+			}
+
+			phi_old = phi;
+			a0 = a;
+			a *= 2;
+		}
+
+		return [a,next];
+		
+
+		
+	};
+	
 	 
 	 
 	 this.gradientCheck = function() {
@@ -2528,10 +2815,20 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 };
 
 
-     this.adjustTheta = function(alpha) {
-         this.DerivsAdj =  math.multiply(this.Derivs,alpha);
+	 /** If ThMat supplied, update directly else use gd update
+	 *
+	 **/
+	 
+     this.updateTheta = function(alpha,ThMat) {
+		 
+		 if (ThMat) {
+			this.Theta = ThMat;
+		 }
+		 else {
+            this.DerivsAdj =  math.multiply(this.Derivs,alpha);
 
-         this.Theta = math.subtract(this.Theta,this.DerivsAdj);
+            this.Theta = math.subtract(this.Theta,this.DerivsAdj);
+		 }
 
      };
 	 

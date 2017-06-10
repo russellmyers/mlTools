@@ -68,6 +68,10 @@ function MLParams() {
    this.updateInitialThetaFlag = null;	// retrieve when needed
    this.useBoldDriver = null;			// retrieve when needed
    this.useDownDriver = null;           // retrieve when needed
+   this.useLineSearchDriver = null;     // retrieve when needed
+   this.useConjugateGradientDriver = null;     // retrieve when needed
+   
+   
    
    this.currClassNum = null;            //used for logistic regression multi-class
    
@@ -293,6 +297,10 @@ function getParams() {
 	
 	mlParams.useDownDriver = elVal('downDriverFlag');
 	
+	mlParams.useLineSearchDriver = elVal('lineSearchDriverFlag');
+	
+	mlParams.useConjugateGradientDriver = elVal('conjugateGradientDriverFlag');
+	
 	mlParams.architecture = elVal('nnArch') === '' ? [] : elVal('nnArch').split(' ').map(function(el) { return parseInt(el)	});;
 	
 	
@@ -330,7 +338,7 @@ function elVal(elId) {
 	   return null;
 	}
 	
-	if (el.type === 'checkbox') {
+	if ((el.type === 'checkbox') || (el.type === 'radio')) {
 	   return el.checked;
 	}
 	
