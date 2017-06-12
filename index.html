@@ -7,6 +7,7 @@
 <body>
 <script src="js/math.min.js"></script>
 <script src = "js/Chart.min.js"></script>
+<script src = "js/numeric-1.2.6.min.js"></script>
 
 
 <div id = "bannerDiv">
@@ -40,9 +41,9 @@
    <input id = "boldDriverFlag" type="radio"  name ="driver" >
    <label for = "downDriverFlag" id = "downDriverFlagLab">Down</label>
    <input id = "downDriverFlag" type="radio" checked name="driver" >   
-   <label for "lineSearchDriverFlag" id = "lineSearchDriverFlagLab" >LS</label>
+   <label for = "lineSearchDriverFlag" id = "lineSearchDriverFlagLab" >LS</label>
    <input id = "lineSearchDriverFlag" type="radio" name="driver"  > 
-   <label for "conjugateGradientDriverFlag" id = "conjugateGradientDriverFlagLab" >CG</label>
+   <label for = "conjugateGradientDriverFlag" id = "conjugateGradientDriverFlagLab" >CG</label>
    <input id = "conjugateGradientDriverFlag" type="radio" name="driver"  >
  
   <label for = "numLogClasses" id = "numLogClassesLab"># classes</label>
@@ -56,7 +57,7 @@
    <input id = "diagnosticsFlag" type="checkbox" >Diagnostics
   <input id = "copyThetaFlag" type="checkbox" checked >Update initial Theta after run
   <input id = "analyticFlag" type="checkbox" checked>
-  <label for "analyticFlag" id = "analyticFlagLab">Also solve analytically</label>
+  <label for = "analyticFlag" id = "analyticFlagLab">Also solve analytically</label>
 	
   
  
@@ -68,7 +69,8 @@
  
  <button onclick="learnForeground()">Learn</button>
  <button onclick="learnBackground()">Learn Background</button>
- <button onclick="crossValidate()">Cross Validate</button>
+ <button onclick="crossValidateOrTest('C')">Cross Validate</button>
+ <button onclick="crossValidateOrTest('T')">Test</button>
  <button onclick="prediction()">Predict</button>
  <button onclick="splitInput()">Split</button>
  <button onclick="clearButtonPressed()">Clear</button>

@@ -782,7 +782,7 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 	
 }
 
-function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig) {
+function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig,errMsg,finType) {
 	
 	//get current loop data	
 	PrevMinus1Cost = cData.PrevMinus1Cost;
@@ -832,7 +832,7 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 
     console.log('Cost: ' +  Cost + '\nTot cost: ' +  currCostSum); //(math.sum(Cost) + math.sum(RegCost)));
 	
-	var errMsg = '';
+	//var errMsg = '';
 	
 	if (progCallback) {
 		
@@ -1136,7 +1136,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 				        convergedThisIter = true;
 						errMsg = '<br>Converged after: ' + curr + ' iterations';
 		             	if (progCallback) {
-				            progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg));
+				            progCallback('rightBannerDiv',  getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg),true);
 
 			            }
 					}
@@ -1290,7 +1290,17 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	if ((curr >= maxIters) || pauseFlag || convergedThisIter) {
 		console.log('learnloopdone');
-		var res = learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
+		var finType = '';
+		if (convergedThisIter) {
+			finType = 'C';
+		}
+		else if (pauseFlag) {
+			finType = 'P'
+		}
+		else {
+			finType = 'F';
+		}
+		var res = learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig,errMsg,finType);
 		if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
 			var tst = res[2];
 			var msg = {};
@@ -1310,6 +1320,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 			msg.YOrig = JSON.stringify(res[10]);
 			msg.costArSparse = res[11];
 			msg.itersSparse = res[12];
+            msg.finType = finType;
 			//postMessage({'action':'fin','elToUpdate':'blog','mess':'<br>finished','minT':JSON.stringify(res[4])});	
 			postMessage(msg);
 			postMessage({'action':'progUp','elToUpdate':'outputBlog','mess':'<br>finished'});		
@@ -1425,12 +1436,17 @@ function learn(mlParams,X,Y,progCallback,continueData) {
    
    var itersSparse = [];
    var costArSparse = [];
-   
-   if (continueData) {
+
+    var maxIters = mlParams.maxIterations;
+
+    if (continueData) {
 	   iters = continueData[0];
 	   costAr = continueData[1];
 	   itersSparse = continueData[2];
 	   costArSparse = continueData[3];
+       if (continueData[4] === 'F') {
+           maxIters+= iters.length; //if fully finished last time, then continues for another maxiters
+       }
    }
 
    var iterNum = iters.length;
@@ -1438,7 +1454,7 @@ function learn(mlParams,X,Y,progCallback,continueData) {
    var alpha = mlParams.alpha; 
    var lambda = mlParams.lambda;
    
-   var maxIters = mlParams.maxIterations; 
+
 
     var prevCostSum = 9999999999999999999;
 	var prevMinus1CostSum = 9999999999999999999;

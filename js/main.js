@@ -25,6 +25,7 @@ var mlParams;
  *   10- YOrig // Y is altered in once vs all logistic regression for individual runs
  *   11 - costArSparse // only added every 50 iters
  *   12 - itersSparse // only added every 50 iters
+ *   13 - finType // F - finished iters, C - converged, P - Paused
  *   ]
  */
 var mlResults;
@@ -159,9 +160,10 @@ if (typeof	(Worker) !== "undefined") {
 					var YOrig = stringifyToMatrix(event.data.YOrig);
 					var costArSparse = event.data.costArSparse;
 					var itersSparse = event.data.itersSparse;
+                    var finType = event.data.finType;
 					
 		
-					mlResults.push([costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig,costArSparse,itersSparse]);
+					mlResults.push([costAr,iters,ThetaIdeal,IdealCost,X,Y,minTheta,XUnscaled,minThetaUnscaled,scaleFactors,YOrig,costArSparse,itersSparse,finType]);
 					
 					mlParams.isRunning = false;
 					isRunningUpdated();
@@ -398,7 +400,23 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
-   
+
+   var coVarX = math.matrix([[-5,-4,-3,-2,-1,0,1,2,3,4,5],[4,-3,0,5,2,-2,3,1,-1,-4,-5],[-5,-1,0,-3,-2,1,2,4,-4,3,5]]);
+
+    var sig = math.multiply(coVarX,math.transpose(coVarX));
+
+    sig = math.multiply(sig,1/11);
+
+    var tst = numeric.svd(matrixToArray(sig));
+
+    var tstRed = math.matrix(tst.U);
+
+    tstRed = math.subset(tstRed,math.index(math.range(0,3),math.range(0,2)));
+
+   var tstLowDim = math.multiply(math.transpose(tstRed),coVarX);
+
+   var xApprox = math.multiply(tstRed,tstLowDim);
+
    var tMat = math.matrix([[1,1,1],[2,2,2],[3,3,3],[4,4,4]]);
    
    var remMat = mRemoveFirstRow(tMat);
@@ -411,7 +429,7 @@ function testButClicked() {
    
    
    //learnLoop(1,10);
-   
+
    var mat32 = math.matrix([[1,2],[2,3],[4,5]]);
    var mat25 = math.matrix([[4,5,6,7,8],[6,7,8,9,10]]);
    
@@ -688,7 +706,7 @@ function regButClicked() {
 	 }
 	 else {
 		 var res = mlResults[mlResults.length - 1];
-		 learnBackground([res[1],res[0],res[12],res[11]]);
+		 learnBackground([res[1],res[0],res[12],res[11],res[13]]);
 		 
 		 
 		 
@@ -710,15 +728,19 @@ function splitInput() {
     var inp = elVal('trainingInput');
     var inpAr = inp.split('\n');
     var tot = inpAr.length;
-    var trainPortion = math.floor(tot * .6);
-    var cvPortion  = tot - trainPortion;
+    var trainPortion = Math.round(tot * .6);
+    var cvPortion = Math.round(tot * .2);
+    var testPortion  = tot - trainPortion - cvPortion;
     var trainAr = inpAr.slice(0,trainPortion);
-    var cvAr = inpAr.slice(trainPortion);
+    var cvAr = inpAr.slice(trainPortion,trainPortion + cvPortion);
+    var testAr = inpAr.slice(trainPortion + cvPortion);
 
     this.input = trainAr.join('\n');
     trainingInputUpdated();
 
     el('cvInput').value = cvAr.join('\n');
+
+    el('testInput').value = testAr.join('\n');
     
 }
  
@@ -798,6 +820,11 @@ function parseDataInput(data,noY,labelled) {
 	}
 
 	var ar=  data.split('\n'); //document.getElementById('trainingInput').value.split('\n');
+
+    ar = ar.filter(function(el) {
+        return el.length != 0;
+
+    });
 	
 	yAr = [];
 
@@ -966,19 +993,35 @@ function applyPredictInput() {
 }
 
 function applyCVInput() {
-	
+
    var noY = false;
    var labelled = false;
-   
+
    res = parseDataInput(elVal('cvInput'),noY,labelled);
    mlData.Xcv = res[0];
    mlData.Ycv = res[1];
-   
-   
+
+
    var updateType = 'cv';
    mlDataUpdated('cv');
-	
+
 }
+
+function applyTestInput() {
+
+    var noY = false;
+    var labelled = false;
+
+    res = parseDataInput(elVal('testInput'),noY,labelled);
+    mlData.Xtest = res[0];
+    mlData.Ytest = res[1];
+
+
+    var updateType = 'test';
+    mlDataUpdated('test');
+
+}
+
 
 /**
  * 
@@ -1440,6 +1483,7 @@ function numLogClassesUpdated() {
 		   
 		   case 'predict':
 		   case 'cv':
+           case 'test':
 		    
 		      break;
 			  
@@ -1490,7 +1534,7 @@ function numLogClassesUpdated() {
 		 
 	 }
 	 
-	 el('outputBlog').innerHTML = 'Training set size: ' + XtrainSize + '(' + XtrainPerc + '%)' + '<br>Cross Val set size: ' + XcvSize  +  '(' + XcvPerc + '%)' +'<br>Test set size: ' + XtestSize + '(' + XtestPerc + '%)';	 
+	 el('outputBlog').innerHTML = 'Training set size: ' + XtrainSize + '(' + XtrainPerc.toFixed(2) + '%)' + '<br>Cross Val set size: ' + XcvSize  +  '(' + XcvPerc.toFixed(2) + '%)' +'<br>Test set size: ' + XtestSize + '(' + XtestPerc.toFixed(2) + '%)';
 	 
 
 	 /*
@@ -1511,6 +1555,7 @@ function numLogClassesUpdated() {
 
              case 'predict':
              case 'cv':
+             case 'test':
 
                  break;
              default:
@@ -1701,8 +1746,15 @@ function applyNNThetaFromLearn(MinTheta,ScaledX) {
 }
 
 
-function crossValidate() {
-	 applyCVInput();
+function crossValidateOrTest(testFlag) {
+
+    if (testFlag === 'C') {
+        applyCVInput();
+    }
+    else {
+        applyTestInput();
+    }
+
 	 
 	  var predAr = [];
 	  
@@ -1713,14 +1765,17 @@ function crossValidate() {
 		  var Th = mlNN.unrollThetas();
 		  var ThAr = matrixToArray(Th);
 		  var ThStr = arrayToString(ThAr);
+
+          var X = (testFlag === 'C') ? mlData.Xcv : mlData.Xtest;
+          var Y = (testFlag === 'C') ? mlData.Ycv : mlData.Ytest;
 		  
-		  var res = featureScale(mlData.Xcv,mlNN.scaleFactors);
+		  var res = featureScale(X,mlNN.scaleFactors);
 		  var XcvScaled = res[0];
 		  
- 		  var arch = (mlParams.architecture.length  == 0) ? [mlData.Xcv.size()[0] - 1,mlData.Xcv.size()[0] +1,mlData.Ycv.size()[0]] : mlParams.architecture;
+ 		  var arch = (mlParams.architecture.length  == 0) ? [X.size()[0] - 1,X.size()[0] +1,Y.size()[0]] : mlParams.architecture;
 		  
 		  
-		  var mlNNCV = new NeuralNetwork(arch,XcvScaled,mlData.Ycv,mlData.Xcv,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
+		  var mlNNCV = new NeuralNetwork(arch,XcvScaled,Y,X,mlNN.scaleFactors,mlParams.alpha,mlParams.lambda,ThStr);
 		  mlNNCV.forward();
 		  
 		  var A = mlNNCV.layers[mlNNCV.layers.length - 1].A;
@@ -1744,8 +1799,9 @@ function crossValidate() {
 		  
 		  var res = mlNNCV.checkAccuracy();
 		  var perc = res[0] / res[1] * 100;
-		  
-		  el('cvBannerDiv').innerHTML = 'CV Cost: ' + mlNNCV.getCost('T') + '(exReg: ' + mlNNCV.getCost('C').toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
+
+          var str = (testFlag === 'C') ? 'CV Cost: ' : 'Test Cost: ';
+		  el('cvBannerDiv').innerHTML = str + mlNNCV.getCost('T') + '(exReg: ' + mlNNCV.getCost('C').toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
 	
 	  }
 	  
