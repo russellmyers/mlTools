@@ -35,6 +35,14 @@ var costChart;
 
 var vGraph;
 
+
+/**
+ * mlData: 
+ *   X, Y
+ *   Xcv, Ycv
+ *   Xtest, Ytest
+ */
+ 
 var mlData;
 var mlNN;
 
@@ -200,7 +208,7 @@ if (typeof	(Worker) !== "undefined") {
 					
 					
 		
-					visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors,mlData.XCompressed);
 					
 					
 					
@@ -214,7 +222,7 @@ if (typeof	(Worker) !== "undefined") {
 		            var minThetaUnscaled = mlResults[0][8]; //not used
 		            var scaleFactors = mlResults[0][9]; //not used
 		
-	             	visualise(null,YOrig,null, XUnscaled,minThetaUnscaled,null,scaleFactors);
+	             	visualise(null,YOrig,null, XUnscaled,minThetaUnscaled,null,scaleFactors,mlData.XCompressed);
 					 //var acc = checkAccuracyMultiClass();
 				}
 				else if (event.data.action == 'chartUp') {
@@ -242,7 +250,7 @@ if (typeof	(Worker) !== "undefined") {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
 					}
 					
-					visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+					visualise(X,Y,minTheta,XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors,mlData.XCompressed);
 					
 				}
 				
@@ -1474,6 +1482,77 @@ function numLogClassesUpdated() {
  }
  
  
+ /**Compress training data to 2d for visualisation
+ *
+ */
+  function compressTrainingMLData(k) {
+	
+    k = k || 2;
+
+	
+    var X =  mRemoveFirstRow(mlData.XScaled);
+
+    var sigma = math.multiply(X,math.transpose(X));
+
+	var m = X.size()[1];
+	
+    sigma = math.multiply(sigma,1/m);
+
+    var res = numeric.svd(matrixToArray(sigma));
+
+    var U = math.matrix(res.U);
+
+    var UReduce = math.subset(U,math.index(math.range(0,X.size()[0]),math.range(0,k)));
+
+    var XCompressed = math.multiply(math.transpose(UReduce),X);
+
+    var XApprox = math.multiply(UReduce,XCompressed);	 // uncompress just to check
+	
+	mlData.XCompressed = XCompressed;
+	  
+	 
+ }
+ 
+ function scaleMLData() {
+	 
+	if (!mlData.X) {
+        return;
+
+	}
+
+    var res = featureScale(mlData.X);
+    mlData.XScaled = res[0];	
+	var scaleFactors = res[1];
+	
+	if (mlData.X.size()[0] > 3) { // if > 2d (excluding bias)
+		compressTrainingMLData();
+		
+	}
+	else {
+		 mlData.XCompressed = null;
+		
+	}  
+	
+	
+	
+	if (mlData.Xcv) {
+		res = featureScale(mlData.Xcv,scaleFactors);
+        mlData.XcvScaled = res[0];	
+	}
+	
+	if (mlData.Xtest) {
+		res = featureScale(mlData.Xtest,scaleFactors);
+        mlData.XtestScaled = res[0];	
+	}
+	
+	if (mlData.Xpredict) {
+		res = featureScale(mlData.Xpredict,scaleFactors);
+        mlData.XpredictScaled = res[0];	
+	}
+	 
+ }
+ 
+ 
  function mlDataUpdated(updateType) {
 	 //Updates textarea showing X and Y
 	 // also triggers scaling etc
@@ -1549,6 +1628,10 @@ function numLogClassesUpdated() {
 	 
 	 mlData.scaleFactors = scaleFactors;
 	   */
+	   
+	   
+	scaleMLData();
+	
 
      if (updateType) {
          switch (updateType) {
@@ -1560,10 +1643,13 @@ function numLogClassesUpdated() {
                  break;
              default:
 
-                 visualiseTrainingOnly(mlData.X, mlData.Y);
+                 visualiseTrainingOnly(mlData.X, mlData.Y,mlData.XCompressed);
 
          }
      }
+	 else {
+		 visualiseTrainingOnly(mlData.X, mlData.Y,mlData.XCompressed);
+	 }
    
 	 
  }
@@ -2076,7 +2162,7 @@ function learnForeground() {
 		var minThetaUnscaled = mlResults[0][8]; //not used
 		var scaleFactors = mlResults[0][9]; //not used
 		
-		visualise(null,YOrig,null, XUnscaled,minThetaUnscaled,null,scaleFactors);
+		visualise(null,YOrig,null, XUnscaled,minThetaUnscaled,null,scaleFactors,mlData.XCompressed);
 		
 	
 	
@@ -2123,7 +2209,7 @@ function learnForeground() {
 		visualiseCostChart(costAr,iters);
 		//visualiseCostChart(costArSparse,itersSparse);
 		
-		visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
+		visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors,mlData.XCompressed);
 		
 	}
 	
@@ -2417,12 +2503,22 @@ function convMultiClassMatrixToNum(Y) {
  * @param Y
  * @param ThetaUnscaled
  * @param showAccForMultiClass
+ * @param XCompressed - if supplied, use this to visualise in 2d
  * @returns {{points: Array, colours: Array, styles: Array}}
  */
-function constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMultiClass) {
-  var x1Ar = mRow(XUnscaled,1,true);
-  
-  var x2Ar = mRow(XUnscaled,2,true);
+function constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,showAccForMultiClass,XCompressed) {
+	
+  var x1Ar,x2Ar;	
+  if (XCompressed) {
+	x1Ar = mRow(XCompressed,0,true);
+    x2Ar = mRow(XCompressed,1,true);   // Note: XCompressed has no bias, therefore use index 0 and 1
+	  
+  }
+  else {
+	x1Ar = mRow(XUnscaled,1,true);
+    x2Ar = mRow(XUnscaled,2,true);
+  }
+ 
   
   var yAr;
   
@@ -2540,14 +2636,15 @@ function constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,sho
  * 
  * @param XUnscaled
  * @param Y
+ * @param XCompressed - if supplied use this
  */
-function visualiseTrainingOnly(XUnscaled,Y) {
+function visualiseTrainingOnly(XUnscaled,Y,XCompressed) {
   var ctx = document.getElementById("visualiseChart");
   
   
   var res;
   if ((mlParams.module == 'log') || (mlParams.module === 'neu')) {
-      res = constructClassificationTrainingPlotPoints(XUnscaled,Y,null,false);
+      res = constructClassificationTrainingPlotPoints(XUnscaled,Y,null,false,XCompressed);
   }
   else {
       res = constructRegTrainingPlotPoints(XUnscaled,Y);
@@ -2565,11 +2662,12 @@ function visualiseTrainingOnly(XUnscaled,Y) {
  * @param Y
  * @param ThetaOrig
  * @param scaleFactors
+ * @param XCompressed
  */
-function visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors) { 
+function visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors,XCompressed) { 
 	var ctx = document.getElementById("visualiseChart");
 	
-	var res = constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaOrig,true);
+	var res = constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaOrig,true,XCompressed);
 	createVisGraph(res.points,null,null,res.colours,res.styles);
 	
 	var incX = scaleFactors ? (scaleFactors[1][1] / 30) : 2000 / 10;
@@ -2615,13 +2713,14 @@ function visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors) {
  * @param ThetaOrig
  * @param ThetaIdeal
  * @param scaleFactors
+ * @param XCompressed
  */
-function visualise(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors) {
+function visualise(X,Y,Theta,XUnscaled,ThetaOrig,ThetaIdeal,scaleFactors,XCompressed) {
 
 var ctx = document.getElementById("visualiseChart");
 
 if ((mlParams.module == 'log') || (mlParams.module === 'neu')) {
-   visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors);	
+   visualiseClassification(XUnscaled,Y,ThetaOrig,scaleFactors,XCompressed);	
    return;
 }
 
