@@ -509,12 +509,156 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 
  }
 
-/**
+ /**
  * scale factors indexes: 0-mean, 1-range, 2-lowest. If scaleFactors passed then uses these to scale, otherwise calcs scalefactors as well as scaling
  * @param mat
  * @returns {*}
  */
  function featureScale(mat,inScaleFactors) {
+	 
+   //var scaledMat = math.subset(mat,math.index(0,math.range(0,mat.size()[1]))); //mRow(mat,0); 
+   var scaledMat; // =  matrixToArray(math.flatten(mRow(mat,0)));
+   
+   
+   var rows = mat.size()[0];
+   var cols = mat.size()[1];
+   var scaleFactors = [];
+   scaleFactors.push([1,0,1]);
+   console.log('starting scale loop');
+   for (var r = 1;r < rows;++r) {
+       //don't scale 1st feature, ie r = 0, as this is always 1
+	   var row = mRow(mat,r);
+	   
+	   var min = math.min(row);
+	   var max = math.max(row);
+	   var range = max - min;
+	   var mean = math.mean(row);
+	   
+	   scaleFactors.push([mean,range,min]);
+	   
+   }
+   
+   scaledMat = mat.map(function(el,ind) {
+	   var r = ind[0];
+	   
+	   var newEl;
+  	   
+	   var min,max,range,mean,lowest;
+	  
+	   
+	   if (inScaleFactors) {
+		   mean = inScaleFactors[r][0];
+		   range = inScaleFactors[r][1];
+		   lowest = inScaleFactors[r][2];
+	   }
+	   else {
+		   mean = scaleFactors[r][0];
+		   range = scaleFactors[r][1];
+		   lowest = scaleFactors[r][2];
+		   
+	   }
+	   
+	
+	   if (r == 0) {
+           return el;
+	   }
+	   else {
+  	   
+		   newEl = el - mean;
+		   newEl = (range > 0) ? newEl / range : newEl;
+			
+		   return newEl;
+	   }		   
+	
+	   
+	   
+	});
+	   
+  
+   
+   console.log('ended scale loop');
+   //scaledMat = math.matrix(scaledMat); 
+  // scaledMat = math.reshape(scaledMat,mat.size());  //Need to reshape!!!
+   
+   return [scaledMat,scaleFactors];
+   
+   
+   
+ 
+ }
+ 
+ /**
+ * scale factors indexes: 0-mean, 1-range, 2-lowest. If scaleFactors passed then uses these to scale, otherwise calcs scalefactors as well as scaling
+ * @param mat
+ * @returns {*}
+ */
+ function featureScaleBitBetter(mat,inScaleFactors) {
+	 
+   //var scaledMat = math.subset(mat,math.index(0,math.range(0,mat.size()[1]))); //mRow(mat,0); 
+   var scaledMat =  matrixToArray(math.flatten(mRow(mat,0)));
+   
+   
+   var rows = mat.size()[0];
+   var cols = mat.size()[1];
+   var scaleFactors = [];
+   scaleFactors.push([1,0,1]);
+   console.log('starting scale loop');
+   for (var r = 1;r < rows;++r) {
+       //don't scale 1st feature, ie r = 0, as this is always 1
+	   var row = mRow(mat,r);
+	   
+	   var min = math.min(row);
+	   var max = math.max(row);
+	   var range = max - min;
+	   var mean = math.mean(row);
+	   
+	   //var min = 1;var max = 5;var range = 4;var mean = 3;
+	   
+	   if (inScaleFactors) {
+		   var inMean = inScaleFactors[r][0];
+		   var inRange = inScaleFactors[r][1];
+		   var inLowest = inScaleFactors[r][2];
+		   row = math.subtract(row,inMean);
+		   row = inRange > 0 ? math.divide(row,inRange) : row;
+		   
+	   }
+	   else {
+		   
+		row = math.subtract(row,mean);
+		row = range > 0 ? math.divide(row,range) : row;
+		
+	   }
+	   
+	   var ind = math.index(r, math.range(0,cols));
+	   if (cols == 1) {
+		   var newVal = row.get([0]);
+		   scaledMat =  math.concat(scaledMat,row,0); //math.concat(scaledMat,row.get([0]));  //math.subset(scaledMat,ind,row.get([0])); //expects scalar
+		   // scaledMat.push(row.get([0]));
+	   }
+	   else {
+	      //scaledMat = math.concat(scaledMat,row,0);    THIS LINE TOOK AGES in matrix form!!
+		  scaledMat = scaledMat.concat(matrixToArray(math.flatten(row)));
+	   }
+	   scaleFactors.push([mean,range,min]);
+   }
+   
+   console.log('ended scale loop');
+   scaledMat = math.matrix(scaledMat); 
+   scaledMat = math.reshape(scaledMat,mat.size());  //Need to reshape!!!
+   
+   return [scaledMat,scaleFactors];
+   
+   
+   
+ 
+ }
+ 
+/**
+ * scale factors indexes: 0-mean, 1-range, 2-lowest. If scaleFactors passed then uses these to scale, otherwise calcs scalefactors as well as scaling
+ * @param mat
+ * @returns {*}
+ */
+ function featureScaleOld(mat,inScaleFactors) {
 	 
    var scaledMat = math.clone(mat);
    var rows = mat.size()[0];
@@ -2731,7 +2875,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				this.Theta = this.InitThMat;
 			}
 			else {
-                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-0.5,0.5)); //was 2  ///-1,1));
+                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-0.2,0.2)); //was -0.5, 0.5 // -0.5,0.5)); //was 2  ///-1,1));
 			}
 			/*
             else {			

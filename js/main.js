@@ -41,6 +41,12 @@ var vGraph;
  *   X, Y
  *   Xcv, Ycv
  *   Xtest, Ytest
+ *   XScaled
+ *   XCompressed
+ *   MNISTTrainLabels
+ *   MNISTCVLabels
+ *   MNISTTrainImages
+ *   MNISTCVImages
  */
  
 var mlData;
@@ -130,7 +136,68 @@ function init() {
 	//document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
 	this.input = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
    trainingInputUpdated();
-    
+   
+   var fileToRead = el('inp');
+   fileToRead.addEventListener("change", function(event) {
+		var files = fileToRead.files;
+		var len = files.length;
+		
+		
+		if (len != 4) {
+			
+			alert('Please select 4 files - ie:\ntrain images\ntrain labels\ntest images\ntest labels\n\n' + len + ' files currently selected');
+			return;
+		}
+		if (files) {
+	
+         
+		    var fileReaders = [];
+			//var r = new FileReader();
+			 
+			//onload handler
+
+			mlData.MNISTTrainImages = null;
+			mlData.MNISTTrainLabels = null;
+			mlData.MNISTCVImages = null;
+			mlData.MNISTCVLabels = null;
+			
+	 
+	        for (var i = 0;i < len;++i) {
+				    var r = new FileReader();
+					
+					fileReaders.push(r);
+					
+					fileReaders[i].onload = function(e) {   
+							
+						parseMNISTFile(e,this);
+						
+					}
+					
+					
+					
+				
+				//var im = 0;
+				//var pixels = new Uint8Array(buffer, 16 +(im*pixelsPerImage), 16+(im*pixelsPerImage) + pixelsPerImage);
+
+	
+			
+				    fileReaders[i].fileName = files[i].name;
+					fileReaders[i].readAsArrayBuffer(files[i]);
+			}
+         
+		}
+		else { 
+			alert("Failed to load file");
+		}
+			
+		if (len) {
+			console.log("Filename: " + files[0].name);
+			console.log("Type: " + files[0].type);
+			console.log("Size: " + files[0].size + " bytes");
+		}
+
+    }, false);
+		
 	
 }
 
@@ -408,6 +475,13 @@ function testButClicked() {
 
    mlParams.module = 'tst';
    moduleUpdated();
+   
+   // Check for the various File API support.
+if (window.File && window.FileReader && window.FileList && window.Blob) {
+  // Great success! All the File APIs are supported.
+} else {
+  alert('The File APIs are not fully supported in this browser.');
+}
 
    var coVarX = math.matrix([[-5,-4,-3,-2,-1,0,1,2,3,4,5],[4,-3,0,5,2,-2,3,1,-1,-4,-5],[-5,-1,0,-3,-2,1,2,4,-4,3,5]]);
 
@@ -812,7 +886,216 @@ function stepTraining(inc) {
  
  }
 
+ /**
+ * Parse handwritten digit dataset
+ */
 
+ function parseMNISTFile(e,r) {
+	console.log('loaded: ' + r.fileName);
+	
+	var ext = r.fileName.split('.').pop();
+	
+	var pre = r.fileName.split('-').shift();
+	
+	ext = ext || '';
+	
+	var c=document.getElementById("visualiseChart");
+	var ctx=c.getContext("2d");
+
+	var contents = e.target.result;
+	var buffer = r.result;  
+	
+	switch (ext) {
+		
+		case 'idx1-ubyte':
+		   var numItems = new DataView(buffer.slice(4,8)).getInt32(0, false);
+		  // alert('file: ' + r.fileName + ' num labels: ' + numItems);
+		   var labs = new Uint8Array(buffer.slice(8,8 + numItems));
+		   var xOffset;
+		   if (pre === 'train') {
+			   mlData.MNISTTrainLabels = labs;
+			   xOffset = 40;
+		   }
+		   else {
+			   mlData.MNISTCVLabels = labs;
+			   xOffset = 90;
+		   }
+		   
+		   for (var im = 0;im < 20;++im) {
+			   ctx.fillText(labs[im],xOffset,30 + im*30);
+		   }
+		   
+		   
+		   console.log('labs: ' + labs);
+		   
+		
+		   break;
+		   
+		case 'idx3-ubyte':
+		   var numItems = new DataView(buffer.slice(4,8)).getInt32(0, false); // For big endian
+	       var nRows = new DataView(buffer.slice(8,12)).getInt32(0, false); // For big endian
+	       var nCols = new DataView(buffer.slice(12,16)).getInt32(0, false); // For big endian
+		   //alert('file: ' + r.fileName + ' num images: ' + numItems + ' rows: ' + nRows + ' cols: ' + nCols);
+		  var imageArray = []; 
+		  var pixelsPerImage = nRows * nCols;
+		  	for (var im = 0;im < numItems;++im) {
+		       var pixels = new Uint8Array(buffer, 16 +(im*pixelsPerImage),  pixelsPerImage);
+			   imageArray.push(pixels);
+
+			   //visualise 1st 10 train and cv images
+                if (im < 20) {
+				
+					var imgData=ctx.createImageData(28,28);
+					for (var i=0;i<pixelsPerImage;++i)
+					  {
+					  var pixel = pixels[i];
+					  var xOffset = pre === 'train' ? 10 : 60;
+                     				  
+					  //var pixel = mlData.MNISTTrainImages[im][i];
+					  imgData.data[i*4+0]=pixel;
+					  imgData.data[i*4+1]=pixel;
+					  imgData.data[i*4+2]=pixel;
+					  imgData.data[i*4+3]=255;
+					  }
+					ctx.putImageData(imgData,xOffset,10 + im*30);
+		   
+				}
+			}
+			if (pre === 'train') {
+			   mlData.MNISTTrainImages = imageArray;
+		   }
+		   else {
+			   mlData.MNISTCVImages = imageArray;
+		   }
+			
+
+
+		
+		   break;
+		   
+		default:
+           break;
+
+	}
+	
+	switch (pre) {
+		case 'train':
+		
+		   if ((mlData.MNISTTrainImages) && (mlData.MNISTTrainLabels)) {
+			   
+			   var str = '';
+			   for (var i = 0;i < 10000;++i) {
+				   var ar = [].slice.call(mlData.MNISTTrainImages[i]);
+				   str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
+				   str += ' ' + (parseInt(mlData.MNISTTrainLabels[i]) + 1);
+				   str += '\n';
+				   
+			   }
+			   
+			   this.input = str;
+			   trainingInputUpdated();
+			   
+		   }
+		
+		   break;
+		   
+		default:
+		   if ((mlData.MNISTCVImages) && (mlData.MNISTCVLabels)) {
+			   
+			   
+		   }
+		
+		   break;
+		
+	}
+	
+	//visualise 1st 10 train and cv images
+	/*
+	for (var im = 0;im < 20;++im) {
+		var imgData=ctx.createImageData(28,28);
+		for (var i=0;i<pixelsPerImage;++i)
+		  {	
+	      var pixel = mlData.MNISTTrainImages[im][i];
+		  imgData.data[i*4+0]=pixel;
+		  imgData.data[i*4+1]=pixel;
+		  imgData.data[i*4+2]=pixel;
+		  imgData.data[i*4+3]=255;
+		  }
+		ctx.putImageData(imgData,10,10 + im*30);
+		
+		imgData=ctx.createImageData(28,28);
+		for (var i=0;i<pixelsPerImage;++i)
+		  {	
+	      var pixel = mlData.MNISTCV[im][i];
+		  imgData.data[i*4+0]=pixel;
+		  imgData.data[i*4+1]=pixel;
+		  imgData.data[i*4+2]=pixel;
+		  imgData.data[i*4+3]=255;
+		  }
+		ctx.putImageData(imgData,50,10 + im*30);
+    
+	}	
+	*/
+	
+	
+	/*
+	if (r.fileName.slice(0,3) === 't10') {
+		
+	}
+	else {
+		return;
+	}
+	var contents = e.target.result;
+	var buffer = r.result;  
+	
+	var numItems = buffer.slice(4,8);
+	//var nNumItems = new Uint32Array(numItems);
+	var nNumItems = new DataView(buffer.slice(4,8)).getInt32(0, false); // For big endian
+	var nRows = new DataView(buffer.slice(8,12)).getInt32(0, false); // For big endian
+	var nCols = new DataView(buffer.slice(12,16)).getInt32(0, false); // For big endian
+	//alert('Num items: ' + nNumItems);	
+	//var pixels = new Uint8Array(buffer, 16, 26);
+	//var firstTen = buffer.slice(8,18);
+	var pixelsPerImage = nRows * nCols;
+	
+	var c=document.getElementById("visualiseChart");
+	var ctx=c.getContext("2d");
+	for (var im = 0;im < 100;++im) {
+		var pixels = new Uint8Array(buffer, 16 +(im*pixelsPerImage), 16+(im*pixelsPerImage) + pixelsPerImage);
+		var imgData=ctx.createImageData(28,28);
+		for (var i=0;i<pixelsPerImage;++i)
+		  {	
+		  imgData.data[i*4+0]=pixels[i];
+		  imgData.data[i*4+1]=pixels[i];
+		  imgData.data[i*4+2]=pixels[i];
+		  imgData.data[i*4+3]=255;
+		  }
+		ctx.putImageData(imgData,10,10 + im*30);
+		//var firstTen = buffer.slice(8,18);
+		for (var i = 0;i < nRows;++i) {
+			var str = '';
+			for (var j = 0;j < nCols;++j) {
+				var pix = pixels[i*nCols + j];
+				if (pix >= 128) {
+					str += '*';
+				}
+				else {
+					str += ' ';
+				}
+				//str += pixels[i*nCols + j];
+				
+
+			}
+			console.log('row: ' + str);
+			//alert('pixel: ' + i + ' ' + pixel);
+			
+		}
+	}
+	*/
+ 
+	 
+ }
+ 
 /**
  * 
  * @param event
@@ -1344,8 +1627,11 @@ function numLogClassesUpdated() {
  function nnUpdated() {
 	 
 	 
-	 	 
-		 drawNN();
+	 	 if (mlData.MNISTTrainImages) {
+		 }
+		 else {
+		   drawNN();
+		 }
 		 if (mlParams.diagnosticsFlag) {
 			 if (mlNN) {
 				el('diagnosticDiv').innerHTML = 'Training sample: ' + (mlParams.displayTrainingNum + 1) + ' Inputs: ' + mlNN.getInputsForSingleM(mlParams.displayTrainingNum,4) + '<br>Training sample cost contrib / output unit: ' + mlNN.getCost('CM',mlParams.displayTrainingNum,4);
@@ -1633,6 +1919,13 @@ function numLogClassesUpdated() {
 	scaleMLData();
 	
 
+	 if (mlData.MNISTTrainImages) {
+		 
+		 //return;
+		 
+	 }
+	 
+	 
      if (updateType) {
          switch (updateType) {
 
