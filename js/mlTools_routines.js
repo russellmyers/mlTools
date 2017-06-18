@@ -1131,7 +1131,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	console.log('iter: ' + curr);
 	var counterUpdate = 2;
-	var graphUpdate = 50;
+	var graphUpdate = 10;
 	
 	if (mlParams.useLineSearchDriver || mlParams.useConjugateGradientDriver) {
 		counterUpdate = 1;
@@ -1152,7 +1152,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	iters.push(curr);
 
 
-	if (curr % 50 == 0) {
+	if (curr % graphUpdate == 0) {
 		if (progCallback) {
 			
 			var costArRed,itersRed;
@@ -2020,6 +2020,12 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	this.scaleFactors = scaleFactors;
 	
 	this.pk = null;
+    
+    this.isVisual = false;
+    if (this.X.size()[0] == 785) {
+        //assume MNIST
+        this.isVisual = true;
+    }
 	
 	this.randomTheta = true;
 	
