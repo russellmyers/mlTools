@@ -886,9 +886,30 @@ function stepTraining(inc) {
  
  }
 
+function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
+
+    var imgData=ctx.createImageData(rows,cols);
+    for (var i=0;i<pixels.length;++i)
+    {
+        var pixel = pixels[i];
+       // var xOffset = pre === 'train' ? 10 : 60;
+
+        //var pixel = mlData.MNISTTrainImages[im][i];
+        imgData.data[i*4+0]=pixel;
+        imgData.data[i*4+1]=pixel;
+        imgData.data[i*4+2]=pixel;
+        imgData.data[i*4+3]=255;
+    }
+    ctx.putImageData(imgData,x,y);
+
+
+}
+
  /**
  * Parse handwritten digit dataset
  */
+
+
 
  function parseMNISTFile(e,r) {
 	console.log('loaded: ' + r.fileName);
@@ -944,7 +965,12 @@ function stepTraining(inc) {
 
 			   //visualise 1st 10 train and cv images
                 if (im < 20) {
-				
+
+                    var xOffset = pre === 'train' ? 10 : 60;
+
+                    displayMNISTImage(ctx,pixels,nRows,nCols,xOffset,10 + im*30);
+
+                    /*
 					var imgData=ctx.createImageData(28,28);
 					for (var i=0;i<pixelsPerImage;++i)
 					  {
@@ -958,6 +984,7 @@ function stepTraining(inc) {
 					  imgData.data[i*4+3]=255;
 					  }
 					ctx.putImageData(imgData,xOffset,10 + im*30);
+					*/
 		   
 				}
 			}
@@ -984,7 +1011,7 @@ function stepTraining(inc) {
 		   if ((mlData.MNISTTrainImages) && (mlData.MNISTTrainLabels)) {
 			   
 			   var str = '';
-			   for (var i = 0;i < 10000;++i) {
+			   for (var i = 0;i < 2000;++i) {
 				   var ar = [].slice.call(mlData.MNISTTrainImages[i]);
 				   str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
 				   str += ' ' + (parseInt(mlData.MNISTTrainLabels[i]) + 1);
@@ -996,6 +1023,21 @@ function stepTraining(inc) {
 			   trainingInputUpdated();
 			   
 		   }
+
+            if ((mlData.MNISTCVImages) && (mlData.MNISTCVLabels)) {
+
+                var str = '';
+                for (var i = 0;i < 1000;++i) {
+                    var ar = [].slice.call(mlData.MNISTCVImages[i]);
+                    str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
+                    str += ' ' + (parseInt(mlData.MNISTCVLabels[i]) + 1);
+                    str += '\n';
+
+                }
+
+                el('cvInput').value = str;
+
+            }
 		
 		   break;
 		   
@@ -1628,6 +1670,7 @@ function numLogClassesUpdated() {
 	 
 	 
 	 	 if (mlData.MNISTTrainImages) {
+             drawNN();
 		 }
 		 else {
 		   drawNN();
@@ -3360,6 +3403,7 @@ function VGraph(l,w,h) {
     this.h = (h == null) ? 100 : h;
 	
 	this.message = '';
+    this.pic = null;
 	
 	this.clearRect = function(ctx) {
 		ctx.clearRect(0,0,this.w,this.h);
@@ -3386,6 +3430,11 @@ function VGraph(l,w,h) {
 		*/
         ctx.fillText(this.label,xPos,yPos);
 		ctx.fillText(this.message,xMessPos,yPos);
+
+        if (this.pic) {
+            displayMNISTImage(ctx,this.pic,28,28,xMessPos + 100,yPos);
+
+        }
 		
 		ctx.restore();
 
@@ -3413,9 +3462,15 @@ function VNetworkController(nn) {
     };
 
     this.unitsForLayer = function(lNum) {
-        if (lNum == this.nn.numLayers - 1)  {
+        var maxUnitsToDisplay = 20;
+
+        if (lNum == this.nn.numLayers - 1) {
             return this.nn.architecture[lNum];
         }
+        else if ((this.nn.architecture[lNum] + 1) > maxUnitsToDisplay) {
+            return maxUnitsToDisplay;
+        }
+
         else {
             return this.nn.architecture[lNum] + 1; //include bias
         }
@@ -3567,6 +3622,16 @@ function VNetworkController(nn) {
 
     };
 
+    this.imageDataForM = function(m) {
+        if (this.nn.isVisual) {
+            return matrixToArray(math.subset(this.nn.XUnscaled, math.index(math.range(1, this.nn.XUnscaled.size()[0]), m)));
+        }
+        else {
+            return null;
+        }
+
+    };
+
 
 };
 
@@ -3580,7 +3645,9 @@ function VNetwork(label,w,h,datasource) {
 
     this.display = function(ctx,m) {
 
-      this.message = 'Traning sample: ' + (m + 1);	
+      this.message = 'Training sample: ' + (m + 1);
+
+      this.pic = datasource.imageDataForM(m);
 
       this.parentDisplay(ctx);
 	  
