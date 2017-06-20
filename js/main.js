@@ -468,6 +468,12 @@ function visualButClicked() {
 
 }
 
+function testParam(p) {
+     p = math.multiply(p,2);	
+	
+}
+
+
 /**
  * 
  */
@@ -482,6 +488,10 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
 } else {
   alert('The File APIs are not fully supported in this browser.');
 }
+
+   var pp = math.matrix([1,2,3]);
+   testParam(pp);
+
 
    var coVarX = math.matrix([[-5,-4,-3,-2,-1,0,1,2,3,4,5],[4,-3,0,5,2,-2,3,1,-1,-4,-5],[-5,-1,0,-3,-2,1,2,4,-4,3,5]]);
 
@@ -1011,7 +1021,7 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
 		   if ((mlData.MNISTTrainImages) && (mlData.MNISTTrainLabels)) {
 			   
 			   var str = '';
-			   for (var i = 0;i < 2000;++i) {
+			   for (var i = 0;i < parseInt(elVal('mnistTrainSampleSize'));++i) {
 				   var ar = [].slice.call(mlData.MNISTTrainImages[i]);
 				   str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
 				   str += ' ' + (parseInt(mlData.MNISTTrainLabels[i]) + 1);
@@ -1027,7 +1037,7 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
             if ((mlData.MNISTCVImages) && (mlData.MNISTCVLabels)) {
 
                 var str = '';
-                for (var i = 0;i < 1000;++i) {
+                for (var i = 0;i < parseInt(elVal('mnistCVSampleSize'));++i) {
                     var ar = [].slice.call(mlData.MNISTCVImages[i]);
                     str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
                     str += ' ' + (parseInt(mlData.MNISTCVLabels[i]) + 1);
@@ -1411,8 +1421,9 @@ function applyInput() {
 	   
    }
    else if (mlParams.module == 'neu') {
-	   var yAr = mCol(mlData.Y, 0, true);
-	   yUnits = yAr.length;
+	   //var yAr = mCol(mlData.Y, 0, true);
+	  // yUnits = yAr.length;
+	  yUnits = mlData.Y.size()[0];
 	   
    }
    
@@ -1735,74 +1746,94 @@ function numLogClassesUpdated() {
 	 var numFeatures =  getNumFeatures()[0]; //(Xt.size()[1] - 1) /  mlParams.degrees;
 	
 	 
-	 for (var i = 0;i < Xt.size()[0];++i) {
-		 var row = mRow(Xt,i,true);
+	 var row = [];
+	 
+	 Xt.forEach(function(el,ind) {
 		 
+		 var i = ind[0]; //row num
 		 
-		 var firstDegree = true;
-		 row = row.map(function(el,j) {
-			 if (j == 0) {
-				 el = '[' + el + ']';
-			 }
-			 else {
-				 if ((j - 1) % numFeatures == 0) {
-					 if (!firstDegree) {
-					   el = '[' + el;
-					 }
-			     }
-			     if (j % numFeatures == 0) {
-					 if (!firstDegree) {
-				        el = el + ']';
-					 }
-					 firstDegree = false;
-			     }
-			 
-			 }
-			 return el;
-				 
-			
-		 });
-		 //row.push(Y.get([i]));
-         var ySeparator = '=>';
-
-         if (Y) {
-
-             row.push(ySeparator);
-
-             if (mlParams.module == 'neu') {
-
-                 var yColumn = mCol(Y, i, true);
-                 if (yColumn.length == 1) {
-                     row.push(yColumn); //just binary value
-                 }
-                 else {
-                     //multi output layers
-                     var yVal = -1;
-                     for (var k = 0; k < yColumn.length; ++k) {
-                         if (yColumn[k] == 1) {
-                             yVal = k + 1;
-                             break;
-                         }
-                     }
-                     row.push(yVal);
-                 }
-             }
-             else {
-                 row.push(mCol(Y, i, true));
-             }
-         }
-         else {
-             row.push(ySeparator);
-         }
-
-		 str+= arrayToString(row);
-	     if (i < Xt.size()[0]  - 1)  {
-			  str+= '\n';
+		 if (ind[1] == 0) {//first element in row
+		     row = [el];
+		 }
+		 else {
+			 row.push(el);
 		 }
 		 
 		 
-	 }
+		 if (ind[1] == Xt.size()[1] -1) { //last element in row
+			 
+		 
+		 
+		// for (var i = 0;i < Xt.size()[0];++i) {
+		//	 var row = mRow(Xt,i,true);   //seemed quite slow!!
+			 
+			 
+			 var firstDegree = true;
+			 row = row.map(function(el,j) {
+				 if (j == 0) {
+					 el = '[' + el + ']';
+				 }
+				 else {
+					 if ((j - 1) % numFeatures == 0) {
+						 if (!firstDegree) {
+						   el = '[' + el;
+						 }
+					 }
+					 if (j % numFeatures == 0) {
+						 if (!firstDegree) {
+							el = el + ']';
+						 }
+						 firstDegree = false;
+					 }
+				 
+				 }
+				 return el;
+					 
+				
+			 });
+			 //row.push(Y.get([i]));
+			 var ySeparator = '=>';
+
+			 if (Y) {
+
+				 row.push(ySeparator);
+
+				 if (mlParams.module == 'neu') {
+
+					 var yColumn = mCol(Y, i, true);
+					 if (yColumn.length == 1) {
+						 row.push(yColumn); //just binary value
+					 }
+					 else {
+						 //multi output layers
+						 var yVal = -1;
+						 for (var k = 0; k < yColumn.length; ++k) {
+							 if (yColumn[k] == 1) {
+								 yVal = k + 1;
+								 break;
+							 }
+						 }
+						 row.push(yVal);
+					 }
+				 }
+				 else {
+					 row.push(mCol(Y, i, true));
+				 }
+			 }
+			 else {
+				 row.push(ySeparator);
+			 }
+
+			 str+= arrayToString(row);
+			 if (i < Xt.size()[0]  - 1)  {
+				  str+= '\n';
+			 }
+			 
+		 
+		}
 	 
+	});
+	
 	 return str;
 	 //el('trainingInput').value = str;
 		 
@@ -1853,7 +1884,9 @@ function numLogClassesUpdated() {
     mlData.XScaled = res[0];	
 	var scaleFactors = res[1];
 	
-	if (mlData.X.size()[0] > 3) { // if > 2d (excluding bias)
+	var suppressFlag = elVal('suppressCompress');
+	
+	if ((mlData.X.size()[0] > 3) && (!suppressFlag)) { // if > 2d (excluding bias)
 		compressTrainingMLData();
 		
 	}

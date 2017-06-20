@@ -323,11 +323,16 @@ function predict(Theta,X) {
  * @param Xt
  * @param Theta
  * @param logisticFlag
+ * ZRet is a return parameter (array) holding Z in first element
  * @returns {*}
  */
-function h(Theta,X,logisticFlag) {
+function h(Theta,X,logisticFlag,ZRet) {
 	if (logisticFlag) {
-		return sigmoid(math.multiply(Theta,X));
+		var Z = math.multiply(Theta,X);
+		if (ZRet) {
+		  ZRet[0] = Z; //return Z
+		}
+		return sigmoid(Z);
 	}
     else {	
         return math.multiply(Theta,X);
@@ -525,18 +530,49 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
    var scaleFactors = [];
    scaleFactors.push([1,0,1]);
    console.log('starting scale loop');
-   for (var r = 1;r < rows;++r) {
-       //don't scale 1st feature, ie r = 0, as this is always 1
-	   var row = mRow(mat,r);
+
+   var row = [];
+   
+   mat.forEach(function(el,ind) {
+	   if (ind[1] == 0) {
+		   row = [el];
+	   }
+	   else {
+		   row.push(el);
+	   }
 	   
-	   var min = math.min(row);
-	   var max = math.max(row);
-	   var range = max - min;
-	   var mean = math.mean(row);
+	   if (ind[1] == mat.size()[1] - 1){
+		   
+		   
+		   if (ind[0] == 0) { //first row
+		   
+		   }
+		   else {
+		   
 	   
-	   scaleFactors.push([mean,range,min]);
+			   //for (var r = 1;r < rows;++r) {
+			   //don't scale 1st feature, ie r = 0, as this is always 1
+			
+			   //var row = mRow(mat,r);
+			   
+			   var min = math.min(row);
+			   var max = math.max(row);
+			   var range = max - min;
+			   var mean = math.mean(row);
+			   
+			   scaleFactors.push([mean,range,min]);
+		   
+		   
+			   }
+	   }
 	   
-   }
+		      
+		   
+	   
+   });
+   
+  
+   
    
    scaledMat = mat.map(function(el,ind) {
 	   var r = ind[0];
@@ -1331,7 +1367,16 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 			
 		}
 		else if (mlParams.useConjugateGradientDriver) {
+			if (progCallback) {
+			    progCallback('subProgressDiv','Start conj',true);
+			}
+		            
 			var res = nn.conjugateGradientStep(nn.pk);
+	
+		    if (progCallback) {
+			    progCallback('subProgressDiv','End conj',true);
+			}	
+			
 			if (res[0]) {
 			   alpha = res[0];	
 			   nn.alpha = res[0];
@@ -1615,7 +1660,7 @@ function learn(mlParams,X,Y,progCallback,continueData) {
 		
 		 var arch = (mlParams.architecture.length  == 0) ? [X.size()[0] - 1,X.size()[0] +1,Y.size()[0]] : mlParams.architecture;
 
-         nn = new NeuralNetwork(arch,X,Y,XUnscaled,scaleFactors,mlParams.alpha,mlParams.lambda,mlParams.initTheta);
+         nn = new NeuralNetwork(arch,X,Y,XUnscaled,scaleFactors,mlParams.alpha,mlParams.lambda,mlParams.initTheta,progCallback);
 	     Theta = nn.unrollThetas();
  	}
     else {	
@@ -2007,7 +2052,7 @@ function learn(mlParams,X,Y,progCallback,continueData) {
 
 }
 
-function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,initTheta) {
+function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,initTheta,progCallback) {
 	this.architecture = architecture;
 	this.numLayers = architecture.length;
 	this.numInputFeatures = architecture[0];
@@ -2035,6 +2080,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		this.randomTheta = false;
 	}
 		
+		
+	this.progCallback = progCallback;	
 	
 	//this.randomTheta = randomTheta;
 	
@@ -2609,12 +2656,15 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		c1 = c1 || 1e-6;
 		c2 = c2 || 0.1;
 
-		function zoom(a_lo, a_high, phi_lo) {
+		function zoom(a_lo, a_high, phi_lo,parentIter) {
 			for (var iteration = 0; iteration < 16; ++iteration) {
 				a = (a_lo + a_high)/2;
 				next.x = math.add(current.x,math.multiply(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
 			    svdThis.updateTheta(next.x);
 			    phi = svdThis.getCost('T');
+				if (svdThis.progCallback) {
+					svdThis.progCallback('subProgressDiv','B/p Iter: ' + parentIter + ' Zoom: ' + iteration + ' &alpha; ' + a.toFixed(4),true);
+				}
 			    svdThis.backProp();       //phi = next.fx = f(next.x, next.fxprime);
 			    next.fxprime = svdThis.unrollDerivs();
 				phiPrime = math.sum(math.dotMultiply(next.fxprime,pk)); 
@@ -2650,6 +2700,10 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			next.x = math.add(current.x,math.multiply(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
 			svdThis.updateTheta(next.x);
 			phi = svdThis.getCost('T');
+			if (this.progCallback) {
+			    progCallback('subProgressDiv','B/p Iter: ' + iteration + ' &alpha; ' + a.toFixed(4),true);
+			}
+			
 			svdThis.backProp();       //phi = next.fx = f(next.x, next.fxprime);
 			next.fxprime = svdThis.unrollDerivs();
 			phiPrime = math.sum(math.dotMultiply(next.fxprime,pk));  //dot(next.fxprime, pk);
@@ -2657,7 +2711,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			
 			if ((phi > (phi0 + c1 * a * phiPrime0)) ||
 				(iteration && (phi >= phi_old))) {
-				return zoom(a0, a, phi_old);
+				return zoom(a0, a, phi_old,iteration);
 			}
 
 			if (Math.abs(phiPrime) <= -c2 * phiPrime0) {
@@ -2665,7 +2719,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			}
 
 			if (phiPrime >= 0 ) {
-				return zoom(a, a0, phi);
+				return zoom(a, a0, phi,iteration);
 			}
 
 			phi_old = phi;
@@ -2795,7 +2849,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		//supply scaled X
 		this.X = X;
 		this.layers[0].X = X;
-		this.layers[0].A = math.matrix(matrixToArray(this.X,0)); //remove first row of 1s
+		this.layers[0].A =  mRemoveFirstRow(this.X); //math.matrix(matrixToArray(this.X,0)); //remove first row of 1s
 		
 		
 	};
@@ -2824,7 +2878,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			this.layers.push(lay);
 			if (i == 0) {
 				lay.X = this.X;
-				lay.A = math.matrix(matrixToArray(this.X,0)); //remove first row of 1s
+				lay.A = mRemoveFirstRow(this.X);   //math.matrix(matrixToArray(this.X,0)); //remove first row of 1s
 				
 			}
 			if (i == this.numLayers - 1) {
@@ -3115,8 +3169,10 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 
 	 
 	 this.forward = function() {
-		 this.Z = h(math.transpose(this.prevLayer.Theta),this.X,false); //this.X = prev layer A with bias 1s added
-		 this.A = h(math.transpose(this.prevLayer.Theta),this.X,true);
+		 var ZRet = [];
+		// this.Z = h(math.transpose(this.prevLayer.Theta),this.X,false); //this.X = prev layer A with bias 1s added
+		 this.A = h(math.transpose(this.prevLayer.Theta),this.X,true,ZRet);
+		 this.Z = ZRet[0];
 		 
 	 };
 	 

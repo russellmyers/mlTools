@@ -55,12 +55,22 @@ font-size:medium;
   display:block;
   vertical-align:top;
   width: 100%;
-  height: 80%;
+  height: 70%;
   margin: 0;
   padding: 0;
 
 }
 
+#subProgressDiv {
+  font-size:small;
+  background-color: blue;
+  display:block;
+  vertical-align:top;
+  width: 100%;
+  height: 10%;
+  margin: 0;
+  padding-bottom: 2px;
+}
 #cvBannerDiv {
   font-size:medium;
   background-color: blue;
