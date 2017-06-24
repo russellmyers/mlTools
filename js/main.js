@@ -52,7 +52,7 @@ var vGraph;
 var mlData;
 var mlNN;
 
-
+var mlInput;
 
 
 init();
@@ -68,7 +68,7 @@ function MLParams() {
    this.visualDisplay = null;         // call visualDisplayUpdated() when changed
    this.initTheta =  null;            //  call initThetaUpdated() when changed
 
-   this.input = null;                 // call trainingInputUpdated() when changed
+  // this.input = null;                 // call trainingInputUpdated() when changed
    this.trainingInputDirty = false;
 
    this.degrees = null;            		 // retrieve when needed
@@ -110,6 +110,7 @@ function init() {
     mlParams = new MLParams();
 	mlResults = [];
 	mlData = {};
+	mlInput  = {};
 	mlNN = null;
 
 	/*
@@ -134,8 +135,8 @@ function init() {
 
 	
 	//document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-	this.input = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-   trainingInputUpdated();
+	mlInput.trainingInput = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+    inputUpdated('trainingInput');
    
    var fileToRead = el('inp');
    fileToRead.addEventListener("change", function(event) {
@@ -156,10 +157,10 @@ function init() {
 			 
 			//onload handler
 
-			mlData.MNISTTrainImages = null;
-			mlData.MNISTTrainLabels = null;
-			mlData.MNISTCVImages = null;
-			mlData.MNISTCVLabels = null;
+			mlInput.MNISTTrainImages = null;
+			mlInput.MNISTTrainLabels = null;
+			mlInput.MNISTCVImages = null;
+			mlInput.MNISTCVLabels = null;
 			
 	 
 	        for (var i = 0;i < len;++i) {
@@ -221,18 +222,20 @@ if (typeof	(Worker) !== "undefined") {
 				}
 				else if (event.data.action == 'fin') {
 					//alert('min Th in: ' + event.data.minTheta);
+					
+					var X = mlData.XScaled;    //var X = stringifyToMatrix(event.data.X);
+					var XUnscaled = mlData.X; //var  XUnscaled = stringifyToMatrix(event.data.XUnscaled);
+					var scaleFactors = mlData.scaleFactors; //var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
+					var YOrig = mlData.Y; //var YOrig = stringifyToMatrix(event.data.YOrig);
+
 					var minTheta = stringifyToMatrix(event.data.minTheta);
 					//alert('Min Theta: ' + minTheta + ' size: ' + minTheta.size());
-					var X = stringifyToMatrix(event.data.X);
-					var Y = stringifyToMatrix(event.data.Y);
+					var Y = stringifyToMatrix(event.data.Y);   //use returned  Y, as Y can be manipulated in logistic regression one vs many
 					var IdealCost = stringifyToMatrix(event.data.IdealCost);
 					var ThetaIdeal = stringifyToMatrix(event.data.ThetaIdeal);
-					var  XUnscaled = stringifyToMatrix(event.data.XUnscaled);
 					var minThetaUnscaled = stringifyToMatrix(event.data.minThetaUnscaled);
-					var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
 					var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
 					var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
-					var YOrig = stringifyToMatrix(event.data.YOrig);
 					var costArSparse = event.data.costArSparse;
 					var itersSparse = event.data.itersSparse;
                     var finType = event.data.finType;
@@ -284,10 +287,10 @@ if (typeof	(Worker) !== "undefined") {
 					 console.log('One vs all is all finished');	
 				//	 visualise(X,Y,minTheta, XUnscaled,minThetaUnscaled,ThetaIdeal,scaleFactors);
 				
-				    var YOrig = mlResults[0][10];  // Orig Y with all classes
-		            var XUnscaled = mlResults[0][7];
+				    var YOrig = mlData.Y; //var YOrig = mlResults[0][10];  // Orig Y with all classes
+		            var XUnscaled = mlData.X; //var XUnscaled = mlResults[0][7];
 		            var minThetaUnscaled = mlResults[0][8]; //not used
-		            var scaleFactors = mlResults[0][9]; //not used
+		            var scaleFactors = mlData.scaleFactors; //var scaleFactors = mlResults[0][9]; //not used
 		
 	             	visualise(null,YOrig,null, XUnscaled,minThetaUnscaled,null,scaleFactors,mlData.XCompressed);
 					 //var acc = checkAccuracyMultiClass();
@@ -296,15 +299,19 @@ if (typeof	(Worker) !== "undefined") {
 				
 					//var costArExtra = event.data.costAr.slice(event.data.costAr.length - 1000);
 					//var itersExtra = event.data.iters.slice(event.data.iters.length - 1000);
+					
+					var X = mlData.XScaled;    //var X = stringifyToMatrix(event.data.X);
+					var XUnscaled = mlData.X; //var  XUnscaled = stringifyToMatrix(event.data.XUnscaled);
+					var scaleFactors = mlData.scaleFactors; //var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
+					var YOrig = mlData.Y; //var YOrig = stringifyToMatrix(event.data.YOrig);
+
+					
 					var minTheta = stringifyToMatrix(event.data.minTheta);
 					//alert('Min Theta: ' + minTheta + ' size: ' + minTheta.size());
-					var X = stringifyToMatrix(event.data.X);
 					var Y = stringifyToMatrix(event.data.Y);
 					var IdealCost = stringifyToMatrix(event.data.IdealCost);
 					var ThetaIdeal = stringifyToMatrix(event.data.ThetaIdeal);
-					var  XUnscaled = stringifyToMatrix(event.data.XUnscaled);
 					var minThetaUnscaled = stringifyToMatrix(event.data.minThetaUnscaled);
-					var scaleFactors = event.data.scaleFactors; //stringifyToMatrix(event.data.scaleFactors);
 					var costAr =  event.data.costAr; // stringifyToMatrix(event.data.costAr);
 					var iters =  event.data.iters;//stringifyToMatrix(event.data.iters);
 					var costArSparse = event.data.costArSparse;
@@ -722,8 +729,8 @@ function neuralButClicked() {
         visualDisplayUpdated();
 
         //document.getElementById('trainingInput').value = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
-		this.input = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
-		trainingInputUpdated();
+		mlInput.trainingInput = '1 0 1\n0 1 1\n0 0 0\n1 1 0';
+		inputUpdated('trainingInput');
 
         applyInput();
 
@@ -742,8 +749,8 @@ function logButClicked() {
  
 
    //document.getElementById('trainingInput').value = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1'	;
-   this.input = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1';
-   trainingInputUpdated();
+   mlInput.trainingInput = '1 1 0\n2 0 0\n1 3 0\n3 5 1\n5 3 1\n4 2 1\n2.5 1 0\n2.5 6 1\n4 -1 1\n2 5 0\n3.5 -1 0\n3 10 1\n2 7 0\n1.666 11 1';
+   inputUpdated('trainingInput');
  // document.getElementById('trainingInput').value = '1 1 1\n2 2 2\n3 3 3'	;
 
 
@@ -778,8 +785,8 @@ function regButClicked() {
  
    
    //document.getElementById('trainingInput').value = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-   this.input = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
-   trainingInputUpdated(); 
+   mlInput.trainingInput = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
+   inputUpdated('trainingInput'); 
  
   applyInput();
     
@@ -808,12 +815,26 @@ function regButClicked() {
  }
  
  
- function inputChanged() {
-	 this.input = elVal('trainingInput');
-	 trainingInputUpdated(true);
+ function inputChanged(e) {
 	 
-	 //clearButtonPressed();
+	 var elem = e.target.id;
 	 
+	 mlInput[elem] = elVal(elem);
+	 inputUpdated(elem,true);
+	 
+	 /*
+	 switch (elem) {
+		 case 'trainingInput':
+			 mlInput.trainingInput = elVal('trainingInput');
+			 inputUpdated('trainingInput',true);
+			 
+			 //clearButtonPressed();
+			 break;
+		default:
+			 break;
+	 }
+	 */
+		 
  }
 
 function splitInput() {
@@ -827,18 +848,28 @@ function splitInput() {
     var cvAr = inpAr.slice(trainPortion,trainPortion + cvPortion);
     var testAr = inpAr.slice(trainPortion + cvPortion);
 
-    this.input = trainAr.join('\n');
-    trainingInputUpdated();
+    mlInput.trainingInput = trainAr.join('\n');
+    inputUpdated('trainingInput');
 
-    el('cvInput').value = cvAr.join('\n');
+    mlInput.cvInput = cvAr.join('\n');
+	inputUpdated('cvInput');
+	//el('cvInput').value = cvAr.join('\n');
 
-    el('testInput').value = testAr.join('\n');
+	mlInput.testInput = testAr.join('\n');
+	inputUpdated('testInput');
+    //el('testInput').value = testAr.join('\n');
     
 }
  
- function inputPasted() {
-     this.input = elVal('trainingInput');
-     trainingInputUpdated(true);
+ function inputPasted(e) {
+	 
+	 var elem = e.target.id;
+	 
+	 mlInput[elem] = elVal(elem);
+	 inputUpdated(elem,true);
+	 
+     //mlInput.trainingInput = elVal('trainingInput');
+     //inputUpdated('trainingInput',true);
 
 
      //clearButtonPressed();
@@ -944,11 +975,11 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
 		   var labs = new Uint8Array(buffer.slice(8,8 + numItems));
 		   var xOffset;
 		   if (pre === 'train') {
-			   mlData.MNISTTrainLabels = labs;
+			   mlInput.MNISTTrainLabels = labs;
 			   xOffset = 40;
 		   }
 		   else {
-			   mlData.MNISTCVLabels = labs;
+			   mlInput.MNISTCVLabels = labs;
 			   xOffset = 90;
 		   }
 		   
@@ -999,10 +1030,10 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
 				}
 			}
 			if (pre === 'train') {
-			   mlData.MNISTTrainImages = imageArray;
+			   mlInput.MNISTTrainImages = imageArray;
 		   }
 		   else {
-			   mlData.MNISTCVImages = imageArray;
+			   mlInput.MNISTCVImages = imageArray;
 		   }
 			
 
@@ -1018,41 +1049,43 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
 	switch (pre) {
 		case 'train':
 		
-		   if ((mlData.MNISTTrainImages) && (mlData.MNISTTrainLabels)) {
+		   if ((mlInput.MNISTTrainImages) && (mlInput.MNISTTrainLabels)) {
 			   
 			   var str = '';
 			   for (var i = 0;i < parseInt(elVal('mnistTrainSampleSize'));++i) {
-				   var ar = [].slice.call(mlData.MNISTTrainImages[i]);
+				   var ar = [].slice.call(mlInput.MNISTTrainImages[i]);
 				   str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
-				   str += ' ' + (parseInt(mlData.MNISTTrainLabels[i]) + 1);
+				   str += ' ' + (parseInt(mlInput.MNISTTrainLabels[i]) + 1);
 				   str += '\n';
 				   
 			   }
 			   
-			   this.input = str;
-			   trainingInputUpdated();
+			   mlInput.trainingInput = str;
+			   inputUpdated('trainingInput');
 			   
 		   }
 
-            if ((mlData.MNISTCVImages) && (mlData.MNISTCVLabels)) {
+            if ((mlInput.MNISTCVImages) && (mlInput.MNISTCVLabels)) {
 
                 var str = '';
                 for (var i = 0;i < parseInt(elVal('mnistCVSampleSize'));++i) {
-                    var ar = [].slice.call(mlData.MNISTCVImages[i]);
+                    var ar = [].slice.call(mlInput.MNISTCVImages[i]);
                     str +=    ar.join(' ');//mlData.MNISTTrainImages[i].join(' ');
-                    str += ' ' + (parseInt(mlData.MNISTCVLabels[i]) + 1);
+                    str += ' ' + (parseInt(mlInput.MNISTCVLabels[i]) + 1);
                     str += '\n';
 
                 }
 
-                el('cvInput').value = str;
+				mlInput.cvInput = str;
+				inputUpdated('cvInput');
+                //el('cvInput').value = str;
 
             }
 		
 		   break;
 		   
 		default:
-		   if ((mlData.MNISTCVImages) && (mlData.MNISTCVLabels)) {
+		   if ((mlInput.MNISTCVImages) && (mlInput.MNISTCVLabels)) {
 			   
 			   
 		   }
@@ -1382,17 +1415,25 @@ function applyInput() {
 	*/
 
    //var res = parseDataInput(elVal('trainingInput'));
-   var res = parseDataInput(this.input); 
-   mlData.X = res[0];
-   mlData.Y = res[1];
    
-   res = parseDataInput(elVal('cvInput'));
-   mlData.Xcv = res[0];
-   mlData.Ycv = res[1];
+   if (mlParams.trainingInputDirty) {
+		var res = parseDataInput(mlInput.trainingInput); 
+		mlData.X = res[0];
+		mlData.Y = res[1];
+   }
    
-   res = parseDataInput(elVal('testInput'));
-   mlData.Xtest = res[0];
-   mlData.Ytest = res[1];
+   if (mlParams.cvInputDirty) {
+		res = parseDataInput(elVal('cvInput'));
+		mlData.Xcv = res[0];
+		mlData.Ycv = res[1];
+   }
+   
+   
+   if (mlParams.testInputDirty) {
+		res = parseDataInput(elVal('testInput'));
+		mlData.Xtest = res[0];
+		mlData.Ytest = res[1];
+   }
    
   
    
@@ -1433,11 +1474,9 @@ function applyInput() {
   
   
    mlDataUpdated();
-
    
    
-   
-   if (mlParams.module == 'neu') {
+   if ((mlParams.module == 'neu') && (mlParams.trainingInputDirty)) {
 	      var randomTheta = true;
 		  
 		  var arch = (mlParams.architecture.length  == 0) ? [mlData.X.size()[0] - 1,mlData.X.size()[0] +1,yUnits] : mlParams.architecture;
@@ -1464,6 +1503,11 @@ function applyInput() {
 		  */
    	   
    }
+   
+   mlParams.trainingInputDirty = false;
+   mlParams.cvInputDirty = false;
+   mlParams.testInputDirty = false;
+   mlParams.predictInputDirty = false;
 
    /*
    res = getXandY(mlParams,1);
@@ -1519,17 +1563,35 @@ function featureTypeUpdated() {
  */
  
  
-function trainingInputUpdated(suppressUIUpdate) {
+function inputUpdated(elem,suppressUIUpdate) {
 	
-		  
-	  clearButtonPressed();
+	  if (elem === 'trainingInput') {	  
+		clearButtonPressed();
+	  }
 	  
-	    if (suppressUIUpdate) {
+	  if (suppressUIUpdate) {
 	  }
 	  else {
-	     el('trainingInput').value = this.input;
+	     el(elem).value = mlInput[elem];
 	  }
-      mlParams.trainingInputDirty = true;
+	  
+	  switch (elem) {
+		  case 'trainingInput':
+		    mlParams.trainingInputDirty = true;
+			break;
+		  case 'cvInput': 
+		     mlParams.cvInputDirty = true;		  
+			break;
+		  case 'testInput':
+	   	    mlParams.testInputDirty = true;
+			break;
+		  case 'predictInput':
+		    mlParams.predictInputDirty = true;
+			break;
+		  default:
+		  break;
+	  }
+     
 
 }
 	
@@ -1552,6 +1614,8 @@ function numLogClassesUpdated() {
  function isRunningUpdated() {
 	 el('pauseBut').innerHTML = mlParams.isRunning ? "Pause" : "Continue";
 	 
+	 el('runningImage').src = mlParams.isRunning ? "img/poses_running.png" : "img/poses_standing.png";
+	 
 	 
  }
 
@@ -1562,11 +1626,20 @@ function numLogClassesUpdated() {
 	 
 	clearButtonPressed();
 
-    el('cvInput').value = '';
+	mlInput.cvInput = '';
+	inputUpdated('cvInput');
+    //el('cvInput').value = '';
     applyCVInput();
-    el('testInput').value = '';
-    //applyTestInput();
-    el('predictInput').value = '';
+
+	mlInput.testInput = '';
+	inputUpdated('testInput');
+    //el('testInput').value = '';
+    applyTestInput();
+
+
+	mlInput.predictInput = '';
+	inputUpdated('predictInput');
+    //el('predictInput').value = '';
     applyPredictInput();
 
  
@@ -1680,7 +1753,7 @@ function numLogClassesUpdated() {
  function nnUpdated() {
 	 
 	 
-	 	 if (mlData.MNISTTrainImages) {
+	 	 if (mlInput.MNISTTrainImages) {
              drawNN();
 		 }
 		 else {
@@ -1859,6 +1932,25 @@ function numLogClassesUpdated() {
     sigma = math.multiply(sigma,1/m);
 
     var res = numeric.svd(matrixToArray(sigma));
+	
+	var S = math.matrix(res.S);
+	
+	var totVar = math.sum(S);
+	
+	var retainedVar = [];
+	var sSum = 0;
+	
+	for (var i = 0;i < 300;++i) {
+		if (i >= res.S.length) {
+			break;
+		}
+		sSum += res.S[i];
+		
+		retainedVar.push(sSum / totVar * 100);
+		
+		
+	}
+	
 
     var U = math.matrix(res.U);
 
@@ -1880,35 +1972,39 @@ function numLogClassesUpdated() {
 
 	}
 
-    var res = featureScale(mlData.X);
-    mlData.XScaled = res[0];	
-	var scaleFactors = res[1];
+	if (mlParams.trainingInputDirty) {
+		var res = featureScale(mlData.X);
+		mlData.XScaled = res[0];	
+		mlData.scaleFactors = res[1];
+	}
 	
 	var suppressFlag = elVal('suppressCompress');
 	
-	if ((mlData.X.size()[0] > 3) && (!suppressFlag)) { // if > 2d (excluding bias)
-		compressTrainingMLData();
-		
+	if (mlParams.trainingInputDirty) {
+		if ((mlData.X.size()[0] > 3) && (!suppressFlag) ) { // if > 2d (excluding bias)
+			compressTrainingMLData();
+			
+		}
+		else {
+			 mlData.XCompressed = null;
+			
+		}  
 	}
-	else {
-		 mlData.XCompressed = null;
-		
-	}  
 	
 	
 	
-	if (mlData.Xcv) {
-		res = featureScale(mlData.Xcv,scaleFactors);
+	if ((mlData.Xcv) && (mlParams.cvInputDirty)) {
+		res = featureScale(mlData.Xcv,mlData.scaleFactors);
         mlData.XcvScaled = res[0];	
 	}
 	
-	if (mlData.Xtest) {
-		res = featureScale(mlData.Xtest,scaleFactors);
+	if ((mlData.Xtest) && (mlParams.testInputDirty)) {
+		res = featureScale(mlData.Xtest,mlData.scaleFactors);
         mlData.XtestScaled = res[0];	
 	}
 	
-	if (mlData.Xpredict) {
-		res = featureScale(mlData.Xpredict,scaleFactors);
+	if ((mlData.Xpredict) && (mlParams.predictInputDirty)) {
+		res = featureScale(mlData.Xpredict,mlData.scaleFactors);
         mlData.XpredictScaled = res[0];	
 	}
 	 
@@ -1936,26 +2032,38 @@ function numLogClassesUpdated() {
 
 	}
 	else {
+		if (mlParams.trainingInputDirty) {
 		    clearRes();
 	         clearCharts();
+		}
 		
 	}
 	
  
 	
 	getParams();
+	
+  	 var formattedStr;
 	 
-	 var formattedStr = formatData(mlData.X,mlData.Y);
-	 el('trainingInput').value = formattedStr;
+	 if (mlParams.trainingInputDirty) {
+		var formattedStr = formatData(mlData.X,mlData.Y);
+		el('trainingInput').value = formattedStr;
+	 }
 	 
-	 formattedStr = formatData(mlData.Xcv,mlData.Ycv);
-	 el('cvInput').value = formattedStr;
+	 if (mlParams.cvInputDirty) {
+		formattedStr = formatData(mlData.Xcv,mlData.Ycv);
+		el('cvInput').value = formattedStr;
+	 }
 	 
-	 formattedStr = formatData(mlData.Xtest,mlData.Ytest);
-	 el('testInput').value = formattedStr;
+	 if (mlParams.testInputDirty) {
+		formattedStr = formatData(mlData.Xtest,mlData.Ytest);
+		el('testInput').value = formattedStr;
+	 }
 
-     formattedStr = formatData(mlData.Xpredict,null);
-     el('predictInput').value = formattedStr;
+	 if (mlParams.predictInputDirty) {
+		formattedStr = formatData(mlData.Xpredict,null);
+		el('predictInput').value = formattedStr;
+	 }
 
 
      var XtrainSize = mlData.X ? mlData.X.size()[1]  : 0;
@@ -1992,10 +2100,12 @@ function numLogClassesUpdated() {
 	   */
 	   
 	   
+	
 	scaleMLData();
 	
+	
 
-	 if (mlData.MNISTTrainImages) {
+	 if (mlInput.MNISTTrainImages) {
 		 
 		 //return;
 		 
@@ -2012,12 +2122,16 @@ function numLogClassesUpdated() {
                  break;
              default:
 
-                 visualiseTrainingOnly(mlData.X, mlData.Y,mlData.XCompressed);
+			     if (mlParams.trainingInputDirty) {
+					visualiseTrainingOnly(mlData.X, mlData.Y,mlData.XCompressed);
+				 }
 
          }
      }
 	 else {
-		 visualiseTrainingOnly(mlData.X, mlData.Y,mlData.XCompressed);
+		 if (mlParams.trainingInputDirty) {
+			visualiseTrainingOnly(mlData.X, mlData.Y,mlData.XCompressed);
+		 }
 	 }
    
 	 
@@ -2465,11 +2579,12 @@ function learnForeground() {
 
 	var res;
 	
+	var X = mlParams.scalingFlag ? mlData.XScaled : mlData.X;
+	
 	switch (mlParams.module) {
 	    case 'reg': 
-		   res = learn(mlParams,mlData.X,mlData.Y,learnProgressForeground); //mlData.scaleFactors,learnProgressForeground);
-		   mlResults.push(res);
-		   
+		   res = learn(mlParams,X,mlData.Y,learnProgressForeground,null,mlData.scaleFactors,mlData.X); //mlData.scaleFactors,learnProgressForeground);
+		   mlResults.push(res); //TODO not that simple as res does not contain mlData.X etc anymore. Also need to move to a DONE routine
 		   if (elVal('copyThetaFlag')) {
 		   var finalTh = mlResults[0][6];
 			   var fl = math.flatten(finalTh);
@@ -2488,21 +2603,21 @@ function learnForeground() {
 		       
 		       for (var i = 0;i < mlParams.numLogClasses;++i) {
 			      mlParams.currClassNum = i;
-		          res = learn(mlParams,mlData.X, mlData.Y,learnProgressForeground);
-		    	  mlResults.push(res);
+		          res = learn(mlParams,X, mlData.Y,learnProgressForeground,null,mlData.scaleFactors,mlData.X);
+		    	  mlResults.push(res); //TODO not that simple as res does not contain mlData.X etc anymore. Also need to move to a DONE routine
 		       }
 			}
 			else {
-			    res = learn(mlParams,mlData.X, mlData.Y, learnProgressForeground);
-		        mlResults.push(res);
+			    res = learn(mlParams,X, mlData.Y, learnProgressForeground,null,mlData.scaleFactors,mlData.X);
+		        mlResults.push(res); //TODO not that simple as res does not contain mlData.X etc anymore. Also need to move to a DONE routine
 			}
 
           break;
 
         case 'neu':
   			
-			res = learn(mlParams,mlData.X,mlData.Y,learnProgressForeground); //mlData.scaleFactors,learnProgressForeground);
-		    mlResults.push(res);
+			res = learn(mlParams,X,mlData.Y,learnProgressForeground,null,mlData.scaleFactors,mlData.X); //mlData.scaleFactors,learnProgressForeground);
+		    mlResults.push(res); //TODO not that simple as res does not contain mlData.X etc anymore. Also need to move to a DONE routine
 			
 			mlNN.scaleFactors = res[9];
 			
@@ -2948,21 +3063,68 @@ function constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,sho
 	     switch (yAr[i]) {
 		    case 1:
 			   shape = 'rect';
-			   col = '#000000';
+			   col = '#000000'; //black
 			   break;
 			   
 			   
 			case 2:
 			   shape = 'triangle';
-			   col = '#00ff00';
+			   col = '#00ff00'; //green
 			   break;
 			   
 			
 			
 			case 3:
 			   shape = 'circle';
-			   col = '#0000ff';
+			   col = '#0000ff'; //blue
 			   break;
+			   
+		
+			   
+			   
+			case 4:
+			   shape = 'circle';
+			   col = '#ffff00'; //yellow
+			   break;
+			   
+			
+			
+			case 5:
+			   shape = 'circle';
+			   col = '#00ffff'; //light blue
+			   break;		
+
+			case 6:
+			   shape = 'circle';
+			   col = '#ffb266'; //orange
+			   break;
+			   
+			
+			
+			case 7:
+			   shape = 'circle';
+			   col = '#cc00cc'; //purple
+			   break;	
+			   
+
+	  	   case 8:   
+
+			   shape = 'circle';
+			   col = '#ffccff'; //pink
+			   break;
+			   
+			
+			
+			case 9:
+			   shape = 'circle';
+			   col = '#e0e0e0'; //grey
+			   break;	
+			
+			
+			case 10:
+			   shape = 'circle';
+			   col = '#ccffcc'; //light green
+			   break;					   
 			   
 			default:
                shape = 'cross';
@@ -3465,7 +3627,7 @@ function VGraph(l,w,h) {
 		ctx.fillText(this.message,xMessPos,yPos);
 
         if (this.pic) {
-            displayMNISTImage(ctx,this.pic,28,28,xMessPos + 100,yPos);
+            displayMNISTImage(ctx,this.pic,28,28,xMessPos + 100,yPos-10);
 
         }
 		

@@ -852,6 +852,7 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 
  var A = math.multiply(Xt,X);
  A = math.inv(A);
+ A = math.inv(A);
  A = math.multiply(A,Xt);
  
  A = math.multiply(A,math.transpose(Y));
@@ -1500,13 +1501,13 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 			msg.iters = res[1];//JSON.stringify(res[1]);
 			msg.ThetaIdeal = JSON.stringify(res[2]);
 			msg.IdealCost = JSON.stringify(res[3]);
-			msg.X = JSON.stringify(res[4]);
+			//msg.X = JSON.stringify(res[4]); //No longer return this
 			msg.Y = JSON.stringify(res[5]);
 			msg.minTheta = JSON.stringify(res[6]);
-			msg.XUnscaled = JSON.stringify(res[7]);
+			//msg.XUnscaled = JSON.stringify(res[7]); //No longer return this
 			msg.minThetaUnscaled = JSON.stringify(res[8]);
-			msg.scaleFactors = res[9];//JSON.stringify(res[9]);
-			msg.YOrig = JSON.stringify(res[10]);
+			//msg.scaleFactors = res[9];//JSON.stringify(res[9]); //No longer return this
+			//msg.YOrig = JSON.stringify(res[10]); No longer return this
 			msg.costArSparse = res[11];
 			msg.itersSparse = res[12];
             msg.finType = finType;
@@ -1535,7 +1536,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
  * @param progCallback
  * @returns {*}
  */
-function learn(mlParams,X,Y,progCallback,continueData) {
+function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
   
    var minCost = null;
    var minReg = null;
@@ -1550,20 +1551,21 @@ function learn(mlParams,X,Y,progCallback,continueData) {
    
    var degrees = mlParams.degrees; //parseInt(elVal('degreesInput'));
 
-   var scaleFactors;
+   //var scaleFactors;  //now passed in
    
-   var XUnscaled = X;
+   //var XUnscaled = X; //now passed in
    
    //if (mlParams.scalingFlag) {
-	   
+	  
+	  
+    /*	  
     var res = featureScale(X);
-      
-     
     scaleFactors = res[1];
 	
 	if (mlParams.scalingFlag) {
 		 X = res[0];
 	}
+	*/
 	  
   // }
    

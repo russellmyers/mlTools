@@ -136,6 +136,11 @@ font-size:medium;
 
 }
 
+#runningImage {
+	width: 20px;
+	height: 20px;
+}
+
 .dataSet {
 	display: inline-block;
 	height: 101px;

@@ -27,13 +27,13 @@
 				msg.iters = mess[1];//JSON.stringify(res[1]);
 				msg.ThetaIdeal = JSON.stringify(mess[2]);
 				msg.IdealCost = JSON.stringify(mess[3]);
-				msg.X = JSON.stringify(mess[4]);
+				//msg.X = JSON.stringify(mess[4]); // No longer return this
 				msg.Y = JSON.stringify(mess[5]);
 				msg.minTheta = JSON.stringify(mess[6]);
-				msg.XUnscaled = JSON.stringify(mess[7]);
+				//msg.XUnscaled = JSON.stringify(mess[7]); // No longer return this
 				msg.minThetaUnscaled = JSON.stringify(mess[8]);
-				msg.scaleFactors = mess[9];//JSON.stringify(res[9]);
-				msg.YOrig = JSON.stringify(mess[10]);
+				//msg.scaleFactors = mess[9];//JSON.stringify(res[9]); // No longer return this
+				//msg.YOrig = JSON.stringify(mess[10]); // No longer return this
 				msg.costArSparse = mess[11];
 				msg.itersSparse = mess[12];
 				postMessage(msg);
@@ -76,10 +76,17 @@
 			inMsg.data.mlData.Y.__proto__ = math.matrix.prototype;
 			*/
 			pauseFlag = false;
-			var X = math.matrix(inMsg.data.mlData.X._data);
+			var X;
+			if (inMsg.data.params.scalingFlag) {
+				X = math.matrix(inMsg.data.mlData.XScaled._data);
+			}
+			else {
+				X = math.matrix(inMsg.data.mlData.X._data);
+			}
             var Y = math.matrix(inMsg.data.mlData.Y._data);
 			var continueData = inMsg.data.continueData;
-			var res = learn(inMsg.data.params,X, Y, progUpdateBackground,continueData);
+			var XUnscaled = math.matrix(inMsg.data.mlData.X._data);
+			var res = learn(inMsg.data.params,X, Y, progUpdateBackground,continueData,inMsg.data.mlData.scaleFactors,XUnscaled);
 			/*
 			var tst = res[2];
 			var msg = {};

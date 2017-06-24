@@ -14,14 +14,14 @@
 
 <div id = "leftBannerDiv">
  <label for = "alphaInput">Learning Rate (&alpha;)</label>
- <input id = "alphaInput" class="mediumInput" type="text" value = "0.1">
+ <input id = "alphaInput" class="mediumInput" type="text" value = "1.0">
  <label for = "lambdaInput">Regularisation (&lambda;)</label>
  <input id = "lambdaInput"  class="mediumInput" type="text" value = "0">
  
  <label for = "maxIterationsInput">Max Iterations</label>
  <input id = "maxIterationsInput" class="largeInput" type="text" value = "10">
    <input id = "scalingFlag" type="checkbox" checked>feature Scaling
-
+<img id = "runningImage" src = "img/poses_standing.png"></img>
  
  <br><br>
  
@@ -112,10 +112,10 @@
 
 <div id = "inputOutputDiv">
     <div id = "inputDiv">
-    <textarea id = "trainingInput"  class="dataSet" oninput="inputChanged()" onpaste="inputPasted()"  ></textarea>
-	<textarea id = "cvInput"  class="dataSet"   ></textarea>
-	<textarea id = "testInput"  class="dataSet"   ></textarea>
-	<textarea id = "predictInput"  class="dataSet" 		  ></textarea>
+    <textarea id = "trainingInput"  class="dataSet" oninput="inputChanged(event)" onpaste="inputPasted(event)"  ></textarea>
+	<textarea id = "cvInput"  class="dataSet"  oninput="inputChanged(event)" onpaste="inputPasted(event)" ></textarea>
+	<textarea id = "testInput"  class="dataSet"  oninput="inputChanged(event)" onpaste="inputPasted(event)" ></textarea>
+	<textarea id = "predictInput"  class="dataSet" 	oninput="inputChanged(event)" onpaste="inputPasted(event)"  ></textarea>
 
 
 	</div>
