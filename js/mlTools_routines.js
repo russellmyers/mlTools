@@ -25,6 +25,18 @@ function arrayToString(ar,sep) {
     
 }
 
+/**
+ * 
+ * @param s standard deviation
+ * @returns {number} random number  nornally distributed with mean 0, stddev s
+ */
+
+function randn_bm(s) {
+	var u = 1 - Math.random(); // Subtraction to flip [0, 1) to (0, 1].
+	var v = 1 - Math.random();
+	return s * Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+}
+
 
 var pauseFlag = false;
 
@@ -2933,18 +2945,36 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		 }
 		 else {
 
-			if (this.InitThMat) {
-				this.Theta = this.InitThMat;
-			}
-			else {
-                this.Theta =  math.matrix(math.random([this.n + 1, this.nextLayerN],-0.2,0.2)); //was -0.5, 0.5 // -0.5,0.5)); //was 2  ///-1,1));
-			}
-			/*
-            else {			
-		        this.Theta =  math.zeros(this.n + 1, this.nextLayerN);
-			}
-			*/
-		 }
+             if (this.InitThMat) {
+                 this.Theta = this.InitThMat;
+             }
+             else {
+                 var nIn = this.n + 1;
+                 var nOut = this.nextLayerN + 1;
+                 var rqdVariance = 2 / (nIn + nOut);
+                 var rqdStdDev = math.sqrt(rqdVariance);
+                 var thMat = math.matrix(math.zeros([this.n + 1, this.nextLayerN]));
+                 thMat = thMat.map(function (el) {
+                     return randn_bm(rqdStdDev);
+                 });
+
+                 //Use Xavier initialisation:
+
+                 //if (mlParams.useXavierInit) {
+                 this.Theta = thMat;
+                 // }
+                 //else {
+
+                 //Use random init
+                 //this.Theta = math.matrix(math.random([this.n + 1, this.nextLayerN], -0.2, 0.2)); //was -0.5, 0.5 // -0.5,0.5)); //was 2  ///-1,1));
+                 //}
+                 /*
+                  else {
+                  this.Theta =  math.zeros(this.n + 1, this.nextLayerN);
+                  }
+                  */
+             }
+         }
 		 
 		 /*
 		 if (this.X.size()[0] == this.n + 1)  {
@@ -3082,11 +3112,24 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
 		 }
 		 else {
-			 return '-';
+			 if (uNum == null) {
+				 return [];
+
+			 }
+			 else {
+
+				 return '-';
+			 }
+
 		 }
 
 
 		 var ins = mCol(this.A,m,true,true);
+
+		 if (uNum == null) {
+			 return ins;
+		 }
+
 		 if (this.A.size().length == 1) {
 			 return ins[0];
 		 }
@@ -3117,6 +3160,11 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		 }
 
 		 var outs = mCol(this.Y,m,true,true);
+
+		 if (uNum == null) {
+			 return outs;
+		 }
+
 		 if (this.Y.size()[0] == 1) {
             return outs;
 		 }

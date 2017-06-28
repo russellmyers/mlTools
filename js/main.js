@@ -267,9 +267,23 @@ if (typeof	(Worker) !== "undefined") {
 						var minThStr = applyNNThetaFromLearn(minTheta,X);
 						mlNN.scaleFactors = scaleFactors;
 
-						
-						
-					}
+                        var c=document.getElementById("testCanvas");
+                        var ctx=c.getContext("2d");
+                        for (var i = 0;i < 10;++i) {
+                            var pixels = mCol(mlNN.layers[mlNN.layers.length - 2].Theta, i, true);
+                            pixels.shift();
+                            var max = math.max(pixels);
+                            var min = math.min(pixels);
+                            var range = max - min;
+
+                            pixels = pixels.map(function (el) {
+                               // return (el < 0) ? 0 : 240;
+                               return (el  - min)  * (255 /range);
+                            });
+                            displayMNISTImage(ctx, pixels, 28, 28, 50 + 32*i, 50);
+                        }
+
+                    }
 					
 					if (elVal('copyThetaFlag')) {
                           mlParams.initTheta = minThStr;
@@ -389,8 +403,12 @@ function getParams() {
 	
 	
 	mlParams.currClassNum = -1; //used for logisitic regression multi-class
+
+   // mlParams.useXavierInit = elVal('useXavierInit'); Now always use it
 	
 	mlParams.pausePressed = false;
+    
+    
  
  }
 
@@ -935,6 +953,7 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
         var pixel = pixels[i];
        // var xOffset = pre === 'train' ? 10 : 60;
 
+
         //var pixel = mlData.MNISTTrainImages[im][i];
         imgData.data[i*4+0]=pixel;
         imgData.data[i*4+1]=pixel;
@@ -960,11 +979,12 @@ function displayMNISTImage(ctx,pixels,rows,cols,x,y) {
 	var pre = r.fileName.split('-').shift();
 	
 	ext = ext || '';
-	
-	var c=document.getElementById("visualiseChart");
-	var ctx=c.getContext("2d");
 
-	var contents = e.target.result;
+    var c=document.getElementById("visualiseChart");
+    var ctx=c.getContext("2d");
+
+
+     var contents = e.target.result;
 	var buffer = r.result;  
 	
 	switch (ext) {
@@ -1277,6 +1297,7 @@ function parseDataInput(data,noY,labelled) {
 	if (mlParams.module == 'neu') {
 		var mx = math.max(yAr);
 		if (mx > 1) {//multi output layers
+            //Perform one hot encoding
 			var multi = yAr.map(function(el) {
 				var newAr = [];
 				for (var i = 0;i < mx;++i) {
@@ -3599,6 +3620,7 @@ function VGraph(l,w,h) {
 	
 	this.message = '';
     this.pic = null;
+    this.extraMessage = '';
 	
 	this.clearRect = function(ctx) {
 		ctx.clearRect(0,0,this.w,this.h);
@@ -3617,14 +3639,20 @@ function VGraph(l,w,h) {
 		
 		var messLen = ctx.measureText(this.message).width;
 		var xMessPos = this.w * 2 / 3 - (messLen / 2);
-		
-		//ctx.translate(xPos,yPos);
+
+        var extraMessLen = ctx.measureText(this.extraMessage).width;
+        var xExtraMessPos = this.w * 5 / 6 - (extraMessLen / 2);
+
+
+        //ctx.translate(xPos,yPos);
 		/*
 		ctx.rotate(Math.PI/2);
 		ctx.translate(-xPos,-yPos);
 		*/
         ctx.fillText(this.label,xPos,yPos);
 		ctx.fillText(this.message,xMessPos,yPos);
+        ctx.fillText(this.extraMessage,xExtraMessPos,yPos);
+
 
         if (this.pic) {
             displayMNISTImage(ctx,this.pic,28,28,xMessPos + 100,yPos-10);
@@ -3817,6 +3845,34 @@ function VNetworkController(nn) {
 
     };
 
+    this.resultsForM = function(m) {
+
+        var Am = this.nn.layers[this.layers() - 1].getAForSingleM(m);
+        var Ym = this.nn.layers[this.layers() - 1].getYForSingleM(m);
+
+        var svdThis = this;
+
+        Ym = Ym.map(function(el,i) {
+            var classNum;
+            if (svdThis.nn.isVisual) {
+                classNum = i; //assumes MNIST handwritten digits
+            }
+            else {
+                classNum = i + 1;
+            }
+            return [Am.length == 0 ? 0 : Am[i],el,classNum];
+
+        });
+
+        Ym.sort(function(a,b) {
+           return b[0] - a[0];
+        });
+
+        return Ym;
+
+    };
+
+
     this.imageDataForM = function(m) {
         if (this.nn.isVisual) {
             return matrixToArray(math.subset(this.nn.XUnscaled, math.index(math.range(1, this.nn.XUnscaled.size()[0]), m)));
@@ -3843,6 +3899,53 @@ function VNetwork(label,w,h,datasource) {
       this.message = 'Training sample: ' + (m + 1);
 
       this.pic = datasource.imageDataForM(m);
+
+      var predictThresh = 0.05;
+      var Ym = this.datasource.resultsForM(m);
+      var extraStr = '';
+
+      var maxOthers = 2; // max number of runners-up
+
+      var lim = (maxOthers + 1 > Ym.length) ? Ym.length : maxOthers + 1;
+
+      if (Ym.length == 1) {
+
+      }
+      else {
+          for (var i = 0; i < lim; ++i) {
+              if (i == 0) {
+                  extraStr += 'Prediction: ';
+                  extraStr += Ym[i][2] + '(' + Ym[i][0].toFixed(2) + ')';
+                  if (Ym[i][1] == 1) {
+                      extraStr += ' Correct';
+                  }
+                  else {
+                      extraStr += ' Incorrect';
+                  }
+              }
+              else {
+
+                  if (Ym[i][0] > predictThresh) {
+                      if (i == 1) {
+                          extraStr += '   [others: ';
+                      }
+                      extraStr += ' ' + Ym[i][2] + '(' + Ym[i][0].toFixed(2) + ')';
+                  }
+                  else {
+                      if (i > 1) {
+                          extraStr += ']';
+                      }
+                      break;
+                  }
+                  if (i == lim - 1) {
+                      extraStr += ']'
+                  }
+              }
+
+          }
+      }
+
+      this.extraMessage = extraStr;
 
       this.parentDisplay(ctx);
 	  
@@ -3915,6 +4018,9 @@ function VNetwork(label,w,h,datasource) {
                });
            }
       }
+
+
+
 
     };
 
