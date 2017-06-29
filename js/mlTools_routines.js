@@ -273,8 +273,17 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
  * @returns {Matrix}
  */
 function sigmoid(In) {
+	
+	
+	/*
 	var Out = math.map(In,function(el) {
 		
+		var exp = Math.pow(Math.E,el * -1);	
+		return  1 / (1 + exp);
+		
+	});
+	*/
+	var Out = In.map(function(el) {
 		var exp = Math.pow(Math.E,el * -1);	
 		return  1 / (1 + exp);
 		
@@ -339,15 +348,20 @@ function predict(Theta,X) {
  * @returns {*}
  */
 function h(Theta,X,logisticFlag,ZRet) {
+	
+
+	
 	if (logisticFlag) {
-		var Z = math.multiply(Theta,X);
+		
+		var Z =  Theta.multiply(X); //math.multiply(Theta,X);
 		if (ZRet) {
 		  ZRet[0] = Z; //return Z
 		}
 		return sigmoid(Z);
 	}
     else {	
-        return math.multiply(Theta,X);
+	    
+        return  Theta.multiply(X); //math.multiply(Theta,X);
 	}
 }
 
@@ -1550,6 +1564,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
  */
 function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
   
+  var tst = new Matrix([]);
    var minCost = null;
    var minReg = null;
    var minCostSum = 99999999999999999999;
@@ -3221,8 +3236,11 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 this.forward = function() {
 		 var ZRet = [];
 		// this.Z = h(math.transpose(this.prevLayer.Theta),this.X,false); //this.X = prev layer A with bias 1s added
-		 this.A = h(math.transpose(this.prevLayer.Theta),this.X,true,ZRet);
-		 this.Z = ZRet[0];
+		var  PrevTh = new Matrix(matrixToArray(this.prevLayer.Theta));
+		var  ThisX = new Matrix(matrixToArray(this.X));
+		// this.A = h(math.transpose(this.prevLayer.Theta),this.X,true,ZRet);
+		this.A = h(PrevTh.transpose(),ThisX,true,ZRet);
+		this.Z = ZRet[0];
 		 
 	 };
 	 

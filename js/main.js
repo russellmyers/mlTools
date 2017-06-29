@@ -405,6 +405,8 @@ function getParams() {
 	mlParams.currClassNum = -1; //used for logisitic regression multi-class
 
    // mlParams.useXavierInit = elVal('useXavierInit'); Now always use it
+   
+    mlParams.useVectorious = elVal('useVectorious');
 	
 	mlParams.pausePressed = false;
     
@@ -514,6 +516,49 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
   alert('The File APIs are not fully supported in this browser.');
 }
 
+   var bigAr = [];
+   var ar = [];
+   for (var k = 0;k < 1000;++k) {
+	   ar = [];
+	   for (var i = 0;i < 1000;++i) {
+		   ar.push(i);
+		   
+	   }
+	   bigAr.push(ar);
+   }
+   var bigArB = [];
+   for (var k = 0;k < 1000;++k) {
+	   ar = [];
+	   for (var i = 0;i < 500;++i) {
+		   ar.push(i);
+	   }
+	   bigArB.push(ar);
+   }
+   
+   var MJSA = math.matrix(bigAr);
+   var MJSB = math.matrix(bigArB);
+   
+   var tstAr = [1,2];
+   var tst = [tstAr, [2,1], [3,1]];
+   var tstM = new Matrix(tst);
+   
+    var A = new Matrix([[1], [2], [3]]),
+      B = new Matrix([[1, 3, 5]]),
+      C = A.multiply(B);
+	  
+   var VECA = new Matrix(bigAr);
+   
+  var VECB = new Matrix(bigArB);
+   
+
+   console.log('starting math.js');
+   var MJSC = math.multiply(MJSA,MJSB);
+   console.log('ended math.js');
+   
+   console.log('starting vectorious.js');
+   var VECC = VECA.multiply(VECB);
+   console.log('ended vectorious.js');  
+   
    var pp = math.matrix([1,2,3]);
    testParam(pp);
 
@@ -1945,8 +1990,21 @@ function numLogClassesUpdated() {
 
 	
     var X =  mRemoveFirstRow(mlData.XScaled);
+	
+	var XV = new Matrix(matrixToArray(X));
 
-    var sigma = math.multiply(X,math.transpose(X));
+	var sigma;
+	
+	console.log('sigma start');
+	if (mlParams.useVectorious) {
+	  sigma = XV.multiply(XV.transpose());
+	  sigma = math.matrix(sigma.toArray());
+		
+	}
+	else {
+      sigma = math.multiply(X,math.transpose(X));
+	}
+	console.log('sigma end');
 
 	var m = X.size()[1];
 	
@@ -1979,7 +2037,7 @@ function numLogClassesUpdated() {
 
     var XCompressed = math.multiply(math.transpose(UReduce),X);
 
-    var XApprox = math.multiply(UReduce,XCompressed);	 // uncompress just to check
+    //var XApprox = math.multiply(UReduce,XCompressed);	 // uncompress just to check
 	
 	mlData.XCompressed = XCompressed;
 	  

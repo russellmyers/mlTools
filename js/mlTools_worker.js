@@ -1,5 +1,11 @@
+
+ 
  importScripts('math.min.js');
+ importScripts('vectorious.min.js');
+ //importScripts('matrix.js');
  importScripts('mlTools_routines.js');
+
+
 
 
 
@@ -75,17 +81,23 @@
 			inMsg.data.mlData.X.__proto__ = math.matrix.prototype;
 			inMsg.data.mlData.Y.__proto__ = math.matrix.prototype;
 			*/
+			var tmp = new e([]);
+			console.log('e: ' + e);	
 			pauseFlag = false;
 			var X;
 			if (inMsg.data.params.scalingFlag) {
-				X = math.matrix(inMsg.data.mlData.XScaled._data);
+				//X = math.matrix(inMsg.data.mlData.XScaled._data);
+				X = inMsg.data.mlData.XScaled._data;
 			}
 			else {
-				X = math.matrix(inMsg.data.mlData.X._data);
+				//X = math.matrix(inMsg.data.mlData.X._data);
+				X =  inMsg.data.mlData.X._data;
 			}
-            var Y = math.matrix(inMsg.data.mlData.Y._data);
+            //var Y = math.matrix(inMsg.data.mlData.Y._data);
+			var Y = inMsg.data.mlData.Y._data;
 			var continueData = inMsg.data.continueData;
-			var XUnscaled = math.matrix(inMsg.data.mlData.X._data);
+			//var XUnscaled = math.matrix(inMsg.data.mlData.X._data);
+			var XUnscaled = inMsg.data.mlData.X._data;
 			var res = learn(inMsg.data.params,X, Y, progUpdateBackground,continueData,inMsg.data.mlData.scaleFactors,XUnscaled);
 			/*
 			var tst = res[2];
