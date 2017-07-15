@@ -21,7 +21,7 @@ h2 {
    margin:0;
    padding:0;
    font-size:0;
-   height: 170px;
+   height: 200px;
    
 }
 
@@ -252,6 +252,24 @@ font-size:medium;
 #visualiseChart {
     /*display: inline-block;*/
     
+
+}
+
+#logDiv {
+	overflow:auto;
+	height: 300px;
+}
+
+#testFl {
+	float:right;
+}
+
+#learnFieldset {
+	display:inline-block;
+}
+
+#sgdFieldset  {
+	display: inline-block;
 
 }
 	

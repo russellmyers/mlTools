@@ -1,13 +1,22 @@
  importScripts('math.min.js');
  importScripts('mlTools_routines.js');
-
+ importScripts('linear-algebra.min.js');
 
 
  postMessage('Hello from worker');	
  //var inp = '1 2\n3 4\n4 5\n5 7';
  var inp = '224 895\n300 716\n310 667\n349 1111\n460 1450\n696 1638\n393 1150\n566 1657\n985 2540\n1109 2740\n710 1810\n828 3080\n948 2000';
 
+ mlParams = {};
+ 
 
+ var Matrix;
+ var Vector;
+ var l = linearAlgebra();
+ Matrix = linearAlgebra().Matrix;
+ Vector = linearAlgebra().Vector;
+ 
+ 
  /**
   *
   * @param elToUpdate
@@ -36,6 +45,7 @@
 				//msg.YOrig = JSON.stringify(mess[10]); // No longer return this
 				msg.costArSparse = mess[11];
 				msg.itersSparse = mess[12];
+				msg.costArCV = mess[13];
 				postMessage(msg);
 			}
 			else {
@@ -74,19 +84,69 @@
 			/*
 			inMsg.data.mlData.X.__proto__ = math.matrix.prototype;
 			inMsg.data.mlData.Y.__proto__ = math.matrix.prototype;
+			
 			*/
+			
+			mlParams.useMathjs = inMsg.data.params.useMathjs; //temporary - mlParams is not available in background
+			
 			pauseFlag = false;
+			
 			var X;
 			if (inMsg.data.params.scalingFlag) {
-				X = math.matrix(inMsg.data.mlData.XScaled._data);
+				if (inMsg.data.params.useMathjs) {
+					X = math.matrix(inMsg.data.mlData.XScaled._data);
+				}
+				else {
+					X = matCreate(inMsg.data.mlData.XScaled.data);
+				}
 			}
 			else {
-				X = math.matrix(inMsg.data.mlData.X._data);
+				if (inMsg.data.params.useMathjs) {
+					X = math.matrix(inMsg.data.mlData.X._data);
+				}
+				else {
+					X = matCreate(inMsg.data.mlData.X.data);
+				}
 			}
-            var Y = math.matrix(inMsg.data.mlData.Y._data);
+			var Y;
+			
+			if (inMsg.data.params.useMathjs) {
+				Y = math.matrix(inMsg.data.mlData.Y._data);
+			}
+			else {
+				Y = matCreate(inMsg.data.mlData.Y.data);
+			}
+			
 			var continueData = inMsg.data.continueData;
-			var XUnscaled = math.matrix(inMsg.data.mlData.X._data);
-			var res = learn(inMsg.data.params,X, Y, progUpdateBackground,continueData,inMsg.data.mlData.scaleFactors,XUnscaled);
+			var XUnscaled;
+			if (inMsg.data.params.useMathjs) {
+				XUnscaled = math.matrix(inMsg.data.mlData.X._data);
+			}
+			else {
+				XUnscaled = matCreate(inMsg.data.mlData.X.data);
+			}
+			
+			var Xcv;
+			if (inMsg.data.mlData.Xcv) {
+				if (inMsg.data.params.useMathjs) {
+					Xcv = math.matrix(inMsg.data.mlData.Xcv._data);
+				}
+				else {
+					Xcv = matCreate(inMsg.data.mlData.Xcv.data);
+				}
+			}
+			
+			var Ycv;
+			if (inMsg.data.mlData.Ycv) {
+				if (inMsg.data.params.useMathjs) {
+					Ycv = math.matrix(inMsg.data.mlData.Ycv._data);
+				}
+				else {
+					Ycv = matCreate(inMsg.data.mlData.Ycv.data);
+				}
+			}
+			
+			var res = learn(inMsg.data.params,X, Y, progUpdateBackground,continueData,inMsg.data.mlData.scaleFactors,XUnscaled,Xcv,Ycv);
 			/*
 			var tst = res[2];
 			var msg = {};

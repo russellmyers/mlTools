@@ -46,12 +46,272 @@ var pauseFlag = false;
 
 function mRemoveFirstRow(mat) {
 	
+	if (mlParams.useMathjs) {
+		
+	}
+	else {
+		//use math.js format matrix for this routine
+		//mat = math.matrix(mat.toArray());
+		var newMat = mat.clone();
+		newMat.data.shift();
+		newMat.rows -=1;
+		return newMat;
+	}
+	
 	var newMat = math.subset(mat,math.index(math.range(1,mat.size()[0]),math.range(0,mat.size()[1])));
-	return newMat;
+	
+	if (mlParams.useMathjs) {
+		return newMat;
+	}
+	else {
+		return matCreate(matrixToArray(newMat));
+	}
 	
 	
 }
 
+
+/**
+*Routines to perform matrix manipulation.
+*  Abstracted here so the matrix library used can be changed
+*
+*/
+function matCreate(ar) {
+
+    var mat;
+	
+    if (mlParams.useMathjs) {
+		mat = math.matrix(ar);
+	}
+	else {
+	  mat = new Matrix(ar);
+	}
+	
+	return mat;
+}
+
+function matTranspose(mat) {
+	var matT;
+	
+	if (mlParams.useMathjs) {
+		matT = math.transpose(mat);
+	}
+	else {
+	   matT = mat.trans();
+	}
+	
+	return matT;
+}
+
+function matSum(mat) {
+
+    if (mlParams.useMathjs) {
+       return math.sum(mat);
+	}   else {
+		
+       return mat.getSum();	
+	}	
+}
+
+function matInverse(mat) {
+
+   if (mlParams.useMathjs) {
+      return math.inv(mat);
+   }   
+   else {
+	  mat = math.matrix(mat.toArray());
+      matInv = math.inv(mat);
+      return matCreate(matrixToArray(matInv));
+	   
+   }
+	
+}
+
+function matConcat(mat1,mat2,dim) {
+	if (mlParams.useMathjs) {
+		return math.concat(mat1,mat2,dim);
+	}
+	else {
+		if (dim == 0) {
+			var newMat = mat1.clone();
+			newMat.data = newMat.data.concat(mat2.data);
+			newMat.rows = mat1.rows + mat2.rows;
+			return newMat;
+
+			}
+		else {
+			return mat1; // col concat not implemented
+		}
+		
+	}
+	
+}
+
+/**
+* return new matrix with only first newRows rows and newCols columns
+*/
+function matReduce(mat,newRows,newCols) {
+	if (mlParams.useMathjs) {
+		return math.subset(mat,math.index(math.range(0,newRows),math.range(0,newCols)));
+	}
+	else {
+		//use math.js subset routine
+		var newMat = math.matrix(mat.toArray());
+		newMat = math.subset(newMat,math.index(math.range(0,newRows),math.range(0,newCols)));
+		return matCreate(matrixToArray(newMat));
+		
+		
+	}
+	
+}
+
+function matZeros(r,c) {
+	if (mlParams.useMathjs) {
+		return math.zeros(r,c);
+	}
+	else {
+		return Matrix.zero(r,c);
+	}
+    
+}
+
+
+function matOnes(r,c) {
+	if (mlParams.useMathjs) {
+		return math.ones(r,c);
+	}
+	else {
+		var mat = Matrix.zero(r,c);
+        mat = mat.map(function(el) {
+            return 1;
+		});	
+        return mat;		
+	}
+	
+}
+
+function matSum(mat) {
+	if (mlParams.useMathjs) {
+		return math.sum(mat);
+	}
+	else {
+		return mat.getSum();	
+	}
+}
+
+function matGet(mat,r,c) {
+	if (mlParams.useMathjs) {
+		return mat.get([r,c]);
+	}
+	else {
+		return mat.data[r][c];
+	}
+	
+}
+
+function matSet(mat,r,c,val) {
+	 if (mlParams.useMathjs) {
+		 mat.set([r,c],val);
+	 }
+	 else {
+		 mat.data[r][c] = val;
+	 }
+}
+
+function matSubtract(mat1,mat2) {
+	if (mlParams.useMathjs) {
+		return math.subtract(mat1,mat2);
+	}
+	else {
+		return mat1.minus(mat2); 
+	}
+}
+
+function matAdd(mat1,mat2) {
+	if (mlParams.useMathjs) {
+		return math.add(mat1,mat2);
+	}
+	else {
+		return mat1.plus(mat2); 
+	}
+	
+}
+
+
+function matSquare(mat) {
+	if (mlParams.useMathjs) {
+		return math.square(mat);
+	}
+	else {
+		return matDotMultiply(mat,mat);
+	}
+	
+}
+function matMultiply(mat1,mat2) {
+	
+	if (mlParams.useMathjs) {
+		return math.multiply(mat1,mat2);
+		
+	}
+	else {
+		return mat1.dot(mat2);
+	}
+}
+
+function matDotMultiply(mat1,mat2) {
+	
+	if (mlParams.useMathjs) {
+		return math.dotMultiply(mat1,mat2);
+	}
+	else {
+		return mat1.mul(mat2);
+	}
+}
+
+function matMultiplyBy(mat1,x) {
+	if (mlParams.useMathjs) {
+		return math.multiply(mat1,x);
+	}
+	else {
+		return mat1.mulEach(x);
+	}
+}
+
+function matIsVector(mat) {
+      if (mlParams.useMathjs) {
+		  return  (mat.size().length == 1);
+		  
+     }
+	 else {
+		 if (mat instanceof Matrix) {
+			 return false;
+		 }
+		 else {
+			 return true;
+		 }
+		 
+	 }
+}
+
+function matRows(mat) {
+	
+	if (mlParams.useMathjs) {
+		return mat.size()[0];
+	}
+	else {
+		return mat.rows;
+	}
+}
+
+function matCols(mat) {
+	
+	if (mlParams.useMathjs) {
+		return mat.size()[1];
+	}
+	else {
+	   return mat.cols;
+	}
+}
 
 /**
  *
@@ -62,11 +322,13 @@ function mRemoveFirstRow(mat) {
  */
 function matrixToArray(mat,rNum,cNum) {
 
+   
 	rNum = rNum == null ? -1 : rNum;
 	cNum = cNum == null ? -1 : cNum;
 	
 	
 	if ((rNum == -1) && (cNum == -1)) {
+		
 		return mat.toArray();
 		
 	}
@@ -129,6 +391,14 @@ function matrixToArray(mat,rNum,cNum) {
  * @returns {*} matrix or array
  */
 function mRow(matrix, index,retAsArray,assumeRowVector) {
+	
+  if (mlParams.useMathjs) {
+
+  }
+  else {
+    //convert to mathjs matrix for this exercise
+	matrix = math.matrix(matrix.toArray());
+  }	
    
    if (matrix.size().length == 1) { //vector
 	   if (assumeRowVector) {
@@ -140,7 +410,12 @@ function mRow(matrix, index,retAsArray,assumeRowVector) {
 	            return arEntry;
 		   }
 		   else {
-		      return matrix;
+			  if (mlParams.useMathjs) { 
+		         return matrix;
+			  }
+			  else {
+				 return matCreate(matrixToArray(matrix)); 
+			  }
 		   }
 	   }
 	   else {
@@ -152,7 +427,7 @@ function mRow(matrix, index,retAsArray,assumeRowVector) {
 			}
 		   
 		   else {
-			   return math.matrix([els]);
+			   return  matCreate([els]); //math.matrix([els]);
 			   
 		   }
 		   
@@ -177,10 +452,15 @@ function mRow(matrix, index,retAsArray,assumeRowVector) {
    }
    else {
 	 if (cols == 1) {
-        return math.matrix([els]); //els will be scalar
+        return  matCreate([els]); //math.matrix([els]); //els will be scalar
 	 }
      else {	 
-       return els;
+	   if (mlParams.useMathjs) {
+          return els;
+	   }
+	   else {
+		  return matCreate(matrixToArray(els)); 
+	   }
 	 }
    }	
   
@@ -194,6 +474,15 @@ function mRow(matrix, index,retAsArray,assumeRowVector) {
  * @returns {*} matrix or array
  */
 function mCol(matrix, index,retAsArray,assumeRowVector) {
+
+  	
+  if (mlParams.useMathjs) {
+
+  }
+  else {
+    //convert to mathjs matrix for this exercise
+	matrix = math.matrix(matrix.toArray());
+  }	
  
  if (matrix.size().length == 1) { //vector
       if (assumeRowVector) {
@@ -202,7 +491,8 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
 			  return [els];
 		  }
 		  else {
-		     return math.matrix(els);
+			   return matCreate(els);
+			  
 		  }
 	  }
 	
@@ -214,17 +504,22 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
 	            });
 	            return arEntry;
 				 
-	       }
+		  }
 		   else {
-				 return matrix;
+			     if (mlParams.useMathjs) {
+				    return matrix;
+				 }
+				 else {
+					return matCreate(matrixToArray(matrix));
+				 }
 		   }
 	  }
 		  
 	  
 
-  }  
+ }  
   
-  var rows = matrix.size()[0];
+  var rows =  matrix.size()[0];
   var els = math.subset(matrix, math.index(math.range(0,rows),index));
   if (retAsArray) {
 	  if (rows == 1) {
@@ -255,15 +550,20 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
   
   else {
 	 if (rows == 1) {
-        return math.matrix([els]);
+        return matCreate([els]); //math.matrix([els]);
 	 }
-     else {	 
-       return  els; //els.reshape([rows]); 
+     else {	
+	   if (mlParams.useMathjs) {
+          return  els; //els.reshape([rows]); 
+	   }
+	   else {
+		  return matCreate(matrixToArray(els)); 
+	   }
 	 }
   
   }	
   
-} 
+}
 
 // ML routines
 
@@ -273,12 +573,20 @@ function mCol(matrix, index,retAsArray,assumeRowVector) {
  * @returns {Matrix}
  */
 function sigmoid(In) {
-	var Out = math.map(In,function(el) {
-		
-		var exp = Math.pow(Math.E,el * -1);	
-		return  1 / (1 + exp);
-		
-	});
+	var Out;
+	
+	if (mlParams.useMathjs) {
+
+		Out = math.map(In,function(el) {
+			
+			var exp = Math.pow(Math.E,el * -1);	
+			return  1 / (1 + exp);
+			
+		});
+	}
+	else {
+		Out = In.sigmoid();
+	}
 	
 	return Out;
 
@@ -294,7 +602,7 @@ function sigmoid(In) {
 function accuracy(Theta,X,Y) {
 	var pred = predict(Theta,X);
 	
-	var accMatrix =  math.subtract(Y,pred);
+	var accMatrix =  matSubtract(Y,pred);
 	
 	var correctNum = 0;
 	
@@ -302,13 +610,15 @@ function accuracy(Theta,X,Y) {
     var recall = null;
     var f1Score = null;
 	
-	accMatrix.forEach(function(el) {
+	//accMatrix.forEach(function(el) {
+	var dummy = accMatrix.map(function(el) {	
 		if (el == 0) {
 			++correctNum;
 		}
+		return el;
 	});
 	
-	return [correctNum,Y.size()[1],prec,recall,f1Score,accMatrix];
+	return [correctNum,matCols(Y),prec,recall,f1Score,accMatrix];
 	
 }
 
@@ -323,7 +633,8 @@ function predict(Theta,X) {
 	
 	var thresh = 0.5; // predict true if >= this
 	var H = h(Theta,X,true);
-	return math.map(H,function(el) {
+	//return math.map(H,function(el) {
+	return H.map(function(el) {	
 		return el >= 0.5 ? 1 : 0;
 	});
 	
@@ -340,14 +651,14 @@ function predict(Theta,X) {
  */
 function h(Theta,X,logisticFlag,ZRet) {
 	if (logisticFlag) {
-		var Z = math.multiply(Theta,X);
+		var Z = matMultiply(matTranspose(Theta),X); //math.multiply(Theta,X);
 		if (ZRet) {
 		  ZRet[0] = Z; //return Z
 		}
 		return sigmoid(Z);
 	}
     else {	
-        return math.multiply(Theta,X);
+        return matMultiply(matTranspose(Theta),X); //math.multiply(Theta,X);
 	}
 }
 
@@ -360,7 +671,7 @@ function h(Theta,X,logisticFlag,ZRet) {
  * @returns {*}
  */
 function err(Theta,X,Y,logisticFlag) {
-    return math.subtract(h(Theta,X,logisticFlag),Y);
+    return matSubtract(h(Theta,X,logisticFlag),Y);
 
 }
 
@@ -373,7 +684,7 @@ function err(Theta,X,Y,logisticFlag) {
  * @returns {*}
  */
 function sqErr(Theta,X,Y,logisticFlag)  {
-    return math.square(err(Theta,X,Y,logisticFlag));
+    return matSquare(err(Theta,X,Y,logisticFlag));
 }
 
 /**
@@ -386,11 +697,50 @@ function sqErr(Theta,X,Y,logisticFlag)  {
  * @param logisticFlag
  * @returns {*}
  */
-function gdUpdate(ThetaT,X,Y,alpha,lambda,logisticFlag) {
+function gdUpdate(ThetaT,X,Y,alpha,lambda,useMomentumFlag,useRMSPropFlag,useAdamFlag,Momentum,RMSProp,logisticFlag) {
     var Derivs = derivs(ThetaT,X,Y,lambda,logisticFlag);
-	var adjDerivs = math.multiply(Derivs,alpha);
-	var ThetaUpdated = math.subtract(math.transpose(ThetaT),adjDerivs);
-	return [ThetaUpdated,Derivs];
+	
+	var adjDerivs;
+
+	var newMomentum;
+	if ((useMomentumFlag) || (useAdamFlag)) {
+		
+		if (Momentum) {
+			newMomentum = matAdd(matMultiplyBy(Derivs,0.1),matMultiplyBy(Momentum,0.9));
+		}
+		else {
+			newMomentum = Derivs.clone(); //first time
+		}	
+	}
+	
+	
+	if (useMomentumFlag) {
+	
+		adjDerivs = matMultiplyBy(newMomentum,alpha);
+	}
+		
+	else if ((useRMSPropFlag) || (useAdamFlag))	 {
+		    var newRMSProp;
+			if (RMSProp) {
+				newRMSProp = matAdd(matMultiplyBy(matDotMultiply(Derivs,Derivs),0.1),matMultiplyBy(RMSProp,0.9));
+			}
+			else {
+				newRMSProp = Derivs.clone(); //first time
+				newRMSProp = matDotMultiply(newRMSProp,newRMSProp);
+			}
+			var newRMSPropSqrtInv = newRMSProp.map(function(el) {
+				return alpha / Math.sqrt(el);
+			});
+			adjDerivs = useAdamFlag ? matDotMultiply(newMomentum,newRMSPropSqrtInv) : matDotMultiply(Derivs,newRMSPropSqrtInv);
+	}	
+	else {
+	   adjDerivs = matMultiplyBy(Derivs,alpha);
+	}		
+		
+	
+		
+	var ThetaUpdated = matSubtract(matTranspose(ThetaT),adjDerivs);
+	return [ThetaUpdated,Derivs,newMomentum,newRMSProp];
 	
 	
 }
@@ -407,19 +757,39 @@ function gdUpdate(ThetaT,X,Y,alpha,lambda,logisticFlag) {
  
 function derivs(ThetaT,X,Y,lambda,logisticFlag) {
   
-    var Xt = math.transpose(X);
+    var Xt = matTranspose(X); //math.transpose(X);
+	
+	var Th = matTranspose(ThetaT);
 
-	var errs = err(ThetaT,X,Y,logisticFlag);
-    var Derivs = math.multiply(X,math.transpose(errs));
+	var errs = err(Th,X,Y,logisticFlag);
+    var Derivs = matMultiply(X,matTranspose(errs));
   
-    var sz = Y.size();
-    var m = sz[1];
+    //var sz = Y.size();
+    //var m = sz[1];
+	var m = matCols(Y);
 	
-	var RegPart = math.multiply(math.transpose(ThetaT),lambda);
-	RegPart.set([0,0],0); // don't regularise theta0
+	var RegPart = matMultiplyBy(Th,lambda);
+		
+	//RegPart.set([0,0],0); // don't regularise theta0
+	if (mlParams.useMathjs) {	
+				RegPart.set([0,0],0); //don't regularise theta0
+	}
+	else {
+			RegPart = RegPart.eleMap(function(el,row,col) {
+				if ((row == 0) && (col == 0)) {
+					return 0;
+				}
+				else {
+					return el;
+				}
+			});
+	}
+
+
 	
-	Derivs = math.add(Derivs,RegPart);
-    Derivs = math.multiply(Derivs,1 / m);
+	
+	Derivs = matAdd(Derivs,RegPart);
+    Derivs = matMultiplyBy(Derivs,1 / m);
    
     return Derivs;
     
@@ -429,10 +799,26 @@ function derivs(ThetaT,X,Y,lambda,logisticFlag) {
 * cost of regularisation term
 */
 function regCost(Theta,lambda,m) {
-		var RegCost = math.square(Theta);
-		RegCost = math.multiply(RegCost,(lambda / (2 * m)));
+		var RegCost = matSquare(Theta);
+		RegCost = matMultiplyBy(RegCost,(lambda / (2 * m)));
+			
+		if (mlParams.useMathjs) {	
+				RegCost.set([0,0],0); //don't regularise theta0
+		}
+		else {
+			RegCost = RegCost.eleMap(function(el,row,col) {
+				if ((row == 0) && (col == 0)) {
+					return 0;
+				}
+				else {
+					return el;
+				}
+			});
+		}
+			
+		
 				
-		RegCost.set([0,0],0); //don't regularise theta0
+				
 		
 		return RegCost;
 	
@@ -464,11 +850,11 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 	     var Cost;
 		 
 		 var m;
-		 if (Y.size().length == 1) { //vector
-		    m = Y.size()[0];
+		 if (matIsVector(Y)) { //vector
+		    m = matRows(Y); //Y.size()[0];
 		 }
 		 else {
-			m =  Y.size()[1];
+			m =  matCols(Y); //Y.size()[1];
 		 }
 			 
 		 //var m = Y.size()[0];
@@ -483,34 +869,39 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 			 }
 			 
 			 
-			 var LogH = math.map(H,function(el) {
+			 //var LogH = math.map(H,function(el) {
+			var LogH = H.map(function(el) {	 
 				 if (el == 0) {
-					 return 1e-20;
+					 return math.log(1e-20);
 				 }
 				 else {
 				   return math.log(el);
 				 }
 			 });
 			 
-			 var Cost1 = math.dotMultiply(Y,LogH);
-             Cost1 = math.multiply(Cost1,-1);			 
+			 var Cost1 = matDotMultiply(Y,LogH); //math.dotMultiply(Y,LogH);
+             Cost1 = matMultiplyBy(Cost1,-1); //math.multiply(Cost1,-1);			 
 
-			 var OtherLogH = math.map(H,function(el) {
+			 //var OtherLogH = math.map(H,function(el) {
+		     var OtherLogH = H.map(function(el) {	 
 				 if (1 - el == 0) {
-					 return 1e-20;
+					 return math.log(1e-20);
 				 }
 				 else {
 				     return math.log(1 - el);
 				 }
 			 });
-			 var OtherY = math.map(Y,function(el) {
+			 
+			 //var OtherY = math.map(Y,function(el) {
+			 var OtherY = Y.map(function(el) {	 
 				 return 1 - el;
 			 });
-			 var Cost2 = math.dotMultiply(OtherY,OtherLogH);
+			 
+			 var Cost2 = matDotMultiply(OtherY,OtherLogH); //math.dotMultiply(OtherY,OtherLogH);
 			 
 			 var RegCost = regCost(Theta,lambda,m);
 			 
-			 return [math.multiply((math.subtract(Cost1,Cost2)),1 / m),RegCost];
+			 return [matMultiplyBy((matSubtract(Cost1,Cost2)),1 / m),RegCost];
 			 
 		 }
 		 else {
@@ -518,9 +909,9 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 			
 			var RegCost = regCost(Theta,lambda,m);
 			
-		    Cost = math.multiply(SqErrCost,1 / (2 * m));   
+		    Cost = matMultiplyBy(SqErrCost,1 / (2 * m));   
 		 }
-         var	 costSum = math.sum(Cost) + math.sum(RegCost);
+         var	 costSum = matSum(Cost) + matSum(RegCost);
 		 
          return [Cost,RegCost];
 
@@ -537,15 +928,20 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
    var scaledMat; // =  matrixToArray(math.flatten(mRow(mat,0)));
    
    
-   var rows = mat.size()[0];
-   var cols = mat.size()[1];
+   var rows = matRows(mat); //mat.size()[0];
+   var cols = matCols(mat); //mat.size()[1];
    var scaleFactors = [];
    scaleFactors.push([1,0,1]);
    console.log('starting scale loop');
 
    var row = [];
    
-   mat.forEach(function(el,ind) {
+  // mat.forEach(function(el,ind) {
+   var dummy = mat.eleMap(function(el,r,c) {
+       var ind = [r,c];
+   
+       
+	   
 	   if (ind[1] == 0) {
 		   row = [el];
 	   }
@@ -553,7 +949,7 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 		   row.push(el);
 	   }
 	   
-	   if (ind[1] == mat.size()[1] - 1){
+	   if (ind[1] == matCols(mat)  - 1){
 		   
 		   
 		   if (ind[0] == 0) { //first row
@@ -578,6 +974,8 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 			   }
 	   }
 	   
+	   return el;
+	   
 		      
 		   
 	   
@@ -586,7 +984,9 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
   
    
    
-   scaledMat = mat.map(function(el,ind) {
+   //scaledMat = mat.map(function(el,ind) {
+	scaledMat = mat.eleMap(function(el,row,col) {
+       var ind = [row,col];		
 	   var r = ind[0];
 	   
 	   var newEl;
@@ -751,20 +1151,112 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
  
  }
  
+ /**
+ *
+ */ 
+function crossValidateOrTest(testFlag,X,Y,ThetaUnrolled,mlType,scaleFactors,arch,lambda) {
+
+    if (X == null){
+		return [0,''];
+	}
+	
+	var costCVExReg = 0;
+	
+	var res = featureScale(X,scaleFactors);
+	var XScaled = res[0];
+
+//      applyInput();
+	 
+	  var predAr = [];
+	  
+	  if (mlType === 'neu') {
+		  
+     	  var ThAr = matrixToArray(ThetaUnrolled);
+		  var ThStr = arrayToString(ThAr);
+	  
+		  var mlNNCV = new NeuralNetwork(arch,XScaled,Y,X,scaleFactors,0,lambda,ThStr);
+		  mlNNCV.forward();
+		  
+		  var A = mlNNCV.layers[mlNNCV.layers.length - 1].A;
+	
+		  
+		  var predStr = '';
+		 
+		  for (i = 0;i < matCols(A);++i) {
+			  predStr = '';
+			  for (var r = 0;r < matRows(A);++r) {
+				  predStr += matGet(A,r,i).toFixed(3);
+				  if (r < matRows(A) - 	1) {
+					 predStr += ' ';
+				  }			  
+			  }
+			  predAr.push(predStr);
+			  
+		  }
+		  
+		  var res = mlNNCV.checkAccuracy();
+		  var perc = res[0] / res[1] * 100;
+		  
+		  costCVExReg = matSum(mlNNCV.getCost('C'));
+
+          var str = (testFlag === 'C') ? 'CV Cost: ' : 'Test Cost: ';
+		  str += mlNNCV.getCost('T') + '(exReg: ' + costCVExReg.toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
+//		  el('cvBannerDiv').innerHTML = str;  //+ mlNNCV.getCost('T') + '(exReg: ' + matSum(mlNNCV.getCost('C')).toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
+          //updateLog(str + mlNNCV.getCost('T') + '(exReg: ' + matSum(mlNNCV.getCost('C')).toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%');	
+		  return [costCVExReg,str];
+	  }
+	  
+	  else {
+
+		
+		var P;
+		if (mlParams.module === 'log') {
+		   P =  predict(ThetaUnrolled,XScaled); 
+		}
+		else {
+		  P = h(ThetaUnrolled,XScaled);	
+		}
+		
+		predAr = mRow(P,0,true);
+		predAr = predAr.map(function(el) {
+			return el.toFixed(3);
+		});
+		
+		var res = costFunction(ThetaUnrolled,XScaled,Y,lambda,mlType);
+		costCVExReg = matSum(res[0]);
+		var totCVCost   = matSum(res[0]) + matSum(res[1]);
+		
+		var str = (testFlag === 'C') ? 'CV Cost: ' : 'Test Cost: ';
+		str += totCVCost + '(exReg: ' + costCVExReg.toFixed(3)  + ')'  // + ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
+		//el('cvBannerDiv').innerHTML = str;  //+ mlNNCV.getCost('T') + '(exReg: ' + matSum(mlNNCV.getCost('C')).toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%';
+        //updateLog(str + mlNNCV.getCost('T') + '(exReg: ' + matSum(mlNNCV.getCost('C')).toFixed(3)  + ')' +  ' Acc: '  + res[0] + '/' + res[1] + ' ' + perc.toFixed(3) + '%');	
+		return [costCVExReg,str];
+        
+		
+		
+	  }
+	  
+		  
+		  
+	  
+	
+}
+
+ 
  function factorYForOneVsAll(mlParams, Y) {
 	 
 	    var YFactored = Y.clone();
 	 
-	    for (var i = 0;i < Y.size()[1];++i) {
+	    for (var i = 0;i < matCols(Y);++i) {
 			   if ((mlParams.module == 'log') && (mlParams.numLogClasses > 2) && (mlParams.currClassNum > -1)) {
-				     var yVal  = YFactored.get([0,i]);
+				     var yVal  =  matGet(YFactored,0,i); //YFactored.get([0,i]);
 		             if (yVal == mlParams.currClassNum + 1) { //input class y vals are one based 
 		                   yVal = 1;
 		             }
 		             else {
 			               yVal = 0;
 		             }
-					 YFactored.set([0,i],yVal); //math.set(YFactored,[i],yVal);
+					 matSet(YFactored,0,i,yVal); //YFactored.set([0,i],yVal); //math.set(YFactored,[i],yVal);
 					 
 			   }
 		   
@@ -853,21 +1345,22 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
       X = ret[0];
  	}
   
-   return [X,Y, XUnscaled,scaleFactors,YOrig];   
+   retu	rn [X,Y, XUnscaled,scaleFactors,YOrig];   
  
  }
  */
  
  function solveAnalytically(X,Y) {
  
- var Xt = math.transpose(X);
+ var Xt = matTranspose(X); //math.transpose(X);
 
- var A = math.multiply(Xt,X);
- A = math.inv(A);
- A = math.inv(A);
- A = math.multiply(A,Xt);
+ var A = matMultiply(Xt,X); //math.multiply(Xt,X);
  
- A = math.multiply(A,math.transpose(Y));
+ A = matInverse(A); //math.inv(A);
+ 
+ A = matMultiply(A,Xt); //math.multiply(A,Xt);
+ 
+ A = matMultiply(A,matTranspose(Y)); //math.multiply(A,math.transpose(Y));
  
  return A;
  
@@ -885,19 +1378,32 @@ function thetaUnscale(Theta,scaleFactors) {
 	var constAdj = 0;
 	var ThetaUnscaled = [];
 	
-	var n = Theta.size()[0] - 1;
+	var n = matRows(Theta) - 1;
+	
+	var firstElements = [];
+	
+	var dummy = Theta.eleMap(function(el,row,col) {
+		if (col == 0) {
+			firstElements.push(el);
+		}
+		
+		return el;
+	});
 	
 	for (var a = 1;a < n+1;++a) {
-			var ThetaUnscaledEntry =  Theta.subset(math.index(a,0)) / scaleFactors[a][1];
+			//var ThetaUnscaledEntry =  Theta.subset(math.index(a,0)) / scaleFactors[a][1];
+			var ThetaUnscaledEntry =  firstElements[a] / scaleFactors[a][1];
 			ThetaUnscaled.push(ThetaUnscaledEntry);
-			constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] * Theta.subset(math.index(a,0));
+			constAdj += (scaleFactors[a][0] * -1) / scaleFactors[a][1] *  firstElements[a]; //Theta.subset(math.index(a,0));
 	}
 
-	ThetaUnscaled.unshift(Theta.subset(math.index(0,0)) + constAdj);
+	//ThetaUnscaled.unshift(Theta.subset(math.index(0,0)) + constAdj);
+	ThetaUnscaled.unshift(firstElements[0] + constAdj);
+	
 	ThetaUnscaled = ThetaUnscaled.map(function(el) {
 		return [el];
 	});
-	return math.matrix(ThetaUnscaled);
+	return matCreate(ThetaUnscaled); //math.matrix(ThetaUnscaled);
 
 
 }
@@ -909,7 +1415,7 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 	
 	var dashInfo = '';
 	
-	dashInfo += 'Iter: ' +  iterNum +  ' Cost: ' + (math.sum(Cost) + math.sum(RegCost)) + ' (exReg: ' + math.sum(Cost).toFixed(3)  + ')' + ' Alpha: ' + alpha.toFixed(3) + '<br>';
+	dashInfo += 'Epoch: ' +  iterNum +  ' Cost: ' + (matSum(Cost) + matSum(RegCost)) + ' (exReg: ' + matSum(Cost).toFixed(3)  + ')' + ' Alpha: ' + alpha.toFixed(3) + '<br>';
 	
 	
 	if ((mlParams.module === 'log') && (mlParams.numLogClasses > 2)) {
@@ -922,7 +1428,7 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 		var num = 0;var dem = 1;
 		
 		if (mlParams.module == 'log') {
-			var acc = accuracy(math.transpose(minTheta),X,Y);
+			var acc = accuracy(minTheta,X,Y);
 			num = acc[0];
 			dem = acc[1];
 		}
@@ -953,10 +1459,12 @@ function getDashboardInfo(mlParams,nn,iterNum,alpha,minTheta,minThetaUnscaled,X,
 		
 	}
 	else {
-			dashInfo += '<br>Model h(Theta) = ' + math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d);
+		   var firstElements = mCol(minThetaUnscaled,0,true);
+		   
+			dashInfo += '<br>Model h(Theta) = ' +  firstElements[0].toFixed(d); //math.subset(minThetaUnscaled,math.index(0,0)).toFixed(d);
 			
 			for (var i = 1;i < n+1;++i) {
-			     dashInfo += ' + ' + math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i;
+			     dashInfo += ' + ' + firstElements[i].toFixed(d) + 'x' + i; //math.subset(minThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i;
 			}
 			
 	}
@@ -1005,10 +1513,14 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 	ThetaUnscaled = cData.ThetaUnscaled;
 	scaleFactors = cData.scaleFactors;
 	
+	Momentum = cData.Momentum;
+	RMSProp = cData.RMSProp;
+	
 	n = cData.n;
 	
 	iters = cData.iters;
 	costAr = cData.costAr;
+	costArCV = cData.costArCV;
 	
 	itersSparse = cData.itersSparse;
 	costArSparse = cData.costArSparse;
@@ -1062,16 +1574,16 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 		
 		else {
 			if (mlParams.diagnosticsFlag) {
-			   progCallback('diagnosticDiv','<br><br>Model h(Theta) = ' + math.subset(ThetaUnscaled,math.index(0,0)).toFixed(d));
+			   progCallback('diagnosticDiv','<br><br>Model h(Theta) = ' + matGet(ThetaUnscaled,0,0).toFixed(d));
 				for (var i = 1;i < n+1;++i) {
-				   progCallback('diagnosticDiv',' + ' + math.subset(ThetaUnscaled,math.index(i,0)).toFixed(d) + 'x' + i); 
+				   progCallback('diagnosticDiv',' + ' + matGet(ThetaUnscaled,i,0).toFixed(d) + 'x' + i); 
 				}
 					
 				progCallback('diagnosticDiv','<br>Model Cost: ' + currCostSum);
 			
-				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + Theta.subset(math.index(0,0)).toFixed(d));
+				progCallback('diagnosticDiv','<br>(scaled:  Model h(Theta) = ' + matGet(Theta,0,0).toFixed(d));
 				for (var i = 1;i < n+1;++i) {
-				   progCallback('diagnosticDiv',' + ' + Theta.subset(math.index(i,0)).toFixed(d) + 'x' + i);
+				   progCallback('diagnosticDiv',' + ' + matGet(Theta,i,0).toFixed(d) + 'x' + i);
 				}
 				progCallback('diagnosticDiv',')');
 				progCallback('diagnosticDiv','<br>Alpha: ' +  mlParams.alpha) ;
@@ -1082,13 +1594,13 @@ function learnLoopDone(curr,maxIters,mlParams,X,Y,progCallback,continueData,cDat
 	}	
 	
  	
-	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,YOrig,costArSparse,itersSparse];
+	return [costAr,iters,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,YOrig,costArSparse,itersSparse,costArCV];
     
 	
 }
 
 
-function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig) {
+function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig,Xcv,Ycv) {
 	++curr;
 	
 /*
@@ -1099,6 +1611,12 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	}
 */	
 	var errMsg = '';
+	
+	
+	if (progCallback && (mlParams.useConjugateGradientDriver || mlParams.sgdFlag)) {
+		progCallback('subProgressDiv','Start epoch',true);
+	}
+
 	
 	
 //get current loop data	
@@ -1129,10 +1647,14 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	ThetaUnscaled = cData.ThetaUnscaled;
 	scaleFactors = cData.scaleFactors;
 	
+	Momentum = cData.Momentum;
+	RMSProp = cData.RMSProp;
+	
 	n = cData.n;
 	
 	iters = cData.iters;
 	costAr = cData.costAr;
+	costArCV = cData.costArCV;
 	
 	itersSparse = cData.itersSparse;
 	costArSparse = cData.costArSparse;
@@ -1159,7 +1681,9 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	}
 	
 	
-	
+	if (progCallback && (mlParams.useConjugateGradientDriver || mlParams.sgdFlag)) {
+		progCallback('subProgressDiv','Calcing cost',true);
+	}
 	
 	if (mlParams.module == 'neu') {
 		nn.forward();
@@ -1168,41 +1692,72 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 		
 	}
 	else {
-		var res =  costFunction(math.transpose(Theta),X,Y,mlParams.lambda,mlParams.module);
+		var res =  costFunction(Theta,X,Y,mlParams.lambda,mlParams.module);
 		Cost = res[0];
 		RegCost = res[1];
 		
 	}
 
 	
-	currCostSum = math.sum(Cost) + math.sum(RegCost);
+	currCostSum = matSum(Cost) + matSum(RegCost);
+	
+	
 	
 	
 	console.log('iter: ' + curr);
 	var counterUpdate = 2;
 	var graphUpdate = 10;
 	
-	if (mlParams.useLineSearchDriver || mlParams.useConjugateGradientDriver) {
+	if ((mlParams.useLineSearchDriver || mlParams.useConjugateGradientDriver) || mlParams.sgdFlag) {
 		counterUpdate = 1;
 		
 	}
 	
+	var cvRes = [];
+		
+	if (mlParams.module === 'neu') {
+		cvRes = crossValidateOrTest('C',Xcv,Ycv,nn.unrollThetas(),mlParams.module,nn.scaleFactors,nn.architecture,nn.lambda);
+	
+	}
+	else {
+		cvRes = crossValidateOrTest('C',Xcv,Ycv,Theta,mlParams.module,scaleFactors,null,mlParams.lambda);
+	}
 	
 	if (curr % counterUpdate == 0) {
-		if (progCallback) {
+		
+		
+	  	if (progCallback) {
+		   if (mlParams.useConjugateGradientDriver || mlParams.sgdFlag) {
+		      progCallback('subProgressDiv','Getting dashinfo',true);
+	       }
 			
 			var dashInfo = getDashboardInfo(mlParams,nn,curr,alpha,Theta,ThetaUnscaled,X,Y,n,Cost,RegCost,errMsg);
 			progCallback('rightBannerDiv',dashInfo,true);
-			
+				
 		}
+		
+		var str;
+		
+		if (mlParams.useConjugateGradientDriver) {
+		      progCallback('subProgressDiv','Cross validating',true);
+	    }
+		
+	
+		progCallback('cvBannerDiv',cvRes[1],true);
+		progCallback('logDiv',dashInfo + ' \n' + cvRes[1]); //console.log('str: ' + str);
 	}
 
 	costAr.push(currCostSum);   //(math.sum(Cost) + math.sum(RegCost));
 	iters.push(curr);
+	costArCV.push(cvRes[0]);
 
 
 	if (curr % graphUpdate == 0) {
 		if (progCallback) {
+			
+		   if (mlParams.useConjugateGradientDriver || mlParams.sgdFlag) {
+		      progCallback('subProgressDiv','Prepare graph update',true);
+	       }
 			
 			var costArRed,itersRed;
 			
@@ -1249,7 +1804,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 				//progCallback('chart',null,true);
 			}
 			else {
-			  progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,null,costArSparse,itersSparse]);
+			  progCallback('chart',[costArRed,itersRed,ThetaIdeal,IdealCost,X,Y,Theta,XUnscaled,ThetaUnscaled,scaleFactors,null,costArSparse,itersSparse,costArCV]);
 			}
 		}
 	
@@ -1370,52 +1925,104 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 
 	var logisticFlag = (mlParams.module == 'log');
 	
-	if (mlParams.module == 'neu') {
-		nn.backProp();
-		if (mlParams.useLineSearchDriver) {
-			var res = nn.wolfeLineSearch();
-			alpha = res[0];
-			nn.alpha = res[0];
-			nn.updateTheta(res[1].x);
-			
-		}
-		else if (mlParams.useConjugateGradientDriver) {
-			if (progCallback) {
-			    progCallback('subProgressDiv','Start conj',true);
-			}
-		            
-			var res = nn.conjugateGradientStep(nn.pk);
+	var Xsvd,Ysvd,nnsvd, XTAr, YTAr; //used for SGD
+	var numBatches;
 	
-		    if (progCallback) {
-			    progCallback('subProgressDiv','End conj',true);
-			}	
+	if (mlParams.sgdFlag) {
+		XTAr = matrixToArray(matTranspose(X));
+		YTAr = matrixToArray(matTranspose(Y));
+		numBatches = matCols(X) % mlParams.sgdBatchSize == 0 ? matCols(X)  / mlParams.sgdBatchSize : Math.ceil(matCols(X)  / mlParams.sgdBatchSize);
+		Xsvd = X.clone();
+		Ysvd = Y.clone();
+	}
+	else {
+		numBatches = 1;
+	}
+	
+	for (var b = 0;b < numBatches;++b) {
+		var bPl = b + 1;
+		
+		if (numBatches == 1) {
 			
-			if (res[0]) {
-			   alpha = res[0];	
-			   nn.alpha = res[0];
-			   nn.updateTheta(res[1].x);
-			   nn.pk = res[2];
-			   pk = res[2];
-			   
-			}
-			else {
-				alpha = 1;
-				nn.alpha = 1; //reset
-				nn.pk = res[2];
-				pk = res[2];
-				
-			}
 			
 		}
 		else {
-		    nn.updateTheta();
+			
+			if ((progCallback) && (mlParams.sgdFlag)) {
+				progCallback('subProgressDiv','Batch ' + bPl + ' Start',true);
+			}
+			
+			var thisBatchFrom = b * mlParams.sgdBatchSize;
+			var thisBatchTo   = (b+1) * mlParams.sgdBatchSize;
+			X = matTranspose(matCreate(XTAr.slice(thisBatchFrom,thisBatchTo)));
+			Y = matTranspose(matCreate(YTAr.slice(thisBatchFrom,thisBatchTo)));
 		}
-		//nn.gradientCheck(); uncomment if checking gradient manually
-		Theta = nn.unrollThetas();
+		
+		if (mlParams.module == 'neu') {
+			nn.backProp();
+			if (mlParams.useLineSearchDriver) {
+				var res = nn.wolfeLineSearch();
+				alpha = res[0];
+				nn.alpha = res[0];
+				nn.updateTheta(res[1].x);
+				
+			}
+			else if (mlParams.useConjugateGradientDriver) {
+				if (progCallback) {
+					progCallback('subProgressDiv','Batch ' + bPl + ' Start conj',true);
+				}
+						
+				var res = nn.conjugateGradientStep(nn.pk,bPl,mlParams.useMomentumDriver,mlParams.useRMSPropDriver);
+		
+				if (progCallback) {
+					progCallback('subProgressDiv','Batch ' + bPl + ' End conj',true);
+				}	
+				
+				if (res[0]) {
+				   alpha = res[0];	
+				   nn.alpha = res[0];
+				   nn.updateTheta(res[1].x);
+				   nn.pk = res[2];
+				   pk = res[2];
+				   
+				}
+				else {
+					alpha = 1;
+					nn.alpha = 1; //reset
+						nn.pk = res[2];
+					pk = res[2];
+					
+				}
+				
+			}
+			else {
+				nn.updateTheta(null,mlParams.useMomentumDriver,mlParams.useRMSPropDriver,mlParams.useAdamDriver);
+			}
+			//nn.gradientCheck(); uncomment if checking gradient manually
+			Theta = nn.unrollThetas();
+		}
+		else {
+		   var res = gdUpdate(matTranspose(Theta),X,Y,alpha,mlParams.lambda,mlParams.useMomentumDriver,mlParams.useRMSPropDriver,mlParams.useAdamDriver,Momentum,RMSProp,logisticFlag);
+		   Theta = res[0];
+		   Momentum = res[2];
+		   RMSProp = res[3];
+		}
+		
+		if (numBatches == 1) {
+			
+			
+		}
+		else {
+			
+			if ((progCallback) && (mlParams.sgdFlag)) {
+				progCallback('subProgressDiv','Batch ' + bPl + ' End',true);
+			}
+		}
 	}
-	else {
-	   var res = gdUpdate(math.transpose(Theta),X,Y,alpha,mlParams.lambda,logisticFlag);
-	   Theta = res[0];
+	
+	if (mlParams.sgdFlag) { //restore full set
+		X = Xsvd;
+		Y = Ysvd;
 	}
 	
 	
@@ -1440,6 +2047,12 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 				ThetaUnscaled = Theta.clone();
 			}
 	}
+	
+	
+	if (progCallback && (mlParams.useConjugateGradientDriver || mlParams.sgdFlag)) {
+		progCallback('subProgressDiv','End epoch',true);
+	}
+	
 			
 			
 	 
@@ -1463,6 +2076,9 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	cData.prevTheta = prevTheta;
 	cData.prevThetaUnscaled = prevThetaUnscaled;
 	
+	cData.Momentum = Momentum;
+	cData.RMSProp = RMSProp;
+	
 	cData.nn = nn;
 	
 	cData.Theta = Theta;
@@ -1475,6 +2091,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	cData.iters = iters;
 	cData.costAr = costAr;
+	cData.costArCV = costArCV;
 	
     cData.itersSparse = itersSparse;
 	cData.costArSparse = costArSparse;
@@ -1522,6 +2139,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 			//msg.YOrig = JSON.stringify(res[10]); No longer return this
 			msg.costArSparse = res[11];
 			msg.itersSparse = res[12];
+			msg.costArCV = res[13];
             msg.finType = finType;
 			//postMessage({'action':'fin','elToUpdate':'blog','mess':'<br>finished','minT':JSON.stringify(res[4])});	
 			postMessage(msg);
@@ -1534,7 +2152,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	}	
 	else {
 		setTimeout(function() {
-			learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
+			learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig,Xcv,Ycv);
 		},0);
 	}
 		
@@ -1548,7 +2166,7 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
  * @param progCallback
  * @returns {*}
  */
-function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
+function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled,Xcv,Ycv) {
   
    var minCost = null;
    var minReg = null;
@@ -1587,10 +2205,10 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 	   Y = factorYForOneVsAll(mlParams,YOrig); 
    }
   
-   var Xt = math.transpose(X);
+   var Xt = matTranspose(X); //math.transpose(X);
    
-   var m = Y.size()[1];
-   var n = X.size()[0] -1;
+   var m = matCols(Y); //Y.size()[1];
+   var n = matRows(X) -1;
    
    var logisticFlag = (mlParams.module == 'log');
    
@@ -1607,35 +2225,36 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
  
    var ThetaIdeal,IdealCost;
    if ((mlParams.solveAnalytically) && (mlParams.module == 'reg')) {
-       ThetaIdeal = solveAnalytically(math.transpose(XUnscaled),Y);
+       ThetaIdeal = solveAnalytically(matTranspose(XUnscaled),Y);
 	   var d = 4;
 	   if (progCallback) {
 		   if (mlParams.diagnosticsFlag) {
-	           progCallback('diagnosticDiv','<br>Ideal h(Theta) = ' +  math.subset(ThetaIdeal,math.index(0,0)).toFixed(d)); 
+	           progCallback('diagnosticDiv','<br>Ideal h(Theta) = ' +  matGet(ThetaIdeal,0,0).toFixed(d)); 
 	    
                for (var i = 1;i < n+1;++i) {
-			      progCallback('diagnosticDiv',' + ' +  math.subset(ThetaIdeal,math.index(i,0)).toFixed(d) + 'x' + i); 
+			      progCallback('diagnosticDiv',' + ' +  matGet(ThetaIdeal,i,0).toFixed(d) + 'x' + i); 
 	           }
 		   }
 		}
-	  IdealCost =  costFunction(math.transpose(ThetaIdeal),XUnscaled,Y,0,mlParams.module)[0];    //zero lambda
+	  IdealCost =  costFunction(ThetaIdeal,XUnscaled,Y,0,mlParams.module)[0];    //zero lambda
 	  if (progCallback) {
 		   if (mlParams.diagnosticsFlag) { 
-	          progCallback('diagnosticDiv','<br> Ideal Cost: ' + math.sum(IdealCost));
+	          progCallback('diagnosticDiv','<br> Ideal Cost: ' + matSum(IdealCost));
 		   }
 	      
 		}   
    }
    else {
-	   IdealCost = math.matrix([0,0]);
-	   ThetaIdeal = math.matrix([0,0]);
-	   
+	   IdealCost = matCreate([0,0]); //math.matrix([0,0]);
+	   ThetaIdeal = matCreate([0,0]); //math.matrix([0,0]);
+		
    }
    
    
    
    var iters = [];
    var costAr = [];
+   var costArCV = [];
    
    var itersSparse = [];
    var costArSparse = [];
@@ -1647,9 +2266,10 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 	   costAr = continueData[1];
 	   itersSparse = continueData[2];
 	   costArSparse = continueData[3];
-       if (continueData[4] === 'F') {
+       if (continueData[5] === 'F') {
            maxIters+= iters.length; //if fully finished last time, then continues for another maxiters
        }
+	   costArCV = continueData[4];
    }
 
    var iterNum = iters.length;
@@ -1667,12 +2287,14 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 	
 	var prevTheta, prevThetaUnscaled;
 	
+	var Momentum, RMSProp;
+	
 	
 	var nn;
    
     if (mlParams.module == 'neu') {
 		
-		 var arch = (mlParams.architecture.length  == 0) ? [X.size()[0] - 1,X.size()[0] +1,Y.size()[0]] : mlParams.architecture;
+		 var arch = (mlParams.architecture.length  == 0) ? [matRows(X) - 1,matRows(X)+1,matRows(Y)] : mlParams.architecture;
 
          nn = new NeuralNetwork(arch,X,Y,XUnscaled,scaleFactors,mlParams.alpha,mlParams.lambda,mlParams.initTheta,progCallback);
 	     Theta = nn.unrollThetas();
@@ -1693,7 +2315,7 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 			 return [parseFloat(el)];
 		});
 
-		Theta = math.matrix(startTheta);
+		Theta = matCreate(startTheta); //math.matrix(startTheta);
 	}
 	
 //	minTheta = Theta.clone();
@@ -1702,7 +2324,7 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 	var ThetaUnscaled;
 	if (mlParams.module == 'neu') {
 		//TODO Need to implement unscaling for neural network
-		ThetaUnscaled =Theta.clone();
+		ThetaUnscaled = Theta.clone();
 	}
 	
 	else {
@@ -1754,10 +2376,14 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 	cData.ThetaUnscaled = ThetaUnscaled;
 	cData.scaleFactors = scaleFactors;
 	
+	cData.Momentum = Momentum;
+	cData.RMSProp = RMSProp;
+	
 	cData.n = n;
 	
 	cData.iters = iters;
 	cData.costAr = costAr;
+	cData.costArCV = costArCV;
 	
 	cData.itersSparse = itersSparse;
 	cData.costArSparse = costArSparse;
@@ -1771,7 +2397,7 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled) {
 	
 // end set up loop curr data
 	
-	learnLoop(iterNum,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig);
+	learnLoop(iterNum,maxIters,mlParams,X,Y,progCallback,continueData,cData,YOrig,Xcv,Ycv);
 	
 	/*	
 	for (var i = 0;i < maxIters;++i) {
@@ -2081,7 +2707,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	this.pk = null;
     
     this.isVisual = false;
-    if (this.X.size()[0] == 785) {
+    if (matRows(this.X) == 785) {
         //assume MNIST
         this.isVisual = true;
     }
@@ -2142,7 +2768,12 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		var ThArUnrolled;
 		
         if (ThVec) {
-			ThArUnrolled = matrixToArray(ThVec);
+			if (mlParams.useMathjs) {
+			   ThArUnrolled = matrixToArray(ThVec); //actually a vector
+			}
+			else {
+			   ThArUnrolled = mCol(ThVec,0,true); //ThVec.data[0];  //actually a 1 dim row matrix (or is it col matrix?)
+			}
 		}
 		else {
 			ThArUnrolled = this.initTheta.split(' ');
@@ -2161,8 +2792,15 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				var thRows = unitsThisLayer + 1;
 		    	var thCols = svdThis.architecture[i+1];
 				var thAr = ThArUnrolled.splice(0,thRows * thCols);
-				var thMat = math.matrix(thAr);
-				var thMat = math.reshape(thMat,[thRows,thCols]);
+				var thMat;
+				if (mlParams.useMathjs) {
+					thMat = math.matrix(thAr);
+					thMat = math.reshape(thMat,[thRows,thCols]);
+				}
+				else {
+					thMat = Matrix.reshapeFrom(thAr,thRows,thCols);
+					
+				}
 				ThMats.push(thMat);
 	
 			}
@@ -2186,25 +2824,28 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
         var recall = null;
         var f1Score = null;
 
-        if (Y.size()[0] == 1) { //binary
-            P.forEach(function(el,i) {
+        if (matRows(Y) == 1) { //binary
+            //P.forEach(function(el,i) {
+			var dummy = P.eleMap(function(el,r,c) {	
+			   var ind = [r,c];
 
-               if ((el == 0)  && (Y.get(i) == 0)) {
+               if ((el == 0)  && (matGet(Y,r,c) == 0)) {
                    PosNeg.push([0,0,1,0]); // true neg
                }
-               else if ((el == 0)  && (Y.get(i) == 1)) {
+               else if ((el == 0)  && (matGet(Y,r,c) == 1)) {
                    PosNeg.push([0,0,0,1]); // false neg
                }
-               else if ((el == 1)  && (Y.get(i) == 0)) {
+               else if ((el == 1)  && (matGet(Y,r,c) == 0)) {
                     PosNeg.push ([0,1,0,0]); // false pos
                 }
                 else  {
                     PosNeg.push([1,0,0,0]); // true pos
                 }
 
+				return el;
             });
 
-            var PosNegSum = math.multiply(math.ones(Y.size()[1]),PosNeg);
+            var PosNegSum = math.multiply(math.ones(matCols(Y)),PosNeg);
 
             if (PosNegSum.get([0]) + PosNegSum.get([1]) == 0) {
                 prec = 0;
@@ -2231,28 +2872,28 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
         }
 		
 		
-		var D = math.subtract(P,Y);
+		var D = matSubtract(P,Y);
 			
-		var AbsD = math.map(D,function(el) {
+		var AbsD = D.map(function(el) {
 				return Math.abs(el);
 		        });
 		  	
-		var onesM = math.matrix(math.ones(AbsD.size()[0]));
+		var onesM = matOnes(1,matRows(AbsD));
 			
-		var Prod = math.multiply(onesM,AbsD);
+		var Prod = matMultiply(onesM,AbsD);
 		
 		
-		Prod = math.map(Prod,function(el) {
+		Prod = Prod.map(function(el) {
 			return el == 0 ? 1 : 0;
 	    });
 		
-		var numCorrect = math.sum(Prod);
+		var numCorrect = matSum(Prod);
 		
-		Prod = math.map(Prod,function(el) {
+		Prod = Prod.map(function(el) {
 			return el == 0 ? 1 : 0;
 	    });
 		
-		return [numCorrect,Y.size()[1],prec,recall,f1Score,math.reshape(Prod,[1,Prod.size()[0]])];
+		return [numCorrect,matCols(Y),prec,recall,f1Score,Prod]; //math.reshape(Prod,[1,matRows(Prod)])];
 		
 		
 		
@@ -2268,30 +2909,39 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		var P;
 		
 		if (this.numOutputs == 1) {
-			P = math.map(A,function(el,i) {
+			P = A.map(function(el) {
 				return el > 0.5 ? 1 : 0;
 			});
 			
 		}
 		else  {
-			var Maxvals = math.max(A,0);
+			var Maxvals;
+			if (mlParams.useMathjs) {
+				Maxvals = math.max(A,0);
+			}
+			else {
+				Maxvals = math.max(A.toArray(),0);
+				Maxvals = matCreate(Maxvals);
+			}
 			
 			var colNum = 0;
-		    P = math.map(A,function(el,i) {
-				
-				if (el == Maxvals.get([colNum])) {
+		    P = A.eleMap(function(el,r,c) {
+				var ind = [r,c];
+					
+				if (el == matGet(Maxvals,0,c)) {
 					el = 1;
 				}
 				else {
 					el = 0;
 				}
-				
+				/*
 				if (colNum == A.size()[1] - 1) {
 					colNum = 0;
 				}
 				else {
 					++colNum;
 				}
+				*/
 				
 				return el;
 				
@@ -2306,7 +2956,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		
 		
 		return P;
-		
+			
 		
 		
 		
@@ -2395,7 +3045,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 					 }
 					 else {
 						 
-					    return matrixToArray(this.Cost);
+					    return this.Cost; //return matrixToArray(this.Cost);
 					 }
 				 }
 				 else {
@@ -2426,7 +3076,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
 			case 'RM':
 				if (this.RegCost) {
-					return matrixToArray(this.RegCost);
+					return this.RegCost; //return matrixToArray(this.RegCost);
 				}
 				else {
 					return [];
@@ -2437,8 +3087,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				 
 		    default: //TODO
 				if ((this.RegCost) && (this.Cost)) {
-					 var costSum = math.sum(this.Cost);
-					 var regSum =  math.sum(this.RegCost);
+					 var costSum = matSum(this.Cost);
+					 var regSum =  matSum(this.RegCost);
 				     return (costSum + regSum); 
 				}
 				 else {
@@ -2460,7 +3110,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 
 	 
 	 this.unrollThetas = function(excludeBias) {
-		 //unroll all Thetas into a vector
+		 //unroll all Thetas into a vector (returned as 1 dim array)
 		 
 		 //If excludeBias is true, sets all bias theta values to zero (so not included in regularised cost
  		 //TODO !! 
@@ -2480,10 +3130,19 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			   	     }
 			    });
 			 }
+			 
 			 Th	 = math.flatten(Th);
 			 unrolled = unrolled.concat(Th);
+			 
 		 }
-		 return math.matrix(unrolled);
+		 if (mlParams.useMathjs) {
+			return  unrolled;
+		 }
+		 else {
+			var mat = Matrix.reshapeFrom(unrolled,unrolled.length,1);
+			return mat;
+				//matCreate(unrolled);
+		 }
 		 
 	 };
 	 
@@ -2495,7 +3154,16 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			 Der = math.flatten(Der);
 			 unrolled = unrolled.concat(Der);
 		 }
-		 return math.matrix(unrolled);
+		 
+		 if (mlParams.useMathjs) {
+			return  math.matrix(unrolled);
+		 }
+		 else {
+			var mat = Matrix.reshapeFrom(unrolled,unrolled.length,1);
+			return mat;
+				//matCreate(unrolled);
+		 }		 
+		 //return math.matrix(unrolled);
 		 
 	 };
 	 
@@ -2530,7 +3198,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	/**
 	* If ThVec supplied, update directly based on that, else update based on  std grad descent update
 	*/
-	this.updateTheta = function(ThVec){
+	this.updateTheta = function(ThVec,useMomentumDriver,useRMSPropDriver,useAdamDriver){
 		
 		var ThMats;
 		
@@ -2543,7 +3211,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				this.layers[lay].updateTheta(this.alpha,ThMats[lay]);
 			}
 			else {
-				this.layers[lay].updateTheta(this.alpha);
+				this.layers[lay].updateTheta(this.alpha,null,useMomentumDriver,useRMSPropDriver,useAdamDriver);
 			}
 		
         }
@@ -2555,7 +3223,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	};
 	
 	
-	this.conjugateGradientStep = function(pk) {
+	this.conjugateGradientStep = function(pk,batchNum,useMomentumDriver,useRMSPropDriver) {
 		    var params = null;
 		
 			var current = {};
@@ -2568,11 +3236,11 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				
 			}
 			else {
-		       pk = math.multiply(current.fxprime,-1);
+		       pk = matMultiplyBy(current.fxprime,-1);
 			}
 
 		
-		    var res = this.wolfeLineSearch(this.alpha,pk);
+		    var res = this.wolfeLineSearch(this.alpha,pk,batchNum,useMomentumDriver);
 			var a = res[0];
 			next = res[1];
 
@@ -2589,17 +3257,17 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
             if (!a) {
                 // faiiled to find point that satifies wolfe conditions.
                 // reset direction for next iteration
-                pk = math.multiply(current.fxprime,-1);   //scale(pk, current.fxprime, -1);
+                pk = matMultiplyBy(current.fxprime,-1);   //scale(pk, current.fxprime, -1);
 				return[a,null,pk];
 
             } else {
                 // update direction using Polakâ€“Ribiere CG method
-                var yk = math.add(next.fxprime,math.multiply(current.fxprime,-1));     //weightedSum(yk, 1, next.fxprime, -1, current.fxprime);
+                var yk = matAdd(next.fxprime,matMultiplyBy(current.fxprime,-1));     //weightedSum(yk, 1, next.fxprime, -1, current.fxprime);
 
-                var delta_k =    math.sum(math.dotMultiply(current.fxprime,current.fxprime));  //dot(current.fxprime, current.fxprime),
-                    beta_k =     Math.max(0,math.sum(math.dotMultiply(yk,next.fxprime)) / delta_k);     //Math.max(0, dot(yk, next.fxprime) / delta_k);
+                var delta_k =    matSum(matDotMultiply(current.fxprime,current.fxprime));  //dot(current.fxprime, current.fxprime),
+                    beta_k =     Math.max(0,matSum(matDotMultiply(yk,next.fxprime)) / delta_k);     //Math.max(0, dot(yk, next.fxprime) / delta_k);
 
-                pk = math.add(math.multiply(pk,beta_k),math.multiply(next.fxprime,-1));     //weightedSum(pk, beta_k, pk, -1, next.fxprime);
+                pk = matAdd(matMultiplyBy(pk,beta_k),matMultiplyBy(next.fxprime,-1));     //weightedSum(pk, beta_k, pk, -1, next.fxprime);
 
 				return [a,next,pk];
 				/*
@@ -2634,13 +3302,16 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
 	
 	
-	this.wolfeLineSearch = function(a,pk) {
+	this.wolfeLineSearch = function(a,pk,batchNum,useMomentumDriver) {
 	/// searches along line 'pk' for a point that satifies the wolfe conditions
     /// See 'Numerical Optimization' by Nocedal and Wright p59-60
     /// f : objective function
     /// pk : search direction
     /// current: object containing current gradient/loss
     /// next: output: contains next gradient/loss
+	
+	// batchNum just used to output progress - indicates sgd batch within an epoch
+	
     /// returns a: step size taken
   //   function wolfeLineSearch(f, pk, current, next, a, c1, c2) {
 	  
@@ -2653,15 +3324,20 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			
 		}
 		else {
-		   pk = math.multiply(current.fxprime,-1);
+		   pk = matMultiplyBy(current.fxprime,-1);
 		}
+		
+		if (batchNum == null) {
+			batchNum = 0;
+		}
+		
 		//var a = this.alpha;
 		var c1;
 		var c2;
 		
 		var svdThis = this;
 	  
-		var phi0 = current.fx, phiPrime0 =  math.sum(math.dotMultiply(current.fxprime,pk)), //dot(current.fxprime, pk),
+		var phi0 = current.fx, phiPrime0 =  matSum(matDotMultiply(current.fxprime,pk)), //dot(current.fxprime, pk),
 			phi = phi0, phi_old = phi0,
 			phiPrime = phiPrime0,
 			a0 = 0;
@@ -2670,19 +3346,19 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		c1 = c1 || 1e-6;
 		c2 = c2 || 0.1;
 
-		function zoom(a_lo, a_high, phi_lo,parentIter) {
+		function zoom(a_lo, a_high, phi_lo,parentIter,parentBatchNum) {
 			for (var iteration = 0; iteration < 16; ++iteration) {
 				a = (a_lo + a_high)/2;
-				next.x = math.add(current.x,math.multiply(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
-			    svdThis.updateTheta(next.x);
+				next.x = matAdd(current.x,matMultiplyBy(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
+			    svdThis.updateTheta(next.x,useMomentumDriver);
 			    phi = svdThis.getCost('T');
 				if (svdThis.progCallback) {
-					svdThis.progCallback('subProgressDiv','B/p Iter: ' + parentIter + ' Zoom: ' + iteration + ' &alpha; ' + a.toFixed(4),true);
+					svdThis.progCallback('subProgressDiv','Batch ' + parentBatchNum + ' B/p Iter: ' + parentIter + ' Zoom: ' + iteration + ' &alpha; ' + a.toFixed(4),true);
 				}
 			    svdThis.backProp();       //phi = next.fx = f(next.x, next.fxprime);
 			    next.fxprime = svdThis.unrollDerivs();
-				phiPrime = math.sum(math.dotMultiply(next.fxprime,pk)); 
-				svdThis.updateTheta(current.x);  //restore. Don't change in this routine, new value will be returned
+				phiPrime = matSum(matDotMultiply(next.fxprime,pk)); 
+				svdThis.updateTheta(current.x,useMomentumDriver);  //restore. Don't change in this routine, new value will be returned
 				/*
 				weightedSum(next.x, 1.0, current.x, a, pk);
 				phi = next.fx = f(next.x, next.fxprime);
@@ -2711,21 +3387,21 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		}
 
 		for (var iteration = 0; iteration < 10; ++iteration) {
-			next.x = math.add(current.x,math.multiply(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
-			svdThis.updateTheta(next.x);
+			next.x = matAdd(current.x,matMultiplyBy(pk,a));  //weightedSum(next.x, 1.0, current.x, a, pk);
+			svdThis.updateTheta(next.x,useMomentumDriver);
 			phi = svdThis.getCost('T');
 			if (this.progCallback) {
-			    progCallback('subProgressDiv','B/p Iter: ' + iteration + ' &alpha; ' + a.toFixed(4),true);
+			    progCallback('subProgressDiv','Batch ' + batchNum + ' B/p Iter: ' + iteration + ' &alpha; ' + a.toFixed(4),true);
 			}
 			
 			svdThis.backProp();       //phi = next.fx = f(next.x, next.fxprime);
 			next.fxprime = svdThis.unrollDerivs();
-			phiPrime = math.sum(math.dotMultiply(next.fxprime,pk));  //dot(next.fxprime, pk);
-			svdThis.updateTheta(current.x);  //restore. Don't change in this routine, new value will be returned
+			phiPrime = matSum(matDotMultiply(next.fxprime,pk));  //dot(next.fxprime, pk);
+			svdThis.updateTheta(current.x,useMomentumDriver);  //restore. Don't change in this routine, new value will be returned
 			
 			if ((phi > (phi0 + c1 * a * phiPrime0)) ||
 				(iteration && (phi >= phi_old))) {
-				return zoom(a0, a, phi_old,iteration);
+				return zoom(a0, a, phi_old,iteration,batchNum);
 			}
 
 			if (Math.abs(phiPrime) <= -c2 * phiPrime0) {
@@ -2733,7 +3409,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			}
 
 			if (phiPrime >= 0 ) {
-				return zoom(a, a0, phi,iteration);
+				return zoom(a, a0, phi,iteration,batchNum);
 			}
 
 			phi_old = phi;
@@ -2768,7 +3444,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 					  var cost1 = this.getCost('T');
 					  var gradApprox = (cost2 - cost1) / (2 * eps);
 					  this.layers[lay].ApproxGrads.set([i,j],gradApprox);
-					  
+						
 					  Th.set([i,j],curVal); //restore
 	
 				  }
@@ -2930,6 +3606,9 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 this.InitThMat = InitThMat;
      this.lambda = lambda;
 	 
+	 this.Momentum = null;
+	 this.RMSProp = null;
+	 
 	 this.ApproxGrads = null;
 	 
 	 
@@ -2953,7 +3632,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
                  var nOut = this.nextLayerN + 1;
                  var rqdVariance = 2 / (nIn + nOut);
                  var rqdStdDev = math.sqrt(rqdVariance);
-                 var thMat = math.matrix(math.zeros([this.n + 1, this.nextLayerN]));
+                 var thMat = matZeros(this.n + 1, this.nextLayerN);
                  thMat = thMat.map(function (el) {
                      return randn_bm(rqdStdDev);
                  });
@@ -2991,7 +3670,9 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 };
 
      this.calcRegDerivs = function() {
-         var RegDeriv = math.map(this.Theta,function(el,ind) {
+        // var RegDeriv = math.map(this.Theta,function(el,ind) {
+		var RegDeriv = this.Theta.eleMap(function(el,r,c) {
+			var ind = [r,c];
              if (ind[0] == 0) { //1st row
                  return 0;
              }
@@ -3001,7 +3682,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
          });
 
-         RegDeriv = math.multiply(RegDeriv,this.lambda / this.A.size()[1]);
+         RegDeriv = matMultiplyBy(RegDeriv,this.lambda / matCols(this.A)); 
 
          return RegDeriv;
 
@@ -3009,16 +3690,16 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
      this.calcDerivs = function() {
 
-      var ones = math.ones(1,this.A.size()[1]);
-      this.AWithBias = math.concat(ones,this.A,0);
+      var ones = matOnes(1,matCols(this.A)); //math.ones(1,this.A.size()[1]);
+      this.AWithBias = matConcat(ones,this.A,0); //math.concat(ones,this.A,0);
 
-      this.Derivs = math.multiply(this.AWithBias,math.transpose(this.nextLayer.D));
+      this.Derivs = matMultiply(this.AWithBias,matTranspose(this.nextLayer.D)); //math.multiply(this.AWithBias,math.transpose(this.nextLayer.D));
 
-      this.Derivs = math.multiply(this.Derivs,1 / this.A.size()[1]); //divide by m
+      this.Derivs = matMultiplyBy(this.Derivs, 1 / matCols(this.A)); //math.multiply(this.Derivs,1 / this.A.size()[1]); //divide by m
 
       var RegDerivPart = this.calcRegDerivs();
 
-      this.Derivs = math.add(this.Derivs,RegDerivPart);
+      this.Derivs = matAdd(this.Derivs,RegDerivPart);
 
 
 
@@ -3028,15 +3709,15 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
      this.calcDeltas = function()  {
        if (this.isOutputLayer()) {
-           this.D = math.subtract(this.A,this.Y);
+           this.D = matSubtract(this.A, this.Y); //math.subtract(this.A,this.Y);
        }
        else {
-           this.D = math.multiply(this.Theta,this.nextLayer.D);
-           var ones = math.ones(1,this.A.size()[1]);
-           this.AWithBias = math.concat(ones,this.A,0);
-           this.AComplement = math.subtract(math.ones(math.size(this.AWithBias)),this.AWithBias);
-           this.prime = math.dotMultiply(this.AWithBias,this.AComplement);
-           this.D = math.dotMultiply(this.D,this.prime);
+           this.D = matMultiply(this.Theta,this.nextLayer.D);  //math.multiply(this.Theta,this.nextLayer.D);
+           var ones = matOnes(1,matCols(this.A)); //math.ones(1,this.A.size()[1]);
+           this.AWithBias = matConcat(ones,this.A,0); //math.concat(ones,this.A,0);
+           this.AComplement = matSubtract(matOnes(matRows(this.AWithBias),matCols(this.AWithBias)),this.AWithBias); //math.subtract(math.ones(math.size(this.AWithBias)),this.AWithBias);
+           this.prime = matDotMultiply(this.AWithBias,this.AComplement); //math.dotMultiply(this.AWithBias,this.AComplement);
+           this.D = matDotMultiply(this.D,this.prime); //math.dotMultiply(this.D,this.prime);
 
            //this.D = math.matrix(matrixToArray(this.D,0)); //remove first row of 1s
 		   this.D = mRemoveFirstRow(this.D); //vast improvement!
@@ -3057,7 +3738,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 
 	 this.initApproxGrads = function() {
 		 
-		this.ApproxGrads = math.clone(this.Theta);
+		this.ApproxGrads = this.Theta.clone();
 		this.ApproxGrads = this.ApproxGrads.map(function(el) {
 			return 0;
 		});
@@ -3071,23 +3752,65 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 *
 	 **/
 	 
-     this.updateTheta = function(alpha,ThMat) {
+     this.updateTheta = function(alpha,ThMat,useMomentumDriver,useRMSPropDriver,useAdamDriver) {
 		 
 		 if (ThMat) {
 			this.Theta = ThMat;
 		 }
 		 else {
-            this.DerivsAdj =  math.multiply(this.Derivs,alpha);
+			 
+			if (useMomentumDriver || useAdamDriver) {
+				if (this.Momentum) {
+					this.Momentum = matAdd(matMultiplyBy(this.Derivs,0.1),matMultiplyBy(this.Momentum,0.9));
+				}
+				else { //first time
+				   this.Momentum = this.Derivs.clone();
+				
+				}
+			}
+			
+			var newRMSPropSqrtInv;
+			
+			if (useRMSPropDriver || useAdamDriver) {
+							
+				
+				if (this.RMSProp) {
+					this.RMSProp = matAdd(matMultiplyBy(matDotMultiply(this.Derivs,this.Derivs),0.1),matMultiplyBy(this.RMSProp,0.9));
+				}
+				else { //first time
+					this.RMSProp = this.Derivs.clone(); //first time
+					this.RMSProp = matDotMultiply(this.RMSProp,this.RMSProp);
+				}
+				newRMSPropSqrtInv = this.RMSProp.map(function(el) {
+					return el == 0 ? 0  : 1 / Math.sqrt(el);
+				});
+			}
+				
+				
+			if (useMomentumDriver) {
+				this.DerivsAdj =  matMultiplyBy(this.Momentum,alpha);
+			}
+			else if (useRMSPropDriver) {
+				this.DerivsAdj = matMultiplyBy(this.Derivs,alpha);
+				this.DerivsAdj = matDotMultiply(this.DerivsAdj,newRMSPropSqrtInv);
+			}
+			else if (useAdamDriver) {
+				this.DerivsAdj = matMultiplyBy(this.Momentum,alpha);
+				this.DerivsAdj = matDotMultiply(this.DerivsAdj,newRMSPropSqrtInv);			
+			}
+            else {			
+				this.DerivsAdj =  matMultiplyBy(this.Derivs,alpha);
+			}
 
-            this.Theta = math.subtract(this.Theta,this.DerivsAdj);
+            this.Theta = matSubtract(this.Theta,this.DerivsAdj);
 		 }
 
      };
 	 
 	 this.adjustThetaApprox = function(alpha) {
-		 this.ApproxGrads = math.multiply(this.ApproxGrads,alpha);
+		 this.ApproxGrads = matMultiplyBy(this.ApproxGrads,alpha);
 		 
-		 this.Theta = math.subtract(this.Theta,this.ApproxGrads);
+		 this.Theta = matSubtract(this.Theta,this.ApproxGrads);
 		 
 	 };
 	 
@@ -3095,11 +3818,12 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 this.getThetaForUnitToUnit = function(un1,un2) {
 		var thVal;
 
-		if (this.Theta.size().length == 1) {
-			thVal = this.Theta.get([un1]);
+		if (matIsVector(this.Theta)) {
+			//thVal = this.Theta.get([un1]);
+			//not implemented
 		}
 		 else {
-			thVal = this.Theta.get([un1, un2]);
+			thVal =  matGet(this.Theta,un1,un2); //this.Theta.get([un1, un2]);
 		}
 		 
 		 return thVal;
@@ -3130,7 +3854,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			 return ins;
 		 }
 
-		 if (this.A.size().length == 1) {
+		 if (matIsVector(this.A)) {
 			 return ins[0];
 		 }
 		 else if (ins.constructor === Array) {
@@ -3165,7 +3889,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			 return outs;
 		 }
 
-		 if (this.Y.size()[0] == 1) {
+		 if (matRows(this.Y)  == 1) {
             return outs;
 		 }
 		 else {
@@ -3211,9 +3935,10 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		 ar.unshift(ones);
 		 return math.matrix(ar);
 		 */
-		 var ones = math.ones(1,this.X.size()[1]);
+		 var ones = matOnes(1,matCols(this.X));
 		 
-		 this.X = math.concat(ones,this.X,0);
+		 
+		 this.X = matConcat(ones,this.X,0);
 	 
 	 };
 	 
@@ -3221,7 +3946,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 	 this.forward = function() {
 		 var ZRet = [];
 		// this.Z = h(math.transpose(this.prevLayer.Theta),this.X,false); //this.X = prev layer A with bias 1s added
-		 this.A = h(math.transpose(this.prevLayer.Theta),this.X,true,ZRet);
+		 this.A = h(this.prevLayer.Theta,this.X,true,ZRet);
 		 this.Z = ZRet[0];
 		 
 	 };
