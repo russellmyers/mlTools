@@ -1,6 +1,7 @@
  importScripts('math.min.js');
  importScripts('mlTools_routines.js');
  importScripts('linear-algebra.min.js');
+ importScripts('numeric-1.2.6.min.js');
 
 
  postMessage('Hello from worker');	
