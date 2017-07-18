@@ -52,9 +52,9 @@ function mRemoveFirstRow(mat) {
 	else {
 		//use math.js format matrix for this routine
 		//mat = math.matrix(mat.toArray());
-		var newMat = mat.clone();
-		newMat.data.shift();
-		newMat.rows -=1;
+		var newMat = numeric.clone(mat);
+		newMat.shift();
+
 		return newMat;
 	}
 	
@@ -84,10 +84,51 @@ function matCreate(ar) {
 		mat = math.matrix(ar);
 	}
 	else {
-	  mat = new Matrix(ar);
+	  mat = ar.slice(0); // Numeric just uses arrays!
 	}
 	
 	return mat;
+}
+
+function matClone(mat) {
+
+    return numeric.clone(mat);
+    /*
+    var newArray = mat.map(function(row) {
+        return row.slice(0);
+    });
+
+    return newArray;
+    */
+
+}
+
+function matStringify(mat) {
+    if (mat instanceof Array) {
+        return numeric.clone(mat);
+    }
+    else {
+        return JSON.stringify(mat);
+    }
+    
+    
+}
+
+function matAddEpsilon(mat) {
+    var addFunc = numeric.pointwise(['x[i]'],'if (x[i] == 0)  x[i] = 1e-20;ret[i] = x[i];');
+    var Added = addFunc(mat);
+    return Added;
+
+}
+
+function matZeroFirstRow(mat) {
+	var newMat = numeric.clone();
+	for (var c = 0;c < matCols(mat);++c) {
+		newMat[0][c] = 0;
+	}
+	return newMat;
+
+
 }
 
 function matTranspose(mat) {
@@ -97,7 +138,7 @@ function matTranspose(mat) {
 		matT = math.transpose(mat);
 	}
 	else {
-	   matT = mat.trans();
+	   matT = numeric.transpose(mat);
 	}
 	
 	return matT;
@@ -109,7 +150,7 @@ function matSum(mat) {
        return math.sum(mat);
 	}   else {
 		
-       return mat.getSum();	
+       return numeric.sum(mat);
 	}	
 }
 
@@ -119,12 +160,22 @@ function matInverse(mat) {
       return math.inv(mat);
    }   
    else {
-	  mat = math.matrix(mat.toArray());
-      matInv = math.inv(mat);
-      return matCreate(matrixToArray(matInv));
+	 return numeric.inv(mat);
 	   
    }
 	
+}
+
+function matOtherLog(mat) {
+    var logFunc = numeric.pointwise(['x[i]'],'var l = 1 - x[i];if (l == 0)  l = 1e-20;ret[i] = math.log(l);');
+    var OtherLog = logFunc(mat);
+    return OtherLog;
+
+}
+function matLog(mat) {
+    var logFunc = numeric.pointwise(['x[i]'],'var l = x[i];if (l == 0)  l = 1e-20;ret[i] = math.log(l);');
+    var Log = logFunc(mat);
+    return Log;
 }
 
 function matConcat(mat1,mat2,dim) {
@@ -155,10 +206,9 @@ function matReduce(mat,newRows,newCols) {
 		return math.subset(mat,math.index(math.range(0,newRows),math.range(0,newCols)));
 	}
 	else {
-		//use math.js subset routine
-		var newMat = math.matrix(mat.toArray());
-		newMat = math.subset(newMat,math.index(math.range(0,newRows),math.range(0,newCols)));
-		return matCreate(matrixToArray(newMat));
+
+		var newMat = numeric.getBlock(mat,[0,0],[newRows - 1,newCols - 1]);
+		return newMat;
 		
 		
 	}
@@ -190,6 +240,28 @@ function matOnes(r,c) {
 	
 }
 
+/**
+ * assu,mes 1 dim array only as input
+ * @param mat
+ * @param dim
+ */
+function matReshape(mat,dim) {
+
+    var rows = dim[0];
+    var cols = dim[1];
+
+    var newMat =  numeric.rep(dim,0);
+    mat.forEach(function(el,i) {
+       var r = Math.floor(i / cols);
+       var c = i - (r * cols);
+        newMat[r][c] = el;
+    });
+    return newMat;
+
+
+}
+
+/*
 function matSum(mat) {
 	if (mlParams.useMathjs) {
 		return math.sum(mat);
@@ -198,13 +270,14 @@ function matSum(mat) {
 		return mat.getSum();	
 	}
 }
+*/
 
 function matGet(mat,r,c) {
 	if (mlParams.useMathjs) {
 		return mat.get([r,c]);
 	}
 	else {
-		return mat.data[r][c];
+		return mat[r][c];
 	}
 	
 }
@@ -214,8 +287,28 @@ function matSet(mat,r,c,val) {
 		 mat.set([r,c],val);
 	 }
 	 else {
-		 mat.data[r][c] = val;
+		 mat[r][c] = val;
 	 }
+}
+
+function matCount(mat,x) {
+//counts occurences of x in mat
+    var count = 0;
+    mat.forEach(function(row) {
+        row.forEach(function(col) {
+           if (col == x) {
+               ++count;
+           }
+        });
+    });
+    return count;
+}
+
+function matFlatten(mat) {
+
+    var Flattened = [].concat.apply([], mat);
+    return Flattened;
+
 }
 
 function matSubtract(mat1,mat2) {
@@ -223,7 +316,7 @@ function matSubtract(mat1,mat2) {
 		return math.subtract(mat1,mat2);
 	}
 	else {
-		return mat1.minus(mat2); 
+		return numeric.sub(mat1,mat2);
 	}
 }
 
@@ -232,11 +325,20 @@ function matAdd(mat1,mat2) {
 		return math.add(mat1,mat2);
 	}
 	else {
-		return mat1.plus(mat2); 
+		return numeric.add(mat1,mat2);
 	}
 	
 }
 
+function matPow(mat,p) {
+    return numeric.pow(mat,p);
+
+}
+
+function matSqrt(mat) {
+    return numeric.sqrt(mat);
+
+}
 
 function matSquare(mat) {
 	if (mlParams.useMathjs) {
@@ -254,7 +356,7 @@ function matMultiply(mat1,mat2) {
 		
 	}
 	else {
-		return mat1.dot(mat2);
+		return numeric.dot(mat1,mat2);
 	}
 }
 
@@ -264,7 +366,7 @@ function matDotMultiply(mat1,mat2) {
 		return math.dotMultiply(mat1,mat2);
 	}
 	else {
-		return mat1.mul(mat2);
+		return numeric.mul(mat1,mat2);
 	}
 }
 
@@ -273,8 +375,16 @@ function matMultiplyBy(mat1,x) {
 		return math.multiply(mat1,x);
 	}
 	else {
-		return mat1.mulEach(x);
+        var MultAr = numeric.rep(numeric.dim(mat1),x);
+		return numeric.mul(mat1,MultAr);
 	}
+}
+
+function matPredict(mat) {
+    var predFunc = numeric.pointwise(['x[i]'], 'ret[i] = x[i] >= 0.5 ? 1 : 0;');
+    var Pred = predFunc(mat);
+    return Pred;
+
 }
 
 function matIsVector(mat) {
@@ -287,7 +397,12 @@ function matIsVector(mat) {
 			 return false;
 		 }
 		 else {
-			 return true;
+             if (mat[0] instanceof Array) {
+                 return false;
+             }
+             else {
+                 return true;
+             }
 		 }
 		 
 	 }
@@ -299,7 +414,7 @@ function matRows(mat) {
 		return mat.size()[0];
 	}
 	else {
-		return mat.rows;
+		return mat.length;
 	}
 }
 
@@ -309,7 +424,7 @@ function matCols(mat) {
 		return mat.size()[1];
 	}
 	else {
-	   return mat.cols;
+	   return mat[0].length;
 	}
 }
 
@@ -321,8 +436,10 @@ function matCols(mat) {
  * @returns {Array}
  */
 function matrixToArray(mat,rNum,cNum) {
+   //No longer allows excluding rows or cols
+    return matClone(mat);
 
-   
+   /*
 	rNum = rNum == null ? -1 : rNum;
 	cNum = cNum == null ? -1 : cNum;
 	
@@ -379,7 +496,8 @@ function matrixToArray(mat,rNum,cNum) {
  
   }
   
-  return ar;
+  return ar
+  */
 
 }
 
@@ -392,77 +510,16 @@ function matrixToArray(mat,rNum,cNum) {
  */
 function mRow(matrix, index,retAsArray,assumeRowVector) {
 	
-  if (mlParams.useMathjs) {
 
-  }
-  else {
-    //convert to mathjs matrix for this exercise
-	matrix = math.matrix(matrix.toArray());
-  }	
-   
-   if (matrix.size().length == 1) { //vector
-	   if (assumeRowVector) {
-		   if (retAsArray) {
-			    var arEntry = [];
-	            matrix.forEach(function(el) {
-		             arEntry.push(el);
-	            });
-	            return arEntry;
-		   }
-		   else {
-			  if (mlParams.useMathjs) { 
-		         return matrix;
-			  }
-			  else {
-				 return matCreate(matrixToArray(matrix)); 
-			  }
-		   }
-	   }
-	   else {
-		   var els = math.subset(matrix, math.index(index)); //will be scalar
-		   
-		   if (retAsArray) {
-			   
-	          return [els];
-			}
-		   
-		   else {
-			   return  matCreate([els]); //math.matrix([els]);
-			   
-		   }
-		   
-	   }
-   }
-   
-   
-   var cols = matrix.size()[1];
-   var els = math.subset(matrix, math.index(index, math.range(0,cols)));
-   if (retAsArray) {
-	  if (cols == 1) {
-		  return [els]; // els will be scalar
-		  
-	  }
-	  else {
-        var ar = [];
-	    els.forEach(function(el) {
-	       ar.push(el);
-	     });
-	    return ar;
-	  }
-   }
-   else {
-	 if (cols == 1) {
-        return  matCreate([els]); //math.matrix([els]); //els will be scalar
-	 }
-     else {	 
-	   if (mlParams.useMathjs) {
-          return els;
-	   }
-	   else {
-		  return matCreate(matrixToArray(els)); 
-	   }
-	 }
-   }	
+    var mat = numeric.getBlock(matrix,[index,0],[index,matCols(matrix)-1]);
+    
+    if (retAsArray) { 
+        //flatten
+        return mat[0];
+    }
+    else {
+        return mat;
+    }
   
 }
 
@@ -475,93 +532,15 @@ function mRow(matrix, index,retAsArray,assumeRowVector) {
  */
 function mCol(matrix, index,retAsArray,assumeRowVector) {
 
-  	
-  if (mlParams.useMathjs) {
+    var mat = numeric.getBlock(matrix,[0,index],[matRows(matrix)-1,index]);
 
-  }
-  else {
-    //convert to mathjs matrix for this exercise
-	matrix = math.matrix(matrix.toArray());
-  }	
- 
- if (matrix.size().length == 1) { //vector
-      if (assumeRowVector) {
-		  var els = math.subset(matrix, math.index(index)); //will be scalar
-		  if (retAsArray) {
-			  return [els];
-		  }
-		  else {
-			   return matCreate(els);
-			  
-		  }
-	  }
-	
-	  else {
-		  if (retAsArray) {
-		        var arEntry = [];
-	            matrix.forEach(function(el) {
-		             arEntry.push(el);
-	            });
-	            return arEntry;
-				 
-		  }
-		   else {
-			     if (mlParams.useMathjs) {
-				    return matrix;
-				 }
-				 else {
-					return matCreate(matrixToArray(matrix));
-				 }
-		   }
-	  }
-		  
-	  
-
- }  
-  
-  var rows =  matrix.size()[0];
-  var els = math.subset(matrix, math.index(math.range(0,rows),index));
-  if (retAsArray) {
-	  if (rows == 1) {
-		  return [els]; // will be scalar
-	  }
-	  else {
-	    var ar = [];
-	    els.forEach(function(el) {
-		    ar.push(el); 
-	    });
-	    return ar;
-	  }
-	  
-  }
-	  /*
-     if (rows == 1) {
-		 return elements;
-	 }
-	 else {
-		 var flat = math.flatten(elements);
-		 var ar = [];
-		 flat.forEach(function (el) {
-			 ar.push(el);
-		 });
-		 return ar;
-	 }
-	 */
-  
-  else {
-	 if (rows == 1) {
-        return matCreate([els]); //math.matrix([els]);
-	 }
-     else {	
-	   if (mlParams.useMathjs) {
-          return  els; //els.reshape([rows]); 
-	   }
-	   else {
-		  return matCreate(matrixToArray(els)); 
-	   }
-	 }
-  
-  }	
+    if (retAsArray) {
+        //flatten and return as row
+        return matTranspose(mat)[0];
+    }
+    else {
+        return mat;
+    }
   
 }
 
@@ -585,7 +564,10 @@ function sigmoid(In) {
 		});
 	}
 	else {
-		Out = In.sigmoid();
+		//Out = In.sigmoid();
+        var sigm = numeric.pointwise(['x[i]'], 'var exp = Math.pow(Math.E,x[i] * -1);ret[i] = 1 / (1 + exp);');
+        Out = sigm(In);
+
 	}
 	
 	return Out;
@@ -611,12 +593,15 @@ function accuracy(Theta,X,Y) {
     var f1Score = null;
 	
 	//accMatrix.forEach(function(el) {
+    /*
 	var dummy = accMatrix.map(function(el) {	
 		if (el == 0) {
 			++correctNum;
 		}
 		return el;
 	});
+	*/
+    correctNum = matCount(accMatrix,0);
 	
 	return [correctNum,matCols(Y),prec,recall,f1Score,accMatrix];
 	
@@ -634,9 +619,13 @@ function predict(Theta,X) {
 	var thresh = 0.5; // predict true if >= this
 	var H = h(Theta,X,true);
 	//return math.map(H,function(el) {
+
+    /*
 	return H.map(function(el) {	
 		return el >= 0.5 ? 1 : 0;
 	});
+	*/
+    return matPredict(H);
 	
 	
 }
@@ -709,7 +698,7 @@ function gdUpdate(ThetaT,X,Y,alpha,lambda,useMomentumFlag,useRMSPropFlag,useAdam
 			newMomentum = matAdd(matMultiplyBy(Derivs,0.1),matMultiplyBy(Momentum,0.9));
 		}
 		else {
-			newMomentum = Derivs.clone(); //first time
+			newMomentum = matClone(Derivs); //first time
 		}	
 	}
 	
@@ -725,12 +714,17 @@ function gdUpdate(ThetaT,X,Y,alpha,lambda,useMomentumFlag,useRMSPropFlag,useAdam
 				newRMSProp = matAdd(matMultiplyBy(matDotMultiply(Derivs,Derivs),0.1),matMultiplyBy(RMSProp,0.9));
 			}
 			else {
-				newRMSProp = Derivs.clone(); //first time
+				newRMSProp = matClone(Derivs); //first time
 				newRMSProp = matDotMultiply(newRMSProp,newRMSProp);
 			}
-			var newRMSPropSqrtInv = newRMSProp.map(function(el) {
-				return alpha / Math.sqrt(el);
-			});
+            var newRMSPropSqrtInv =  matSqrt(newRMSProp);
+            newRMSPropSqrtInv = matAddEpsilon(newRMSPropSqrtInv);
+            newRMSPropSqrtInv = matPow(newRMSPropSqrtInv,-1);
+            newRMSPropSqrtInv = matMultiplyBy(newRMSPropSqrtInv,alpha);
+
+			//var newRMSPropSqrtInv = newRMSProp.map(function(el) {
+			//	return alpha / Math.sqrt(el);
+			//});
 			adjDerivs = useAdamFlag ? matDotMultiply(newMomentum,newRMSPropSqrtInv) : matDotMultiply(Derivs,newRMSPropSqrtInv);
 	}	
 	else {
@@ -774,7 +768,9 @@ function derivs(ThetaT,X,Y,lambda,logisticFlag) {
 	if (mlParams.useMathjs) {	
 				RegPart.set([0,0],0); //don't regularise theta0
 	}
-	else {
+	else  {
+        matSet(RegPart,0,0,0);
+        /*
 			RegPart = RegPart.eleMap(function(el,row,col) {
 				if ((row == 0) && (col == 0)) {
 					return 0;
@@ -783,6 +779,7 @@ function derivs(ThetaT,X,Y,lambda,logisticFlag) {
 					return el;
 				}
 			});
+			*/
 	}
 
 
@@ -806,14 +803,18 @@ function regCost(Theta,lambda,m) {
 				RegCost.set([0,0],0); //don't regularise theta0
 		}
 		else {
+            /*
 			RegCost = RegCost.eleMap(function(el,row,col) {
 				if ((row == 0) && (col == 0)) {
 					return 0;
 				}
 				else {
 					return el;
+
 				}
 			});
+			*/
+            matSet(RegCost,0,0,0);
 		}
 			
 		
@@ -870,6 +871,9 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 			 
 			 
 			 //var LogH = math.map(H,function(el) {
+
+            LogH =  matLog(H);
+             /*
 			var LogH = H.map(function(el) {	 
 				 if (el == 0) {
 					 return math.log(1e-20);
@@ -878,11 +882,15 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 				   return math.log(el);
 				 }
 			 });
+			 */
 			 
 			 var Cost1 = matDotMultiply(Y,LogH); //math.dotMultiply(Y,LogH);
              Cost1 = matMultiplyBy(Cost1,-1); //math.multiply(Cost1,-1);			 
 
 			 //var OtherLogH = math.map(H,function(el) {
+
+             var OtherLogH = matOtherLog(H);
+             /*
 		     var OtherLogH = H.map(function(el) {	 
 				 if (1 - el == 0) {
 					 return math.log(1e-20);
@@ -891,11 +899,16 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 				     return math.log(1 - el);
 				 }
 			 });
+			 */
 			 
 			 //var OtherY = math.map(Y,function(el) {
+             var OtherY = matMultiplyBy(Y,-1);
+             OtherY = matAdd(OtherY,1);
+             /*
 			 var OtherY = Y.map(function(el) {	 
 				 return 1 - el;
 			 });
+			 */
 			 
 			 var Cost2 = matDotMultiply(OtherY,OtherLogH); //math.dotMultiply(OtherY,OtherLogH);
 			 
@@ -925,7 +938,7 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
  function featureScale(mat,inScaleFactors) {
 	 
    //var scaledMat = math.subset(mat,math.index(0,math.range(0,mat.size()[1]))); //mRow(mat,0); 
-   var scaledMat; // =  matrixToArray(math.flatten(mRow(mat,0)));
+   var scaledMat = []; // =  matrixToArray(math.flatten(mRow(mat,0)));
    
    
    var rows = matRows(mat); //mat.size()[0];
@@ -937,22 +950,27 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
    var row = [];
    
   // mat.forEach(function(el,ind) {
-   var dummy = mat.eleMap(function(el,r,c) {
-       var ind = [r,c];
+
+
+   //var dummy = mat.eleMap(function(el,r,c) {
+   for (var r = 0;r < matRows(mat);++r ) {
+       //var ind = [r,c];
    
        
-	   
+	   /*
 	   if (ind[1] == 0) {
 		   row = [el];
 	   }
 	   else {
 		   row.push(el);
 	   }
+	   */
+       var row = mRow(mat,r,true);
 	   
-	   if (ind[1] == matCols(mat)  - 1){
+	   //if (ind[1] == matCols(mat)  - 1){
 		   
 		   
-		   if (ind[0] == 0) { //first row
+		   if (r == 0) { //first row
 		   
 		   }
 		   else {
@@ -972,55 +990,63 @@ function costFunction(Theta,X,Y,lambda,mlType,A) {
 		   
 		   
 			   }
-	   }
+	   //}
 	   
-	   return el;
+	  //return el;
 	   
 		      
 		   
 	   
-   });
+   }
    
   
    
    
    //scaledMat = mat.map(function(el,ind) {
-	scaledMat = mat.eleMap(function(el,row,col) {
-       var ind = [row,col];		
-	   var r = ind[0];
+	//scaledMat = mat.eleMap(function(el,row,col) {
+    for (var r = 0;r < matRows(mat);++r) {
+
+          //var ind = [row, col];
+          //var r = ind[0];
+
+          var newEl;
+
+          var min, max, range, mean, lowest;
+
+          var row = mRow(mat,r,true);
+
+          if (inScaleFactors) {
+              mean = inScaleFactors[r][0];
+              range = inScaleFactors[r][1];
+              lowest = inScaleFactors[r][2];
+          }
+          else {
+              mean = scaleFactors[r][0];
+              range = scaleFactors[r][1];
+              lowest = scaleFactors[r][2];
+
+          }
+
+
+          if (r == 0) {
+              scaledMat.push(row);
+          }
+          else {
+            var scaledRow = [];
+            for (var c = 0;c < matCols(mat);++c) {
+                var el = row[c];
+                newEl = el - mean;
+                newEl = (range > 0) ? newEl / range : newEl;
+
+                //return newEl;
+                scaledRow.push(newEl);
+            }
+            scaledMat.push(scaledRow);
+          }
+
+
 	   
-	   var newEl;
-  	   
-	   var min,max,range,mean,lowest;
-	  
-	   
-	   if (inScaleFactors) {
-		   mean = inScaleFactors[r][0];
-		   range = inScaleFactors[r][1];
-		   lowest = inScaleFactors[r][2];
-	   }
-	   else {
-		   mean = scaleFactors[r][0];
-		   range = scaleFactors[r][1];
-		   lowest = scaleFactors[r][2];
-		   
-	   }
-	   
-	
-	   if (r == 0) {
-           return el;
-	   }
-	   else {
-  	   
-		   newEl = el - mean;
-		   newEl = (range > 0) ? newEl / range : newEl;
-			
-		   return newEl;
-	   }		   
-	
-	   
-	   
-	});
+	}
 	   
   
    
@@ -1245,7 +1271,7 @@ function crossValidateOrTest(testFlag,X,Y,ThetaUnrolled,mlType,scaleFactors,arch
  
  function factorYForOneVsAll(mlParams, Y) {
 	 
-	    var YFactored = Y.clone();
+	    var YFactored = matClone(Y);
 	 
 	    for (var i = 0;i < matCols(Y);++i) {
 			   if ((mlParams.module == 'log') && (mlParams.numLogClasses > 2) && (mlParams.currClassNum > -1)) {
@@ -1381,7 +1407,8 @@ function thetaUnscale(Theta,scaleFactors) {
 	var n = matRows(Theta) - 1;
 	
 	var firstElements = [];
-	
+
+    /*
 	var dummy = Theta.eleMap(function(el,row,col) {
 		if (col == 0) {
 			firstElements.push(el);
@@ -1389,6 +1416,8 @@ function thetaUnscale(Theta,scaleFactors) {
 		
 		return el;
 	});
+	*/
+    firstElements = mCol(Theta,0,true);
 	
 	for (var a = 1;a < n+1;++a) {
 			//var ThetaUnscaledEntry =  Theta.subset(math.index(a,0)) / scaleFactors[a][1];
@@ -1919,9 +1948,9 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	//prevRegCost = RegCost;
 	
-	prevTheta = Theta.clone();
+	prevTheta = matClone(Theta); //Theta.clone();
 //		prevMinTheta = minTheta.clone();
-	prevThetaUnscaled = ThetaUnscaled.clone();
+	prevThetaUnscaled = matClone(ThetaUnscaled);
 
 	var logisticFlag = (mlParams.module == 'log');
 	
@@ -1932,8 +1961,8 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 		XTAr = matrixToArray(matTranspose(X));
 		YTAr = matrixToArray(matTranspose(Y));
 		numBatches = matCols(X) % mlParams.sgdBatchSize == 0 ? matCols(X)  / mlParams.sgdBatchSize : Math.ceil(matCols(X)  / mlParams.sgdBatchSize);
-		Xsvd = X.clone();
-		Ysvd = Y.clone();
+		Xsvd = matClone(X);
+		Ysvd = matClone(Y);
 	}
 	else {
 		numBatches = 1;
@@ -2037,14 +2066,14 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 	
 	if (mlParams.module == 'neu') {
 		   //TODO Need to implement unscaling for neural network
-		   ThetaUnscaled = Theta.clone();
+		   ThetaUnscaled = matClone(Theta);
 	}
 	else {
 			if (mlParams.scalingFlag) {
 				ThetaUnscaled  = thetaUnscale(Theta,scaleFactors);
 			}
 			else {
-				ThetaUnscaled = Theta.clone();
+				ThetaUnscaled = matClone(Theta);
 			}
 	}
 	
@@ -2128,13 +2157,13 @@ function learnLoop(curr,maxIters,mlParams,X,Y,progCallback,continueData,cData,YO
 			msg.mess = '<br>finished';
 			msg.costAr = res[0];//JSON.stringify(res[0]);
 			msg.iters = res[1];//JSON.stringify(res[1]);
-			msg.ThetaIdeal = JSON.stringify(res[2]);
-			msg.IdealCost = JSON.stringify(res[3]);
+			msg.ThetaIdeal = matStringify(res[2]); //JSON.stringify(res[2]);
+			msg.IdealCost = matStringify(res[3]); //JSON.stringify(res[3]);
 			//msg.X = JSON.stringify(res[4]); //No longer return this
-			msg.Y = JSON.stringify(res[5]);
-			msg.minTheta = JSON.stringify(res[6]);
+			msg.Y = matStringify(res[5]); //JSON.stringify(res[5]);
+			msg.minTheta = matStringify(res[6]); //JSON.stringify(res[6]);
 			//msg.XUnscaled = JSON.stringify(res[7]); //No longer return this
-			msg.minThetaUnscaled = JSON.stringify(res[8]);
+			msg.minThetaUnscaled = matStringify(res[8]); //JSON.stringify(res[8]);
 			//msg.scaleFactors = res[9];//JSON.stringify(res[9]); //No longer return this
 			//msg.YOrig = JSON.stringify(res[10]); No longer return this
 			msg.costArSparse = res[11];
@@ -2324,7 +2353,7 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled,Xcv
 	var ThetaUnscaled;
 	if (mlParams.module == 'neu') {
 		//TODO Need to implement unscaling for neural network
-		ThetaUnscaled = Theta.clone();
+		ThetaUnscaled = matClone(Theta);
 	}
 	
 	else {
@@ -2333,8 +2362,7 @@ function learn(mlParams,X,Y,progCallback,continueData,scaleFactors,XUnscaled,Xcv
 			ThetaUnscaled = thetaUnscale(Theta,scaleFactors);
 		}
 		else {
-			ThetaUnscaled = Theta.clone();
-		}
+			ThetaUnscaled = matClone(Theta);		}
 	}
 	
 		
@@ -2798,7 +2826,9 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 					thMat = math.reshape(thMat,[thRows,thCols]);
 				}
 				else {
-					thMat = Matrix.reshapeFrom(thAr,thRows,thCols);
+
+					//thMat = Matrix.reshapeFrom(thAr,thRows,thCols);
+                    thMat = matReshape(thAr,[thRows,thCols]);
 					
 				}
 				ThMats.push(thMat);
@@ -3119,6 +3149,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		 for (var i = 0;i < this.layers.length - 1;++i) {
 			 var Th = matrixToArray(this.layers[i].Theta);
 			 if (excludeBias) {
+                 Th = matZeroFirstRow(Th);
+                 /*
 			 	Th = Th.map(function(row,rNum) {
 			   	     if (rNum == 0) {
 			   	     	return row.map(function(el) {
@@ -3129,9 +3161,10 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			   	     	return row;
 			   	     }
 			    });
+			    */
 			 }
 			 
-			 Th	 = math.flatten(Th);
+			 Th	 = matFlatten(Th);
 			 unrolled = unrolled.concat(Th);
 			 
 		 }

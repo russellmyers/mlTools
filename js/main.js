@@ -108,8 +108,8 @@ function init() {
 	
 	w = null;
 	
-		Matrix = linearAlgebra().Matrix;
-		Vector = linearAlgebra().Vector;
+	Matrix = linearAlgebra().Matrix;
+	Vector = linearAlgebra().Vector;
 	
 	costChart = null;
 	visChart = null;
@@ -255,15 +255,15 @@ if (typeof	(Worker) !== "undefined") {
 					isRunningUpdated();
 					
 					if (mlParams.module == 'log') {
-					       var acc = accuracy(math.transpose(minThetaUnscaled),XUnscaled,Y);
+					       var acc = accuracy(minTheta,X,Y);
 						   if (elVal('diagnosticsFlag')) {
-							   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(math.transpose(minThetaUnscaled),XUnscaled);
+							   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(minTheta,X);
 
 							   el('diagnosticDiv').innerHTML += '<br>Accuracy: ' + acc;
-							   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(math.transpose(minThetaUnscaled),XUnscaled, true);
+							   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(minTheta,X, true);
 						   }
-						   var perc  = (acc[1] / acc[2] * 100);
-					       el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
+						   var perc  = (acc[0] / acc[1] * 100);
+					       el('outputBlog').innerHTML +='<br>Summary this training run: ' + acc[0]  + '/' + acc[1] + ' (' + perc.toFixed(4) + '%)';
 
 					}
 
@@ -461,6 +461,12 @@ function getParams() {
  * @returns {*}
  */
 function stringifyToMatrix(string) {
+
+  if (string instanceof Array) {
+      //no need
+      return string;
+  }
+
   var obj = JSON.parse(string);
   //obj.__proto__ = math.matrix.prototype;
   var mat = matCreate(obj.data);
@@ -558,6 +564,19 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
 } else {
   alert('The File APIs are not fully supported in this browser.');
 }
+
+   var ar = [[1,2,3],[4,5,6]];
+   var newM =  matCreate(ar);
+   var newMT = matTranspose(newM);
+   var r = mRow(newMT,1);
+   var rr = mRow(newMT,2,true,true);
+   var c = mCol(newMT,0);
+   var cc = mCol(newMT,1,true);
+
+   var cT = numeric.transpose(c);
+   var ccT = numeric.transpose(cc);
+
+    var tst = numeric.dot(cc,ar);
 
    var pp = math.matrix([1,2,3]);
    testParam(pp);
@@ -1914,16 +1933,20 @@ function numLogClassesUpdated() {
 	 var row = [];
 	 
 	// Xt.forEach(function(el,ind) {
-	var dummy = Xt.eleMap(function(el,r,c) {
-        ind = [r,c];		
+
+	//var dummy = Xt.eleMap(function(el,r,c) {
+     for (var i = 0;i < matRows(Xt);++i) {
+
+       // ind = [r,c];
 		 
-		 var i = ind[0]; //row num
+	   // var i = ind[0]; //row num
 		 
 		 
-		 if (ind[0] >= maxRowsToDisplay) {
+		 if (i >= maxRowsToDisplay) {
 		 }
 		 else {
-		 
+		     var row = mRow(Xt,i,true);
+             /*
 			 if (ind[1] == 0) {//first element in row
 				 row = [el];
 			 }
@@ -1938,10 +1961,10 @@ function numLogClassesUpdated() {
 			 
 			// for (var i = 0;i < Xt.size()[0];++i) {
 			//	 var row = mRow(Xt,i,true);   //seemed quite slow!!
+			*/
 				 
-				 
-				 var firstDegree = true;
-				 row = row.map(function(el,j) {
+			 var firstDegree = true;
+			 row = row.map(function(el,j) {
 					 if (j == 0) {
 						 el = '[' + el + ']';
 					 }
@@ -2000,14 +2023,14 @@ function numLogClassesUpdated() {
 				 if (i < matRows(Xt)  - 1)  {
 					  str+= '\n';
 				 }
-			}
+
 			 
 		 
 		}
-		return el;
+		//return el;
 	
 	 
-	});
+	}
 	
 	 return str;
 	 //el('trainingInput').value = str;
@@ -2353,7 +2376,7 @@ function checkAccuracyMultiClass() {
 				var costArSparse = res[11];
 				var itersSparse = res[12];
 				
-				var conf = h(math.transpose(minThetaUnscaled),XUnscaled,true);
+				var conf = h(minThetaUnscaled,XUnscaled,true);
 				confAr.push(conf);
 			
 		}
@@ -2362,11 +2385,12 @@ function checkAccuracyMultiClass() {
 		
 		var Y = mlResults[0][10]; // get Y original from first result (will be same for all)
 		
-		for (var m = 0;m < Y.size()[1];++m) {
+		for (var m = 0;m < matCols(Y);++m) {
 			var max = 0;
 			var maxI = -1;
 			for (var i = 0;i < mlParams.numLogClasses;++i) {
-				var conf = confAr[i].get([0,m]);
+				var confNum = confAr[i];
+                var conf = confNum[0][m];
 				if (conf > max) {
 					max = conf;
 					maxI = i;
@@ -2380,18 +2404,21 @@ function checkAccuracyMultiClass() {
 			
 			
 		}
-		var predMat = math.transpose(math.matrix(predAr));
-		var acc = math.subtract(predMat,Y);
+		var predMat = matTranspose(predAr);
+		var acc = matSubtract(predMat,Y);
 		var numCorrect = 0;
+	    numCorrect = matCount(acc,0);
+	/*
 		acc.forEach(function(el) {
 			if (el == 0) {
 		        ++numCorrect;
 			}
 		});
+		*/
 		console.log('Num correct: ' + numCorrect);
-		var tot = acc.size()[1];
+		var tot = matCols(acc);
 		var perc = (numCorrect / tot * 100).toFixed(2);
-		learnProgressForeground('rightBannerDiv',' Overall num Correct: ' + numCorrect + '/' + tot + ' (' + perc + '%)' );
+		learnProgressForeground('rightBannerDiv','<br>Overall num Correct: ' + numCorrect + '/' + tot + ' (' + perc + '%)' );
 		
 	return acc;
 }
@@ -2810,10 +2837,10 @@ function learnForeground() {
 		
 		if (mlParams.module == 'log') {
 			if (mlParams.diagnosticsFlag) {	
-			   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(math.transpose(minThetaUnscaled),XUnscaled);
-			   var acc = accuracy(math.transpose(minThetaUnscaled),XUnscaled,Y);
+			   el('diagnosticDiv').innerHTML += '<br>Predictions: ' + predict(matTranspose(minThetaUnscaled),XUnscaled);
+			   var acc = accuracy(matTranspose(minThetaUnscaled),XUnscaled,Y);
 			   el('diagnosticDiv').innerHTML += '<br>Accuracy: ' + acc;
-			   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(math.transpose(minThetaUnscaled),XUnscaled,true);
+			   el('diagnosticDiv').innerHTML += '<br>Confidence: ' + h(matTranspose(minThetaUnscaled),XUnscaled,true);
 			   var perc = (acc[1] / acc[2] * 100);
 			   el('diagnosticDiv').innerHTML +='<br>Summary this training run: ' + acc[1]  + '/' + acc[2] + ' (' + perc.toFixed(4) + '%)';
 		   }
@@ -3171,7 +3198,7 @@ function constructClassificationTrainingPlotPoints(XUnscaled,Y,ThetaUnscaled,sho
 		 accMatrix =  mlNN.checkAccuracy()[5];
 	 }
 	 else {
-	   var acc = accuracy(math.transpose(ThetaUnscaled),XUnscaled,Y);
+	   var acc = accuracy(ThetaUnscaled,XUnscaled,Y);
 	   accMatrix = acc[5];
 	 }
 	 

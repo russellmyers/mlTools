@@ -35,13 +35,13 @@
 				msg.elToUpdate = 'chart';
 				msg.costAr = mess[0];//JSON.stringify(res[0]);
 				msg.iters = mess[1];//JSON.stringify(res[1]);
-				msg.ThetaIdeal = JSON.stringify(mess[2]);
-				msg.IdealCost = JSON.stringify(mess[3]);
+				msg.ThetaIdeal = matStringify(mess[2]); //JSON.stringify(mess[2]);
+				msg.IdealCost = matStringify(mess[3]); //JSON.stringify(mess[3]);
 				//msg.X = JSON.stringify(mess[4]); // No longer return this
-				msg.Y = JSON.stringify(mess[5]);
-				msg.minTheta = JSON.stringify(mess[6]);
+				msg.Y = matStringify(mess[5]); //JSON.stringify(mess[5]);
+				msg.minTheta = matStringify(mess[6]); //JSON.stringify(mess[6]);
 				//msg.XUnscaled = JSON.stringify(mess[7]); // No longer return this
-				msg.minThetaUnscaled = JSON.stringify(mess[8]);
+				msg.minThetaUnscaled = matStringify(mess[8]); //JSON.stringify(mess[8]);
 				//msg.scaleFactors = mess[9];//JSON.stringify(res[9]); // No longer return this
 				//msg.YOrig = JSON.stringify(mess[10]); // No longer return this
 				msg.costArSparse = mess[11];
@@ -98,7 +98,7 @@
 					X = math.matrix(inMsg.data.mlData.XScaled._data);
 				}
 				else {
-					X = matCreate(inMsg.data.mlData.XScaled.data);
+					X = matCreate(inMsg.data.mlData.XScaled);
 				}
 			}
 			else {
@@ -106,7 +106,7 @@
 					X = math.matrix(inMsg.data.mlData.X._data);
 				}
 				else {
-					X = matCreate(inMsg.data.mlData.X.data);
+					X = matCreate(inMsg.data.mlData.X);
 				}
 			}
 			var Y;
@@ -115,7 +115,7 @@
 				Y = math.matrix(inMsg.data.mlData.Y._data);
 			}
 			else {
-				Y = matCreate(inMsg.data.mlData.Y.data);
+				Y = matCreate(inMsg.data.mlData.Y);
 			}
 			
 			var continueData = inMsg.data.continueData;
@@ -124,7 +124,7 @@
 				XUnscaled = math.matrix(inMsg.data.mlData.X._data);
 			}
 			else {
-				XUnscaled = matCreate(inMsg.data.mlData.X.data);
+				XUnscaled = matCreate(inMsg.data.mlData.X);
 			}
 			
 			var Xcv;
@@ -133,7 +133,7 @@
 					Xcv = math.matrix(inMsg.data.mlData.Xcv._data);
 				}
 				else {
-					Xcv = matCreate(inMsg.data.mlData.Xcv.data);
+					Xcv = matCreate(inMsg.data.mlData.Xcv);
 				}
 			}
 			
@@ -143,7 +143,7 @@
 					Ycv = math.matrix(inMsg.data.mlData.Ycv._data);
 				}
 				else {
-					Ycv = matCreate(inMsg.data.mlData.Ycv.data);
+					Ycv = matCreate(inMsg.data.mlData.Ycv);
 				}
 			}
 			
