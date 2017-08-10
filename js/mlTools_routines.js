@@ -84,7 +84,7 @@ function matCreate(ar) {
 		mat = math.matrix(ar);
 	}
 	else {
-	  mat = ar.slice(0); // Numeric just uses arrays!
+	  mat = matClone(ar); // Numeric just uses arrays!
 	}
 	
 	return mat;
@@ -122,13 +122,27 @@ function matAddEpsilon(mat) {
 }
 
 function matZeroFirstRow(mat) {
-	var newMat = numeric.clone();
+	var newMat = numeric.clone(mat);
 	for (var c = 0;c < matCols(mat);++c) {
 		newMat[0][c] = 0;
 	}
 	return newMat;
 
 
+}
+
+function matAbs(mat) {
+	return numeric.abs(mat);
+}
+
+function matNot(mat) {
+	return numeric.not(mat);
+}
+
+function matFlip(mat) {
+	//0 -> 1, anything else  -> 0 pointwise
+	var flipFunc = numeric.pointwise(['x[i]'],'ret[i] = x[i] == 0 ? 1 :  0;');
+    return flipFunc(mat);	
 }
 
 function matTranspose(mat) {
@@ -166,6 +180,15 @@ function matInverse(mat) {
 	
 }
 
+function matRand(dim,stdDev) {
+
+	     var Th = matOnes(dim[0],dim[1]);
+		 Th = matMultiplyBy(Th,stdDev);
+		 var randFunc = numeric.pointwise(['x[i]'],'var r = randn_bm(x[i]);ret[i]=r;');
+		 Th = randFunc(Th);
+		 return Th;
+}
+
 function matOtherLog(mat) {
     var logFunc = numeric.pointwise(['x[i]'],'var l = 1 - x[i];if (l == 0)  l = 1e-20;ret[i] = math.log(l);');
     var OtherLog = logFunc(mat);
@@ -184,9 +207,13 @@ function matConcat(mat1,mat2,dim) {
 	}
 	else {
 		if (dim == 0) {
+			/*
 			var newMat = mat1.clone();
 			newMat.data = newMat.data.concat(mat2.data);
 			newMat.rows = mat1.rows + mat2.rows;
+			return newMat;
+			*/
+			var newMat = mat1.concat(mat2);
 			return newMat;
 
 			}
@@ -220,7 +247,7 @@ function matZeros(r,c) {
 		return math.zeros(r,c);
 	}
 	else {
-		return Matrix.zero(r,c);
+		return numeric.rep([r,c],0);
 	}
     
 }
@@ -231,17 +258,13 @@ function matOnes(r,c) {
 		return math.ones(r,c);
 	}
 	else {
-		var mat = Matrix.zero(r,c);
-        mat = mat.map(function(el) {
-            return 1;
-		});	
-        return mat;		
+		return numeric.rep([r,c],1);		
 	}
 	
 }
 
 /**
- * assu,mes 1 dim array only as input
+ * assumes 1 dim array only as input
  * @param mat
  * @param dim
  */
@@ -381,7 +404,7 @@ function matMultiplyBy(mat1,x) {
 }
 
 function matPredict(mat) {
-    var predFunc = numeric.pointwise(['x[i]'], 'ret[i] = x[i] >= 0.5 ? 1 : 0;');
+    var predFunc = numeric.pointwise(['x[i]'], 'ret[i] = x[i] > 0.5 ? 1 : 0;');
     var Pred = predFunc(mat);
     return Pred;
 
@@ -2856,8 +2879,11 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
         if (matRows(Y) == 1) { //binary
             //P.forEach(function(el,i) {
-			var dummy = P.eleMap(function(el,r,c) {	
-			   var ind = [r,c];
+			var PRow = mRow(P,0,true); //only 1 row in binary	
+			//var dummy = P.eleMap(function(el,r,c) {
+            PRow.forEach(function(el,c) {
+				var r = 0;
+			   //var ind = [r,c];
 
                if ((el == 0)  && (matGet(Y,r,c) == 0)) {
                    PosNeg.push([0,0,1,0]); // true neg
@@ -2875,20 +2901,20 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				return el;
             });
 
-            var PosNegSum = math.multiply(math.ones(matCols(Y)),PosNeg);
+            var PosNegSum = matMultiply(matOnes(1,matCols(Y)),PosNeg);
 
-            if (PosNegSum.get([0]) + PosNegSum.get([1]) == 0) {
+            if (matGet(PosNegSum,0,0) + matGet(PosNegSum,0,1) == 0) {
                 prec = 0;
             }
             else {
-                prec = PosNegSum.get([0]) / (PosNegSum.get([0]) + PosNegSum.get([1]));
+                prec = matGet(PosNegSum,0,0) / (matGet(PosNegSum,0,0) +  matGet(PosNegSum,0,1));
             }
 
-            if (PosNegSum.get([0]) + PosNegSum.get([3]) == 0) {
+            if (matGet(PosNegSum,0,0) + matGet(PosNegSum,0,3) == 0) {
                 recall = 0;
             }
             else {
-                recall = PosNegSum.get([0]) / (PosNegSum.get([0]) + PosNegSum.get([3]));
+                recall = matGet(PosNegSum,0,0) / (matGet(PosNegSum,0,0) + matGet(PosNegSum,0,3));
             }
 
             if (prec + recall == 0) {
@@ -2903,27 +2929,41 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		
 		
 		var D = matSubtract(P,Y);
-			
+		
+/*		
 		var AbsD = D.map(function(el) {
 				return Math.abs(el);
 		        });
+*/				
 		  	
+		var AbsD = matAbs(D);
+		
 		var onesM = matOnes(1,matRows(AbsD));
+		
+		Prod = matMultiply(onesM,AbsD);
 			
-		var Prod = matMultiply(onesM,AbsD);
+		var Prod = matFlip(Prod);
 		
 		
+		
+		/*
 		Prod = Prod.map(function(el) {
 			return el == 0 ? 1 : 0;
 	    });
+		*/
+		//Prod = matFlip(Prod);
 		
 		var numCorrect = matSum(Prod);
 		
+		
+		/*
 		Prod = Prod.map(function(el) {
 			return el == 0 ? 1 : 0;
 	    });
+		*/
+		//Prod = matFlip(Prod);
 		
-		return [numCorrect,matCols(Y),prec,recall,f1Score,Prod]; //math.reshape(Prod,[1,matRows(Prod)])];
+		return [numCorrect,matCols(Y),prec,recall,f1Score,AbsD]; //math.reshape(Prod,[1,matRows(Prod)])];
 		
 		
 		
@@ -2939,9 +2979,13 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 		var P;
 		
 		if (this.numOutputs == 1) {
+			
+			/*
 			P = A.map(function(el) {
 				return el > 0.5 ? 1 : 0;
 			});
+			*/
+			P = matPredict(A);
 			
 		}
 		else  {
@@ -2950,13 +2994,19 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				Maxvals = math.max(A,0);
 			}
 			else {
-				Maxvals = math.max(A.toArray(),0);
-				Maxvals = matCreate(Maxvals);
+				Maxvals = math.max(A,0);
+				Maxvals = matCreate([Maxvals]);
 			}
 			
 			var colNum = 0;
-		    P = A.eleMap(function(el,r,c) {
-				var ind = [r,c];
+			
+			var P = matZeros(matRows(A),matCols(A));
+			
+		    //P = A.eleMap(function(el,r,c) {
+			for (var r = 0;r < matRows(A);++r) {	
+			  for(var c = 0;c < matCols(A);++c) {
+				var el = matGet(A,r,c);  
+				//var ind = [r,c];
 					
 				if (el == matGet(Maxvals,0,c)) {
 					el = 1;
@@ -2973,15 +3023,11 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				}
 				*/
 				
-				return el;
-				
-			});
+				matSet(P,r,c,el);
+			  }
 			
-	
-			
-			
-			
-			
+					
+			}
 		}
 		
 		
@@ -3172,7 +3218,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 			return  unrolled;
 		 }
 		 else {
-			var mat = Matrix.reshapeFrom(unrolled,unrolled.length,1);
+			//var mat = Matrix.reshapeFrom(unrolled,unrolled.length,1);
+			var mat = matTranspose([unrolled]);
 			return mat;
 				//matCreate(unrolled);
 		 }
@@ -3517,7 +3564,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 				*/
 			}
 			else {
-				this.layers[j].X = math.clone(this.layers[j-1].A);
+				this.layers[j].X = matClone(this.layers[j-1].A);
 				/*
 				if (j == 1) {
 				   // first A has bias already added. May need to change this
@@ -3665,10 +3712,13 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
                  var nOut = this.nextLayerN + 1;
                  var rqdVariance = 2 / (nIn + nOut);
                  var rqdStdDev = math.sqrt(rqdVariance);
+				 /*
                  var thMat = matZeros(this.n + 1, this.nextLayerN);
                  thMat = thMat.map(function (el) {
                      return randn_bm(rqdStdDev);
                  });
+				 */
+				 var thMat = matRand([this.n + 1, this.nextLayerN],rqdStdDev);
 
                  //Use Xavier initialisation:
 
@@ -3704,6 +3754,8 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 
      this.calcRegDerivs = function() {
         // var RegDeriv = math.map(this.Theta,function(el,ind) {
+	
+	    /*
 		var RegDeriv = this.Theta.eleMap(function(el,r,c) {
 			var ind = [r,c];
              if (ind[0] == 0) { //1st row
@@ -3714,6 +3766,9 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
              }
 
          });
+		 */
+		 var RegDeriv = matClone(this.Theta);
+		 matSet(RegDeriv,0,0,0);
 
          RegDeriv = matMultiplyBy(RegDeriv,this.lambda / matCols(this.A)); 
 
@@ -3797,7 +3852,7 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 					this.Momentum = matAdd(matMultiplyBy(this.Derivs,0.1),matMultiplyBy(this.Momentum,0.9));
 				}
 				else { //first time
-				   this.Momentum = this.Derivs.clone();
+				   this.Momentum = matClone(this.Derivs);
 				
 				}
 			}
@@ -3811,12 +3866,19 @@ function NeuralNetwork(architecture,X,Y,XUnscaled,scaleFactors,alpha,lambda,init
 					this.RMSProp = matAdd(matMultiplyBy(matDotMultiply(this.Derivs,this.Derivs),0.1),matMultiplyBy(this.RMSProp,0.9));
 				}
 				else { //first time
-					this.RMSProp = this.Derivs.clone(); //first time
+					this.RMSProp = matClone(this.Derivs); //first time
 					this.RMSProp = matDotMultiply(this.RMSProp,this.RMSProp);
 				}
+				
+				var newRMSPropSqrtInv =  matSqrt(this.RMSProp);
+                newRMSPropSqrtInv = matAddEpsilon(newRMSPropSqrtInv);
+                newRMSPropSqrtInv = matPow(newRMSPropSqrtInv,-1);
+                //newRMSPropSqrtInv = matMultiplyBy(newRMSPropSqrtInv,alpha);
+				/*
 				newRMSPropSqrtInv = this.RMSProp.map(function(el) {
 					return el == 0 ? 0  : 1 / Math.sqrt(el);
 				});
+				*/
 			}
 				
 				

@@ -565,6 +565,8 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
   alert('The File APIs are not fully supported in this browser.');
 }
 
+   var rAr = matRand([3,2],5);
+   
    var ar = [[1,2,3],[4,5,6]];
    var newM =  matCreate(ar);
    var newMT = matTranspose(newM);
